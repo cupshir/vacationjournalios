@@ -2,7 +2,8 @@
 import React, { Component } from 'react';
 import {
     View,
-    StyleSheet
+    StyleSheet,
+    AlertIOS
 } from 'react-native';
 import { 
     Button,
@@ -11,8 +12,28 @@ import {
     FormValidationMessage,
     Text
      } from 'react-native-elements';
+import { connect } from 'react-redux';
+import { bindActionCreators } from 'redux';
+import * as userActions from '../../store/actions/userActions';
 
-export default class Login extends Component {
+import LoadingMickey from '../../components/LoadingMickey'
+
+class SignIn extends Component {
+    static navigatorButtons = {
+        rightButtons: [
+            {
+                title: 'Sign In',
+                id: 'signIn'
+            }
+        ],
+        leftButtons: [
+            {
+                title: 'Cancel',
+                id: 'cancel'
+            }
+        ]
+    };
+
     constructor(props) {
         super(props);
         this.state = { 
@@ -25,6 +46,18 @@ export default class Login extends Component {
                 password: ''
             }
         };
+        this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
+    }
+
+    // handle navigation event
+    onNavigatorEvent(event) {
+        if (event.type == 'NavBarButtonPress') {
+            if (event.id == 'signIn') {
+                this.handleSignIn();
+            } else if (event.id =='cancel') {
+                this.props.navigator.dismissModal({});
+            }
+        }
     }
 
     // Handle Email input change
@@ -47,7 +80,8 @@ export default class Login extends Component {
             formErrors: {
                 ...this.state.formErrors,
                 email: emailError
-            }
+            },
+            loadingModalActive: false
         });
     }
 
@@ -73,23 +107,20 @@ export default class Login extends Component {
         });
     }
 
-    handleSignUpPress = () => {
-        this.props.navigator.push({
-            screen: 'vacationjournalios.SignUp',
-            title: 'Sign Up'
-        });
+    // Handle Sign In Press
+    handleSignIn = () => {
+        // Check if ready to submit
+        const ready = this.readyForSubmit(this.state.formValues)
+
+        if(ready) {
+            // TODO: Modify SignIn to be a Modal and dismiss modal sign in successful
+            this.props.dispatch(userActions.signInUser(this.state.formValues.email,this.state.formValues.password));
+        } else {
+            AlertIOS.alert('Please enter a valid email address and password')
+        }
     }
 
-    // Handle Submit Click
-    handleLoginPress = () => {
-
-        this.props.navigator.push({
-            screen: 'vacationjournalios.JournalEntry',
-            title: 'Add Journal Entry'
-        });
-    }
-
-    // Check if form ready for submit
+    // Check if form is ready for submit and return true/false
     readyForSubmit = (values) => {
         let ready = true;
 
@@ -108,7 +139,7 @@ export default class Login extends Component {
         return ready;
     }
 
-    // Return true if error messages exist in state
+    // Check if error messages exist in state and return true/false
     checkForErrorMessages = () => {
         let errorCount = 0;
         Object.entries(this.state.formErrors).forEach(([key, val]) => {
@@ -133,21 +164,56 @@ export default class Login extends Component {
         );
     }
 
-    render() {
+    handleDismissModal = () => {
+        this.props.navigator.dismissModal({});
+    }
+
+    showLoadingModal = () => {
+        this.setState({
+            ...this.state,
+            loadingModalActive: true
+        });
+        this.props.navigator.showModal({
+            screen: 'vacationjournalios.LoadingModal',
+            animated: true
+        });
+    }
+
+    dismissLoadingModal = () => {
+        this.setState({
+            ...this.state,
+            loadingModalActive: false
+        });
+        this.props.navigator.dismissModal({});
+    }
+
+    render() {        
         // Check if errors exist in state.formErrors
         const emailError = (this.state.formErrors.email !== '') ? this.renderError(this.state.formErrors.email) : null;
         const passwordError = (this.state.formErrors.password !== '') ? this.renderError(this.state.formErrors.password) : null;
 
-        // Check if form is ready to submit (all validation passes and values exist)
-        const readyForSubmit = this.readyForSubmit(this.state.formValues);
-       
+        // Check if authentication errors exist in redux store
+        const authenticationError = (this.props.authenticationStatus === 'failed') ? this.renderError(this.props.authenticationErrorMessage) : null;
+
+
+        // Loading Mickey Graphic
+        if (this.props.authenticationStatus === 'requesting') {
+            return (
+              <View style={styles.container}>
+                <LoadingMickey />
+              </View>
+            );
+        }
+        
+        // Render Sign In Form
         return (
         <View style={styles.container}>
             <View style={styles.upper}>
-                <Text style={styles.image}>Login Graphic</Text>
+                <Text style={styles.image}>Sign In Graphic</Text>
             </View>
             <View style={styles.lower}>
                 <View>
+                    {authenticationError}
                     <FormLabel>Email</FormLabel>
                     <FormInput 
                         onChangeText={this.handleEmailChange}
@@ -167,22 +233,6 @@ export default class Login extends Component {
                     />
                     {passwordError}
                 </View>
-                <View style={styles.buttons}>
-                    <Button
-                        raised
-                        title='Sign up'
-                        buttonStyle={styles.button}
-                        onPress={this.handleSignUpPress}
-                    />
-                    <Button
-                        raised
-                        title='Login'
-                        buttonStyle={styles.button}
-                        backgroundColor='#387EF7'
-                        //disabled={readyForSubmit}
-                        onPress={this.handleLoginPress}
-                    />
-                </View>
             </View>
         </View>
         )
@@ -201,7 +251,6 @@ var styles = StyleSheet.create({
     },
     lower: {
         flex: .4,
-        justifyContent: 'space-around',
         marginBottom: 50,
         marginRight: 25,
         marginLeft: 25,
@@ -216,15 +265,15 @@ var styles = StyleSheet.create({
         borderColor: 'gray',
         borderWidth: 1,
         borderRadius: 5
-    },
-    buttons: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center'
-    },
-    button: {
-        borderRadius: 5,
-        width: 100
     }
-  });
+});
+
+function mapStateToProps(state) {
+    return {
+      authenticationErrorMessage: state.user.authenticationErrorMessage,
+      authenticationStatus: state.user.authenticationStatus,
+      authenticated: state.user.authenticated
+    }
+  }
+
+export default connect(mapStateToProps)(SignIn);

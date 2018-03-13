@@ -1,4 +1,5 @@
-import { AppRegistry } from 'react-native';
-import App from './src/App';
+/* eslint-disable no-unused-vars */
+import App from './src/app';
 
-AppRegistry.registerComponent('vacationjournalios', () => App);
+// changing to single entry app, below is for requiring login before app starts
+//const app = new App();

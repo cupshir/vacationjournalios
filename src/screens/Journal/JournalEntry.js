@@ -5,8 +5,9 @@ import {
     TextInput,
     AlertIOS
 } from 'react-native';
+import { connect } from 'react-redux';
+import { bindActionCreators } from 'redux';
 import { 
-    Button,
     FormLabel, 
     FormInput,
     Rating,
@@ -15,8 +16,18 @@ import {
 } from 'react-native-elements';
 import DatePicker from 'react-native-datepicker';
 import { Dropdown } from 'react-native-material-dropdown';
+import * as journalActions from '../../store/actions/journalActions';
 
-export default class JournalEntry extends Component {
+class JournalEntry extends Component {
+    static navigatorButtons = {
+        rightButtons: [
+          {
+              title: 'Save',
+              id: 'save' // id for this button, given in onNavigatorEvent(event) to help understand which button was clicked
+          }
+        ]
+    };
+
     constructor(props) {
         super(props);
         this.state = {
@@ -32,6 +43,21 @@ export default class JournalEntry extends Component {
             }
 
         };
+        this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
+    }
+
+    onNavigatorEvent(event) { // this is the onPress handler for the two buttons together
+        if (event.type == 'NavBarButtonPress') { // this is the event type for button presses
+            if (event.id == 'save') {
+                this.handleSavePress();
+            }
+        }
+    }
+
+    // handle save press
+    handleSavePress = () => {
+        //AlertIOS.alert(this.state.formValues);
+        this.props.dispatch(journalActions.signOutUser());
     }
 
     // handle minutes waited change
@@ -112,11 +138,6 @@ export default class JournalEntry extends Component {
                 journaledDate: date
             }
         })
-    }
-
-    // handle save press
-    handleSavePress = () => {
-        AlertIOS.alert(this.state.formValues);
     }
 
     // render View
@@ -214,16 +235,6 @@ export default class JournalEntry extends Component {
                         maxLength={400}
                     />
                 </View>
-                <View style={styles.buttons}>
-                    <Button
-                        raised={true}
-                        title='Save'
-                        buttonStyle={styles.button}
-                        backgroundColor='#387EF7'
-                        disabled={!readyForSubmit}
-                        onPress={this.handleSavePress}
-                    />
-                </View>
             </View>
         )
     }
@@ -242,7 +253,7 @@ var styles = StyleSheet.create({
         marginRight: 25,
         marginLeft: 25,
         borderWidth: 1,
-        height: 250
+        height: 150
     },
     journaledDateMinutes: {
         flexDirection: 'row',
@@ -293,14 +304,7 @@ var styles = StyleSheet.create({
         borderColor: '#aaa',
         borderRadius: 5,
         height: 100
-    },
-    buttons: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        marginTop: 10
-    },
-    button: {
-        borderRadius: 5,
-        width: 100
     }
 });
+
+export default connect()(JournalEntry);
