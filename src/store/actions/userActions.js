@@ -9,9 +9,12 @@ import {
     AUTHENTICATION_START,
     AUTHENTICATION_SUCCESS,
     AUTHENTICATION_ERROR,
+    AUTHENTICATION_ERROR_CLEAR,
 
     SIGN_OUT_USER
 } from './actionTypes'
+
+import * as journalActions from './journalActions';
 
 // User Actions
 
@@ -50,6 +53,9 @@ export function signInUser(email, password) {
           });
           // authenticate user in redux
           dispatch(authenticateUserFromAPI(response.body));
+
+          // load users journals into redux store
+          dispatch(journalActions.getJournals(response.body.data.id));
         })
         .catch(error => {
           dispatch(authenticationError(error));
@@ -57,41 +63,41 @@ export function signInUser(email, password) {
     }
   }
   
-  // Signin user using jwt token
-  export function signInUserByToken(token) {
-      return function(dispatch) {
-        // Set authentication status to start
-        dispatch({
-          type: AUTHENTICATION_START
-        });
-        // make authentication request
-        request
-          .post(`${API_URL}/user`)
-          .set('Authorization', 'Bearer ' + token)
-          .then(response => {
-            // success response - Set user Id in local storage
-            _saveItem('userId', String(response.body.data.id));
-            // Write / Update user in realm dbb
-            realm.write(() => {
-              realm.create('User', {
-                  id: response.body.data.id,
-                  firstName: response.body.data.firstname,
-                  lastName: response.body.data.lastname,
-                  email: response.body.data.email,
-                  jwtToken: response.body.token
-                },
-                true
-              );
-            });
-            // authenticate user in Redux store
-          })
-          .catch(error => {
-            // token failed, remove it
-            //localStorage.removeItem('jwtToken');
-            dispatch(authenticationError(error));
-          });
-      }
-  }
+  // Signin user using jwt token ** Not sure if needed for react native app
+  // export function signInUserByToken(token) {
+  //     return function(dispatch) {
+  //       // Set authentication status to start
+  //       dispatch({
+  //         type: AUTHENTICATION_START
+  //       });
+  //       // make authentication request
+  //       request
+  //         .post(`${API_URL}/user`)
+  //         .set('Authorization', 'Bearer ' + token)
+  //         .then(response => {
+  //           // success response - Set user Id in local storage
+  //           _saveItem('userId', String(response.body.data.id));
+  //           // Write / Update user in realm dbb
+  //           realm.write(() => {
+  //             realm.create('User', {
+  //                 id: response.body.data.id,
+  //                 firstName: response.body.data.firstname,
+  //                 lastName: response.body.data.lastname,
+  //                 email: response.body.data.email,
+  //                 jwtToken: response.body.token
+  //               },
+  //               true
+  //             );
+  //           });
+  //           // authenticate user in Redux store
+  //         })
+  //         .catch(error => {
+  //           // token failed, remove it
+  //           //localStorage.removeItem('jwtToken');
+  //           dispatch(authenticationError(error));
+  //         });
+  //     }
+  // }
   
   // Signup user and then authorize newly created user
   export function signUpUser(credentials) {
@@ -100,6 +106,7 @@ export function signInUser(email, password) {
       dispatch({
         type: AUTHENTICATION_START
       });
+      // Send API request to create user
       request
         .post(`${API_URL}/user/create`)
         .send({
@@ -115,7 +122,7 @@ export function signInUser(email, password) {
           }
           // success response - Set user Id in local storage
           _saveItem('userId', String(response.body.data.id));
-          // Write / Update user in realm dbb
+          // Write / Update user in realm db
           realm.write(() => {
             realm.create('User', {
                 id: response.body.data.id,
@@ -147,6 +154,9 @@ export function signInUser(email, password) {
           
           // authenticate user in redux store
           dispatch(authenticateUserFromRealm(user));
+
+          // load users journals into redux store
+          dispatch(journalActions.getJournals(user.id));
       })
       .catch(error => {
         console.log('error: ', error);
@@ -186,12 +196,22 @@ export function signInUser(email, password) {
         payload: error
     }
   }
+
+  // Clear Authentication Error Message in Redux
+  export function authenticationErrorClear() {
+    return {
+      type: AUTHENTICATION_ERROR_CLEAR
+    }
+  }
   
   // Signout User and clear userId from local storage
   export function signOutUser() {
-    _removeItem('userId');
-    return {
-      type: SIGN_OUT_USER
+    return function (dispatch) {
+      _removeItem('userId');
+      dispatch(journalActions.clearJournals());
+      dispatch({
+        type: SIGN_OUT_USER
+      }) 
     }
   }
 

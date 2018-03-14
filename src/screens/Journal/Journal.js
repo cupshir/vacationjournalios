@@ -7,13 +7,15 @@ import {
   ActivityIndicator, 
   StyleSheet 
 } from "react-native";
+import { connect } from 'react-redux';
+import * as journalActions from '../../store/actions/journalActions';
 
 class Journal extends Component {
     static navigatorButtons = {
       rightButtons: [
         {
           title: '+',
-          id: 'add'
+          id: 'addEntry'
         }
       ],
       leftButtons: [
@@ -43,9 +45,9 @@ class Journal extends Component {
           animationType: 'fade'
         })
       }
-      if (event.id == 'add') {
+      if (event.id == 'addEntry') {
         this.props.navigator.push({
-          screen: 'vacationjournalios.CreateJournal',
+          screen: 'vacationjournalios.JournalEntry',
           title: 'Add Journal Entry',
           animated: true,
           animationType: 'fade'
@@ -65,7 +67,9 @@ class Journal extends Component {
     }
     return (
       <View>
-          <Text>This will be journal</Text>
+          <Text>This will be journal page.</Text>
+          <Text>Journal Name: {this.props.journal.journal ? this.props.journal.journal.name : null}</Text>
+          <Text>Selected Journal is {this.props.journal.selectedJournalId}</Text>
       </View>
     );
   }
@@ -79,4 +83,11 @@ var styles = StyleSheet.create({
   }
 })
 
-export default Journal;
+function mapStateToProps(state) {
+  return {
+    user: state.user,
+    journal: state.journal,
+  }
+}
+
+export default connect(mapStateToProps)(Journal);

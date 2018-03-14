@@ -3,18 +3,38 @@ import React, { Component } from 'react';
 import {
     View,
     ScrollView,
-    StyleSheet
+    StyleSheet,
+    AlertIOS
 } from 'react-native';
 import { 
-    Button,
     FormLabel, 
     FormInput,
     FormValidationMessage,
     Text
 } from 'react-native-elements';
+import { connect } from 'react-redux';
+import { bindActionCreators } from 'redux';
+import * as userActions from '../../store/actions/userActions';
+
+import LoadingMickey from '../../components/LoadingMickey';
 
 
-export default class SignUp extends Component {
+class SignUp extends Component {
+    static navigatorButtons = {
+        rightButtons: [
+            {
+                title: 'Sign Up',
+                id: 'signUp'
+            }
+        ],
+        leftButtons: [
+            {
+                title: 'Cancel',
+                id: 'cancel'
+            }
+        ]
+    };
+
     constructor(props) {
         super(props);
         this.state = { 
@@ -35,6 +55,19 @@ export default class SignUp extends Component {
                 lastName: ''
             }
         };
+        this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
+    }
+
+    // handle navigation event
+    onNavigatorEvent(event) {
+        if (event.type == 'NavBarButtonPress') {
+            if (event.id == 'signUp') {
+                this.handleSignUp();
+            } else if (event.id =='cancel') {
+                this.props.dispatch(userActions.authenticationErrorClear());
+                this.props.navigator.dismissModal({});
+            }
+        }
     }
 
     // Handle Email input change
@@ -196,8 +229,20 @@ export default class SignUp extends Component {
     }
 
     // Handle Submit Click
-    handleSubmitPress = () => {
+    handleSignUp = () => {
+        if(this.readyForSubmit(this.state.formValues)){
+            // Create and populate credentials object
+            let credentials = [];
+            credentials.firstname = this.state.formValues.firstName;
+            credentials.lastname = this.state.formValues.lastName;
+            credentials.email = this.state.formValues.email;
+            credentials.password = this.state.formValues.password;
 
+            this.props.dispatch(userActions.signUpUser(credentials));
+        } else {
+            // TODO: Dynamic alert to better direct what to do
+            AlertIOS.alert('Please correct form errrors and try again')
+        }
     }
 
     // Check if form ready for submit
@@ -253,14 +298,24 @@ export default class SignUp extends Component {
         const confirmPasswordError = (this.state.formErrors.confirmPassword !== '') ? this.renderError(this.state.formErrors.confirmPassword) : null;
         const firstNameError = (this.state.formErrors.firstName !== '') ? this.renderError(this.state.formErrors.firstName) : null;
         const lastNameError = (this.state.formErrors.lastName !== '') ? this.renderError(this.state.formErrors.lastName) : null;
+        
+        // Check if authentication errors exist in redux store
+        const authenticationError = (this.props.authenticationStatus === 'failed') ? this.renderError(this.props.authenticationErrorMessage) : null;
 
-        // Check if form is ready to submit (all validation pass and fields exist)
-        const readyForSubmit = this.readyForSubmit(this.state.formValues);
+        // Loading Mickey Graphic
+        if (this.props.authenticationStatus === 'requesting') {
+            return (
+                <View style={styles.container}>
+                <LoadingMickey />
+                </View>
+            );
+        }
 
         return (
         <View style={styles.container}>
             <ScrollView style={styles.form}>
                 <View>
+                    {authenticationError}
                     <FormLabel>Email</FormLabel>
                     <FormInput 
                         onChangeText={this.handleEmailChange}
@@ -310,15 +365,6 @@ export default class SignUp extends Component {
                     />
                     {lastNameError}
                 </View>
-                <View style={styles.buttons}>
-                    <Button
-                        raised={true}
-                        title='Sign Up'
-                        buttonStyle={styles.button}
-                        backgroundColor='#387EF7'
-                        disabled={!readyForSubmit}
-                    />
-                </View>
             </ScrollView>
         </View>
         )
@@ -339,14 +385,15 @@ var styles = StyleSheet.create({
         flex: .8,
         backgroundColor: '#C7D0FE',
         borderWidth: 1
-    },
-    buttons: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        marginTop: 10
-    },
-    button: {
-        borderRadius: 5,
-        width: 100
     }
   });
+
+function mapStateToProps(state) {
+    return {
+        authenticationErrorMessage: state.user.authenticationErrorMessage,
+        authenticationStatus: state.user.authenticationStatus,
+        authenticated: state.user.authenticated
+    }
+}
+
+export default connect(mapStateToProps)(SignUp);

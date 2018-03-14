@@ -44,12 +44,11 @@ Journal.schema = {
     name: 'Journal',
     primaryKey: 'id',
     properties: {
-        id: { type: 'int', indexed: true },
+        id: { type: 'string', indexed: true },
         name: 'string',
         entries: { type: 'list', objectType: 'JournalEntry' },
         dateCreated: 'date',
         dateModified: 'date',
-        serverId: 'int',
         user: { type: 'User' }
     }
 }
@@ -59,7 +58,7 @@ JournalEntry.schema = {
     name: 'JournalEntry',
     primaryKey: 'id',
     properties: {
-        id: { type: 'int', indexed: true },
+        id: { type: 'string', indexed: true },
         name: 'string',
         park: { type: 'Park' },
         attraction: { type: 'Attraction' },
@@ -70,8 +69,7 @@ JournalEntry.schema = {
         rating: 'int',
         pointsScored: 'int',
         usedFastPass: 'bool',
-        comments: 'string',
-        serverId: 'int'
+        comments: 'string'
     }
 }
 

@@ -16,7 +16,7 @@ import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import * as userActions from '../../store/actions/userActions';
 
-import LoadingMickey from '../../components/LoadingMickey'
+import LoadingMickey from '../../components/LoadingMickey';
 
 class SignIn extends Component {
     static navigatorButtons = {
@@ -55,6 +55,7 @@ class SignIn extends Component {
             if (event.id == 'signIn') {
                 this.handleSignIn();
             } else if (event.id =='cancel') {
+                this.props.dispatch(userActions.authenticationErrorClear());
                 this.props.navigator.dismissModal({});
             }
         }
@@ -199,9 +200,9 @@ class SignIn extends Component {
         // Loading Mickey Graphic
         if (this.props.authenticationStatus === 'requesting') {
             return (
-              <View style={styles.container}>
-                <LoadingMickey />
-              </View>
+                <View style={styles.container}>
+                    <LoadingMickey />
+                </View>
             );
         }
         

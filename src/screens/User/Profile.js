@@ -8,36 +8,17 @@ import {
 } from "react-native";
 import * as userActions from '../../store/actions/userActions';
 
+// temp for dev
+import * as parkActions from '../../store/actions/parkActions';
+
 import LoadingMickey from '../../components/LoadingMickey';
 
 class Profile extends Component {
-  static navigatorButtons = {
-    rightButtons: [
-        {
-          title: 'Sign Out',
-          id: 'signOut'
-        }
-    ]
-  };
-
-  constructor(props) {
-    super(props);
-    this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
-  }
-
   componentDidMount() {
     this.props.dispatch(userActions.loadUserFromRealm());
+    this.props.dispatch(parkActions.requestParks());
   }
 
-
-  // handle navigation event
-  onNavigatorEvent(event) {
-    if (event.type == 'NavBarButtonPress') {
-        if (event.id == 'signOut') {
-            this.handleSignOut();
-        }
-    }
-  }
 
   handleItemPress = (item) => {
     switch(item) {
@@ -47,6 +28,19 @@ class Profile extends Component {
             title: 'Sign In',
             animated: true
           });
+          break;
+        }
+        case 'signUp': {
+          this.props.navigator.showModal({
+            screen: 'vacationjournalios.SignUp',
+            title: 'Sign Up',
+            animated: true
+          });
+          break;
+        }
+        case 'signOut': {
+          this.props.dispatch(userActions.signOutUser());
+          //this.handleSignOut();
           break;
         }
     }
@@ -61,11 +55,14 @@ class Profile extends Component {
       return (
         <View style={styles.signInContainer}>
           <View style={styles.upperContainer}>
-            <Text>Sign In Graphic?</Text>
+            <Text style={styles.upperText}>Profile Graphc</Text>
           </View>
-          <View style={styles.lowerContainer}>
+          <View style={styles.middleContainer}>
             <TouchableOpacity style={styles.button} onPress={() => this.handleItemPress('signIn')}>
                 <Text>Sign In</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.button} onPress={() => this.handleItemPress('signUp')}>
+                <Text>Sign Up</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -74,13 +71,18 @@ class Profile extends Component {
     return (
       <View style={styles.container}>
         <View style={styles.upperContainer}>
-          <Text>Pic goes here</Text>
+          <Text style={styles.upperText}>Pic goes here</Text>
         </View>
-        <View style={styles.lowerContainer}>
-          <Text>email: {this.props.user.email}</Text>
+        <View style={styles.middleContainer}>
+          <Text >email: {this.props.user.email}</Text>
           <Text>First Name: {this.props.user.firstname}</Text>
           <Text>Last Name: {this.props.user.lastname}</Text>
           <Text>User ID: {this.props.user.userid}</Text>
+        </View>
+        <View style={styles.lowerContainer}>
+          <TouchableOpacity style={styles.button} onPress={() => this.handleItemPress('signOut')}>
+            <Text>Sign Out</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -90,7 +92,7 @@ class Profile extends Component {
 var styles = StyleSheet.create({
   signInContainer: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'space-around',
     alignItems: 'center'
   },
   container: {
@@ -99,11 +101,21 @@ var styles = StyleSheet.create({
     alignItems: 'center'
   },
   upperContainer: {
-    flex: .4,
-    justifyContent: 'center'
+    flex: .5,
+    justifyContent: 'center',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    width: 300,
+  },
+  upperText: {
+    textAlign: 'center'
+  },
+  middleContainer: {
+    flex: .3
   },
   lowerContainer: {
-    flex: .6
+    flex: .1,
+    justifyContent: 'flex-end'
   },
   button: {
     width: 100,
@@ -111,7 +123,8 @@ var styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 5,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
+    margin: 10
   }
 });
 

@@ -33,6 +33,7 @@ Navigation.startTabBasedApp({
 	tabsStyle: {
 		tabBarButtonColor: 'black',
 		tabBarSelectedButtonColor: 'black',
-		tabBarBackgroundColor: 'white'
+		tabBarBackgroundColor: 'white',
+		tabBarHideShadow:  true
 	}
 });

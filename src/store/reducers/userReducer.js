@@ -4,13 +4,14 @@ import {
   AUTHENTICATION_START,
   AUTHENTICATION_SUCCESS,
 
-  AUTHENTICATION_ERROR
+  AUTHENTICATION_ERROR,
+  AUTHENTICATION_ERROR_CLEAR
 } from '../actions/actionTypes';
 
 const initialState = {
-  authenticated: false,
-  authenticationStatus: null,
-  authenticationErrorMessage: null
+authenticated: false,
+authenticationStatus: null,
+authenticationErrorMessage: null
 }
 
 export function user(state = initialState, action) {
@@ -38,6 +39,11 @@ export function user(state = initialState, action) {
         authenticationStatus: 'failed',
         authenticationErrorMessage: action.payload.message
       };
+    case AUTHENTICATION_ERROR_CLEAR:
+      return {
+        ...state,
+        authenticationErrorMessage: null
+      }
     case SIGN_OUT_USER:
       return {
         ...state, 

@@ -1,7 +1,14 @@
 import request from 'superagent';
+import realm from '../../database/realm';
+
 
 import {
     API_URL,
+
+    LOAD_PARKS_START,
+    LOAD_PARKS_SUCCESS,
+    LOAD_PARKS_FAILED,
+
     REQUEST_PARKS_START,
     REQUEST_PARKS_SUCCESS,
     REQUEST_PARKS_FAILED
@@ -9,13 +16,10 @@ import {
 
 // Park Actions
 
-// Request all parks from api
-// TODO:  Better Handle bad token
+// Load parks from realm
+
+// Request all parks from api and save to realm
 export function requestParks() {
-    // get token from local storage
-    const token = localStorage.getItem('jwtToken');
-    if(token){
-      // token found - make api call to request parks
       return function(dispatch) {
         // Set start status
         dispatch({
@@ -23,25 +27,27 @@ export function requestParks() {
         });
         request
           .get(`${API_URL}/parks`)
-          .set('Authorization', 'Bearer ' + token)
           .then(response => {
-            dispatch({
-              type: REQUEST_PARKS_SUCCESS,
-              payload: response
-            });
+            realm.write(() => {
+              response.body.data.forEach(park => {
+                realm.create('Park', {
+                    id: park.parkid,
+                    name: park.parkname
+                  },
+                  true
+                );
+              });
+              dispatch({
+                type: REQUEST_PARKS_SUCCESS,
+                payload: response
+              });
+            })
           })
           .catch(error => {
+            console.log('error: ', error)
             dispatch({
               type: REQUEST_PARKS_FAILED
             });
           });
       }
-    } else {
-      // token doesnt exist - fail request / signout user as precaution?
-      return function(dispatch) {
-        dispatch({
-          type: REQUEST_PARKS_FAILED
-        });
-      }
-    }
   }
