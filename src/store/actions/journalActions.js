@@ -1,25 +1,76 @@
-import { AsyncStorage } from 'react-native';
+//import { AsyncStorage } from 'react-native';
 import uuid from 'react-native-uuid';
 import realm from '../../database/realm';
 
 import {
-    GET_JOURNALS,
-    CLEAR_JOURNALS,
+  GET_JOURNALS,
+  CLEAR_JOURNALS,
 
-    JOURNAL_SAVING,
-    JOURNAL_LOADING,
+  JOURNAL_SAVING,
+  JOURNAL_LOADING,
 
-    JOURNAL_ACTION_FAILED,
+  JOURNAL_LOAD_SUCCESS,
 
-    JOURNAL_CREATE_SUCCESS,
+  JOURNAL_CREATE_SUCCESS,
+  JOURNAL_ENTRY_CREATE_SUCCESS,
 
-    JOURNAL_DELETE_SUCCESS,
+  JOURNAL_DELETE_SUCCESS,
+  JOURNAL_ENTRY_DELETE_SUCCESS,
 
-    JOURNAL_SET_SELECTED
-
+  JOURNAL_ACTION_FAILED
 } from './actionTypes'
 
 // Journal Actions
+
+// Get Journals by userId
+export function getJournals(userId) {
+  return (dispatch) => {
+    if(userId) {
+      const journals = realm.objects('Journal').filtered('user.id = $0', userId);
+      dispatch({
+        type: GET_JOURNALS,
+        journals: journals
+      });  
+    } else {
+      dispatch({
+        type: JOURNAL_ACTION_FAILED,
+        error: 'Failed to load journals'
+      })
+    }
+  };
+}
+
+// Clear journals from redux store
+export function clearJournals() {
+  return {
+    type: CLEAR_JOURNALS
+  }
+}
+
+// Get Journal by Id
+export function getJournal(journalId) {
+  return (dispatch) => {
+    if (journalId) {
+      const journal = realm.objects('Journal').filtered('id = $0', journalId);
+      if (journal) {
+        dispatch({
+          type: JOURNAL_LOAD_SUCCESS,
+          journal: journal[0]
+        });
+      } else {
+        dispatch({
+          type: JOURNAL_ACTION_FAILED,
+          error: 'Failed to load journal'
+        });
+      }
+    } else {
+      dispatch({
+        type: JOURNAL_ACTION_FAILED,
+        error: 'Failed to load journal'
+      });
+    }
+  }
+}
 
 // Create Journal in local Realm
 export function createJournal(journalName, userId) {
@@ -76,73 +127,91 @@ export function deleteJournal(journalId) {
   }
 }
 
-// Set selected JournalId and load journal in Redux Store
-export function setSelectedJournalId(journalId) {
-  return (dispatch) => {
-    if (journalId) {
-      const journal = realm.objects('Journal').filtered('id = $0', journalId);
-      if (journal) {
-        dispatch({
-          type: JOURNAL_SET_SELECTED,
-          journal: journal[0],
-          journalId: journalId
-        })
-      }
-    }
-  }
-}
-
 // Save Journal Entry to Realm
-export function saveJournalEntry(journalId, entry) {
-
-}
-
-// Get Journals by userId
-export function getJournals(userId) {
+export function createJournalEntry(journalId, journalEntry) {
   return (dispatch) => {
-    if(userId) {
-      const journals = realm.objects('Journal').filtered('user.id = $0', userId);
+    try {
+      realm.write(() => {
+        const journalEntry = realm.create('JournalEntry', {
+          id: uuid.v4(),
+          park: { id: journalEntry.parkId },
+          attraction: { id: journalEntry.attractionId },
+          dateJournaled: journalEntry.dateJournaled,
+          dateCreated: Date(),
+          dateModified: Date(),
+          minutesWaited: journalEntry.minutesWaited,
+          rating: journalEntry.rating,
+          pointsScored: journalEntry.pointsScored,
+          usedFastPass: journalEntry.usedFastPass,
+          comments: journalEntry.comments
+        });
+        if (journalEntry) {
+          dispatch({
+            type: JOURNAL_ENTRY_CREATE_SUCCESS,
+          });  
+        }
+      });
+    } catch (error) {
       dispatch({
-        type: GET_JOURNALS,
-        journals: journals
+        type: JOURNAL_ACTION_FAILED,
+        error: error
       });  
     }
-  };
-}
-
-// Clear journals from redux store
-export function clearJournals() {
-  return {
-    type: CLEAR_JOURNALS
   }
 }
 
-    // Local Storage Methods
-
-  // Save item to local storage
-  const _saveItem = async (key, value) => {
+// Delete Journal Entry from local Realm
+export function deleteJournalEntry(journalEntryId) {
+  return (dispatch) => {
     try {
-      await AsyncStorage.setItem(key, value);
-    } catch (error) {
-      throw error;
-    }
-  };
+      realm.write(() => {
+        // get journal entry object to delete
+        const journalEntry = realm.objects('JournalEntry').filtered('id = $0', journalEntryId);
+        // delete journal entry object
+        realm.delete(journalEntry);
 
-  // Get item from local storage
-  const _getItem = async (key) => {
-    try {
-      return await AsyncStorage.getItem(key);
+        dispatch({
+          type: JOURNAL_ENTRY_DELETE_SUCCESS
+        });
+      })
     } catch (error) {
-      throw error;
+      dispatch({
+        type: JOURNAL_ACTION_FAILED,
+        error: error
+      });  
     }
-  };
+  }
+}
 
-  // Remove item from local storage
-  const _removeItem = async (key) => {
-    try {
-      return await AsyncStorage.removeItem(key);
-    } catch (error) {
-      throw error;
-    }
-  };
-  
+
+
+
+
+// // Local Storage Methods - Dont think we need
+
+// // Save item to local storage
+// const _saveItem = async (key, value) => {
+//   try {
+//     await AsyncStorage.setItem(key, value);
+//   } catch (error) {
+//     throw error;
+//   }
+// };
+
+// // Get item from local storage
+// const _getItem = async (key) => {
+//   try {
+//     return await AsyncStorage.getItem(key);
+//   } catch (error) {
+//     throw error;
+//   }
+// };
+
+// // Remove item from local storage
+// const _removeItem = async (key) => {
+//   try {
+//     return await AsyncStorage.removeItem(key);
+//   } catch (error) {
+//     throw error;
+//   }
+// };
