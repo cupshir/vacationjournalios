@@ -135,7 +135,7 @@ class CreateJournal extends Component {
         const vacationNameError = (this.state.formErrors.vacationName !== '') ? this.renderError(this.state.formErrors.vacationName) : null;
         
         // Loading Mickey Graphic
-        if (this.props.journalStatus === 'saving') {
+        if (this.props.journal.status === 'saving') {
             return (
                 <View style={styles.container}>
                     <LoadingMickey />
@@ -171,9 +171,9 @@ var styles = StyleSheet.create({
 
 function mapStateToProps(state) {
     return {
-      journalStatus: state.journal.status,
+      journal: state.journal,
       user: state.user
     }
-  }
+}
 
 export default connect(mapStateToProps)(CreateJournal);
