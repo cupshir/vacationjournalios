@@ -44,7 +44,7 @@ class JournalList extends Component {
 
   // row on press event
   onPress = (id, name) => {
-    this.props.dispatch(journalActions.setSelectedJournalId(id));
+    this.props.dispatch(journalActions.getJournal(id));
     this.props.navigator.push({
       screen: 'vacationjournalios.Journal',
       title: name,
@@ -107,9 +107,18 @@ class JournalList extends Component {
     // if user not logged in, display signin message
     if(!this.props.user.authenticated) {
       return (
-        <View style={styles.signInMessage}>
+        <View style={styles.messageContainer}>
           <Text>TODO: Sign In Message with modal button</Text>
         </View>
+      );
+    }
+
+    // if no journals exist, display message to create one
+    if (!this.props.journal.journals.length) {
+      return (
+        <View style={styles.messageContainer}>
+        <Text>Create a journal button</Text>
+      </View>
       );
     }
     
@@ -126,7 +135,7 @@ class JournalList extends Component {
 }
 
 var styles = StyleSheet.create({
-  signInMessage: {
+  messageContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center'
@@ -142,7 +151,7 @@ var styles = StyleSheet.create({
     width: 300
   },
   listText: {
-    color: 'red',
+    color: 'blue',
     textAlign: 'center',
     fontSize: 20
   }
