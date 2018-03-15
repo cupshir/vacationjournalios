@@ -10,8 +10,7 @@ import {
 
 const initialState =  {
     parks: [],
-    loadStatus: null,
-    requestStatus: null
+    status: null
 };
 
 export function parks(state = initialState, action) {
@@ -19,34 +18,34 @@ export function parks(state = initialState, action) {
         case LOAD_PARKS_START:
             return {
                 ...state,
-                loadStatus: 'requesting'
+                status: 'requesting'
             };
         case LOAD_PARKS_SUCCESS:
             return {
                 ...state,
                 parks: action.payload.body.data,
-                loadStatus: 'success'
+                status: 'success'
             };
         case LOAD_PARKS_FAILED:
             return {
                 ...state,
-                loadStatus: 'failed'
+                status: 'failed'
             };
         case REQUEST_PARKS_START:
             return {
                 ...state,
-                requestStatus: 'requesting'
+                status: 'requesting'
             };
         case REQUEST_PARKS_SUCCESS:
             return {
                 ...state,
                 parks: action.payload.body.data,
-                requestStatus: 'success'
+                status: 'success'
             };
         case REQUEST_PARKS_FAILED:
             return {
                 ...state,
-                requestStatus: 'failed'
+                status: 'failed'
             };
         default:
             return state;
