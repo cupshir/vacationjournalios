@@ -59,7 +59,6 @@ JournalEntry.schema = {
     primaryKey: 'id',
     properties: {
         id: { type: 'string', indexed: true },
-        name: 'string',
         park: { type: 'Park' },
         attraction: { type: 'Attraction' },
         dateJournaled: 'date',
