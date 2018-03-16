@@ -58,6 +58,7 @@ export function journal(state = initialState, action) {
         case JOURNAL_ENTRY_CREATE_SUCCESS:
             return {
                 ...state,
+                journal: action.journal,
                 status: 'success'
             }
         case JOURNAL_ENTRY_DELETE_SUCCESS:

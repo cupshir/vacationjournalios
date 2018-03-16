@@ -28,7 +28,7 @@ class CreateJournalEntry extends Component {
         rightButtons: [
           {
               title: 'Save',
-              id: 'save' // id for this button, given in onNavigatorEvent(event) to help understand which button was clicked
+              id: 'save'
           }
         ]
     };
@@ -36,20 +36,31 @@ class CreateJournalEntry extends Component {
     constructor(props) {
         super(props);
         this.state = {
+            selectedPark: {
+                parkRawSelectedValue: '',
+                parkId: '',
+                parkName: '',
+            },
+            selectedAttraction: {
+                attractionRawSelectedValue: '',
+                attractionId: '',
+                attractionName: '',
+                attractionHasScore: false,
+            },
             formValues: {
                 parkId: '',
                 attractionId: '',
-                journaledDate: new Date(),
+                dateJournaled: new Date(),
                 minutesWaited: '',
-                fastpassUsed: false,
+                usedFastPass: false,
                 rating: 0,
-                points: '',
+                pointsScored: '',
                 comments: ''
             },
             formErrors: {
                 parkId: '',
                 attractionId: '',
-                journaledDate: '',
+                dateJournaled: '',
                 rating: '',
                 minutesWaited: ''
             },
@@ -60,14 +71,15 @@ class CreateJournalEntry extends Component {
         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
     }
 
-    onNavigatorEvent(event) { // this is the onPress handler for the two buttons together
-        if (event.type == 'NavBarButtonPress') { // this is the event type for button presses
+    onNavigatorEvent(event) { 
+        if (event.type == 'NavBarButtonPress') {
             if (event.id == 'save') {
                 this.handleSavePress();
             }
         }
     }
 
+    // set park modal visible
     setParkModalVisible(visible) {
         this.setState({
             ...this.state,
@@ -75,6 +87,7 @@ class CreateJournalEntry extends Component {
         });
     }
 
+    // set attraction modal visible
     setAttractionModalVisible(visible) {
         this.setState({
             ...this.state,
@@ -93,11 +106,11 @@ class CreateJournalEntry extends Component {
     }
 
     // handle rating change
-    handleRatingChange = (rating) => {
+    handleRatingChange = (value) => {
         this.setState({
             formValues: {
                 ...this.state.formValues, 
-                rating: parseInt(rating, 10)
+                rating: parseInt(value, 10)
             }
         });
     }
@@ -117,65 +130,127 @@ class CreateJournalEntry extends Component {
         this.setState({
             formValues: {
                 ...this.state.formValues,
-                fastpassUsed: !this.state.formValues.fastpassUsed
+                usedFastPass: !this.state.formValues.usedFastPass
             }
-        })
+        });
     }
 
     // handle points change
-    handlePointsChange = (value) => {
+    handlePointsScoredChange = (value) => {
         this.setState({
             formValues: {
                 ...this.state.formValues,
-                points: value.replace(/[^0-9]/g, '')
+                pointsScored: value.replace(/[^0-9]/g, '')
             }
-        })
+        });
     }
 
     // handle park change
-    handleParkChange = (itemValue, itemIndex) => {
+    //  itemValue contains parkId^parkName
+    //  raw value is saved for setting the correct item in the picker
+    //  selectedAttraction is cleared out to reset attraction picker when park changes 
+    //      (this forces attractions to reload for newly selected park)
+    handleParkChange = (itemValue) => {
+        const array = itemValue.split('^');
         this.setState({
-            ...this.state,
+            selectedPark: {
+                parkRawSelectedValue: itemValue,
+                parkId: array[0],
+                parkName: array[1]
+            },
             formValues: {
                 ...this.state.formValues,
-                parkId: itemValue,
+                parkId: parseInt(array[0], 10),
                 attractionId: ''
             },
-            renderAttractions: true
-        })
+            selectedAttraction: {
+                attractionRawSelectedValue: '',
+                attractionId: '',
+                attractionName: '',
+                attractionHasScore: false
+            },
+            renderAttractions: true,
+            parkModalVisible: false
+        });
     }
 
     // handle attraction change
-    handleAttractionChange = (itemValue, itemIndex) => {
-        this.setState({
+    // itemValue contains attractionId^attractionName^attractionHasScore
+    //  raw value is saved for setting the correct item in the picker
+    handleAttractionChange = (itemValue) => {
+        const array = itemValue.split('^');
+        this.setState({ 
+            selectedAttraction: {
+                attractionRawSelectedValue: itemValue,
+                attractionId: array[0],
+                attractionName: array[1],
+                attractionHasScore: (array[2] == 'true')
+            },
             formValues: {
                 ...this.state.formValues,
-                attractionId: itemValue
-            }
-        })
+                attractionId: parseInt(array[0],10)
+            },
+            attractionModalVisible: false
+        });
     }
 
     // handle date change
-    handleJournaledDateChange = (date) => {
+    handleDateJournaledChange = (date) => {
         this.setState({
             formValues: {
                 ...this.state.formValues,
-                journaledDate: date
+                dateJournaled: date
             }
         })
     }
 
     // handle save press
     handleSavePress = () => {
-        // Check if ready to submit
+        // Check if form is ready to submit
         const ready = this.readyForSubmit(this.state.formValues)
 
         if (ready) {
-            AlertIOS.alert('ready to submit')
+            // scrub values (changes strings to numbers, etc)
+            const submitValues = this.prepareValuesForDB(this.state.formValues);
+            // save journal entry to realm db
+            this.props.dispatch(journalActions.createJournalEntry(this.props.journal.journal.id, submitValues));
         } else {
             // TODO: better message
             AlertIOS.alert('not ready to submit')
         }
+    }
+
+    // Format values as needed by database
+    // IE Some values exist as strings in form for display purposes and need to be converted to numbers
+    prepareValuesForDB = (values) => {
+        // Create return object
+        let returnValues = {
+        parkId: '',
+        attractionId: '',
+        minutesWaited: '',
+        pointsScored: '',
+        rating: '',
+        usedFastPass: '',
+        dateJournaled: '',
+        comments: ''
+        };
+
+        // If minutes waited is '' update to 0 else pass value
+        returnValues.minutesWaited = (values.minutesWaited === '') ? 0 : parseInt(values.minutesWaited, 10); 
+
+        // if pointsscored is '' update to -1 else pass value
+        // -1 is used for attactions that dont keep score (realm db doesnt allow nulls)
+        returnValues.pointsScored = (values.pointsScored === '') ? -1 : parseInt(values.pointsScored, 10);
+
+        // add remaining fields (these are already formated correctly)
+        returnValues.parkId = values.parkId;
+        returnValues.attractionId = values.attractionId;
+        returnValues.rating = values.rating;
+        returnValues.usedFastPass = values.usedFastPass;
+        returnValues.dateJournaled = values.dateJournaled;
+        returnValues.comments = values.comments;
+
+        return returnValues;
     }
     
     // Check if form is ready for submit and return true/false
@@ -192,7 +267,7 @@ class CreateJournalEntry extends Component {
         if (values.rating === 0) {
             return false;
         }
-        if (values.journaledDate === '') {
+        if (values.dateJournaled === '') {
             return false;
         }
         if (values.minutesWaited === '') {
@@ -201,6 +276,7 @@ class CreateJournalEntry extends Component {
 
         // If all required values present, Check that there are no formError messages
         if(ready) {
+            // check returns true if errors, so we flip its return (readyForSubmit would be false on errors)
             ready = !this.checkForErrorMessages();
         }
 
@@ -209,9 +285,11 @@ class CreateJournalEntry extends Component {
 
     // Check if error messages exist in state and return true/false
     checkForErrorMessages = () => {
+        // loop through form errors object and look for values
         let errorCount = 0;
         Object.entries(this.state.formErrors).forEach(([key, val]) => {
             if (val || val !== '') {
+                // value found, increase error count
                 errorCount++;
             }
         });
@@ -232,44 +310,68 @@ class CreateJournalEntry extends Component {
         );
     }
 
-      // Render attractions dropdown
+    // Render points scored input
+    renderPointsScored = () => {
+        return (
+            <View style={styles.pointsRow}>
+                <TextInput
+                    style={styles.points}
+                    onChangeText={this.handlePointsScoredChange}
+                    placeholder='Points Scored'
+                    value={this.state.formValues.pointsScored}
+                />
+            </View>
+        )
+    }
+
+    // Render attractions picker
     renderAttractionsPicker = () => {
         // Double Check for selected park and attractions data, return if one or other not found
-        if(!this.state.formValues.parkId || !this.props.attractions.attractions){
-            console.log('1st return');
-            return;
-        }
+        if(!this.state.selectedPark.parkId || !this.props.attractions.attractions){ return; }
 
-        // // Create new list of filtered attractions by selected park
-        const parkAttractions = this.props.attractions.attractions.filter((park) => {
-             return (park.parkid === parseInt(this.state.formValues.parkId, 10))
-        })
+        // Create new list of filtered attractions by selected park
+        const parkAttractions = this.props.attractions.attractions.filter((attraction) => {
+            return (attraction.parkid === parseInt(this.state.selectedPark.parkId, 10))
+        });
 
         // Render Attractions field
         return (
             <View>
                 <TouchableHighlight
                     onPress={() => { this.setAttractionModalVisible(true); }} >
-                        <Text>{ this.state.formValues.attractionId !== '' ? this.state.formValues.attractionId : 'Select an Attraction'}</Text>
+                        <Text style={styles.parkAttractionText}>
+                            { this.state.selectedAttraction.attractionName !== '' ? this.state.selectedAttraction.attractionName : 'Select an Attraction'}
+                        </Text>
                 </TouchableHighlight>
 
                 <Modal
                     animationType="slide"
                     transparent={true}
-                    visible={this.state.attractionModalVisible}
-                    onRequestClose={() => { AlertIOS.alert('modal closed'); }}>
+                    visible={this.state.attractionModalVisible}>
                         <View style={styles.modalContainer}>
-                            <TouchableHighlight
-                                onPress={() => { this.setAttractionModalVisible(false); }} >
-                                    <Text style={{ textAlign: 'right' }}>X</Text>
-                            </TouchableHighlight>
-                            <Picker
-                                selectedValue={this.state.formValues.attractionId}
-                                onValueChange={itemValue => this.handleAttractionChange(itemValue)} >
-                                    {parkAttractions.map((i, index) => (
-                                        <Picker.Item key={index} label={i.attractionname} value={i.attractionid} />
-                                    ))}
-                            </Picker>
+                            <View style={styles.modalPickerHeader}>
+                                <TouchableHighlight 
+                                    style={styles.modalCloseButton}
+                                    onPress={() => { 
+                                        if(this.state.selectedAttraction.attractionRawSelectedValue === '') {
+                                            const firstAttraction = parkAttractions[0];
+                                            this.handleAttractionChange(firstAttraction.attractionid + '^' + firstAttraction.attractionname + '^' + firstAttraction.attractionhasscore)
+                                        } else {
+                                            this.setAttractionModalVisible(false); 
+                                        }
+                                    }} >
+                                        <Text style={styles.modalCloseButtonText}>Ok</Text>
+                                </TouchableHighlight>
+                            </View>
+                                <View style={styles.modalPickerBody}>                        
+                                <Picker
+                                    selectedValue={this.state.selectedAttraction.attractionRawSelectedValue}
+                                    onValueChange={itemValue => this.handleAttractionChange(itemValue)} >
+                                        {parkAttractions.map((i, index) => (
+                                            <Picker.Item key={index} label={i.attractionname} value={i.attractionid + '^' + i.attractionname + '^' + i.attractionhasscore} />
+                                        ))}
+                                </Picker>
+                            </View>
                         </View>
                 </Modal>
         </View>
@@ -279,15 +381,23 @@ class CreateJournalEntry extends Component {
     // render View
     render() {
         // Check if errors exist in state.formErrors
+        // TODO: Update form with form errors, message or red colors or something
         const parkIdError = (this.state.formErrors.parkId !== '') ? this.renderError(this.state.formErrors.parkId) : null;
         const attractionIdError = (this.state.formErrors.attractionId !== '') ? this.renderError(this.state.formErrors.attractionId) : null;
-        const journaledDateError = (this.state.formErrors.journaledDate !== '') ? this.renderError(this.state.formErrors.journaledDate) : null;
+        const dateJournaledError = (this.state.formErrors.dateJournaled !== '') ? this.renderError(this.state.formErrors.dateJournaled) : null;
         const ratingError = (this.state.formErrors.rating !== '') ? this.renderError(this.state.formErrors.rating) : null;
         const minutesWaitedError = (this.state.formErrors.minutesWaited !== '') ? this.renderError(this.state.formErrors.minutesWaited) : null;
 
+        // if selected park render attraction picker
         let attractionPicker = null;
         if (this.state.renderAttractions) {
             attractionPicker = this.renderAttractionsPicker(); 
+        }
+
+        // render points scored if attraction keeps score
+        let pointsScored = null;
+        if (this.state.selectedAttraction.attractionHasScore) {
+            pointsScored = this.renderPointsScored();
         }
 
 
@@ -300,6 +410,7 @@ class CreateJournalEntry extends Component {
             );
         }
 
+        // Check that parks and attractions exist in redux store
         if (!this.props.parks.parks.length || !this.props.attractions.attractions.length) {
             return (
                 <View style={styles.messageContainer}>
@@ -308,15 +419,13 @@ class CreateJournalEntry extends Component {
             )
         }
 
+        // Render form
         return (
             <View style={styles.container}>
                 <View style={styles.parkAttractionSelector}>
                     <TouchableHighlight
-                        onPress={() => {
-                            this.setParkModalVisible(true);
-                        }}
-                    >
-                        <Text>{ this.state.formValues.parkId !== '' ? this.state.formValues.parkId : 'Select a Park'}</Text>
+                        onPress={() => { this.setParkModalVisible(true); }}>
+                            <Text style={styles.parkAttractionText}>{ this.state.selectedPark.parkName !== '' ? this.state.selectedPark.parkName : 'Select a Park'}</Text>
                     </TouchableHighlight>
                     {attractionPicker}
                 </View>
@@ -332,13 +441,13 @@ class CreateJournalEntry extends Component {
                     />
                     <DatePicker
                         style={styles.datepicker}
-                        date={this.state.formValues.journaledDate}
+                        date={this.state.formValues.dateJournaled}
                         mode="datetime"
                         placeholder="Select Date"
                         format="MM-DD-YYYY, hh:mm a"
                         confirmBtnText="Ok"
                         cancelBtnText="Cancel"
-                        onDateChange={this.handleJournaledDateChange}
+                        onDateChange={this.handleDateJournaledChange}
                         showIcon={false}
                         customStyles={{
                             dateInput: {
@@ -361,19 +470,12 @@ class CreateJournalEntry extends Component {
                     />
                     <CheckBox
                         title='Fastpass'
-                        checked={this.state.formValues.fastpassUsed}
+                        checked={this.state.formValues.usedFastPass}
                         onPress={this.handleFastpassChange}
                         containerStyle={styles.fastpass}
                     />
                 </View>
-                <View style={styles.pointsRow}>
-                    <TextInput
-                        style={styles.points}
-                        onChangeText={this.handlePointsChange}
-                        placeholder='Points'
-                        value={this.state.formValues.points}
-                    />
-                </View>
+                {pointsScored}
                 <View>
                     <TextInput
                         style={styles.comments}
@@ -389,20 +491,31 @@ class CreateJournalEntry extends Component {
                 <Modal
                     animationType="slide"
                     transparent={true}
-                    visible={this.state.parkModalVisible}
-                    onRequestClose={() => { AlertIOS.alert('modal closed'); }}>
+                    visible={this.state.parkModalVisible}>
                         <View style={styles.modalContainer}>
-                            <TouchableHighlight
-                                onPress={() => { this.setParkModalVisible(false); }} >
-                                    <Text style={{ textAlign: 'right' }}>X</Text>
-                            </TouchableHighlight>
-                            <Picker
-                                selectedValue={this.state.formValues.parkId}
-                                onValueChange={itemValue => this.handleParkChange(itemValue)} >
-                                    {this.props.parks.parks.map((i, index) => (
-                                        <Picker.Item key={index} label={i.parkname} value={i.parkid} />
-                                    ))}
-                            </Picker>
+                            <View style={styles.modalPickerHeader}>
+                                <TouchableHighlight
+                                style={styles.modalCloseButton}
+                                onPress={() => { 
+                                    if(this.state.selectedPark.parkRawSelectedValue === '') {
+                                        const firstPark = this.props.parks.parks[0];
+                                        this.handleParkChange(firstPark.parkid + '^' + firstPark.parkname);
+                                    } else {
+                                        this.setParkModalVisible(false);
+                                    }
+                                }}>
+                                    <Text style={styles.modalCloseButtonText}>Ok</Text>
+                                </TouchableHighlight>
+                            </View>
+                            <View style={styles.modalPickerBody}>
+                                <Picker
+                                    selectedValue={this.state.selectedPark.parkRawSelectedValue}
+                                    onValueChange={itemValue => this.handleParkChange(itemValue)} >
+                                        {this.props.parks.parks.map((i, index) => (
+                                            <Picker.Item key={index} label={i.parkname} value={i.parkid + '^' + i.parkname} />
+                                        ))}
+                                </Picker>
+                            </View>
                         </View>
                 </Modal>
             </View>
@@ -418,7 +531,25 @@ var styles = StyleSheet.create({
     },
     modalContainer: {
         flex: 1,
-        justifyContent: 'flex-end'
+        justifyContent: 'flex-end',
+        backgroundColor: 'rgba(0,0,0,0.5)'
+    },
+    modalPickerHeader: {
+        backgroundColor: 'white',
+        borderStyle: 'solid',
+        borderBottomWidth: 1,
+        borderBottomColor: 'lightgrey'
+    },
+    modalPickerBody: {
+        backgroundColor: 'white'
+    },
+    modalCloseButton: {
+        alignSelf: 'flex-end',
+        padding: 10
+    },
+    modalCloseButtonText: {
+        fontSize: 16,
+        color: 'blue'
     },
     container: {
         flex: 1
@@ -427,6 +558,12 @@ var styles = StyleSheet.create({
         flexDirection: 'column',
         marginRight: 25,
         marginLeft: 25
+    },
+    parkAttractionText: {
+        textAlign: 'center',
+        fontSize: 20,
+        marginTop: 5,
+        marginBottom: 5
     },
     userImage: {
         marginRight: 25,

@@ -128,28 +128,41 @@ export function deleteJournal(journalId) {
 }
 
 // Save Journal Entry to Realm
-export function createJournalEntry(journalId, journalEntry) {
+export function createJournalEntry(journalId, entryValues) {
   return (dispatch) => {
+    dispatch({
+      type: JOURNAL_SAVING
+    });
     try {
       realm.write(() => {
-        const journalEntry = realm.create('JournalEntry', {
+        // Get journal
+        let journal = realm.objects('Journal').filtered('id = $0', journalId)[0];
+
+        // save entry to journal
+        // Todo: add check that journal was found before trying to save
+        journal.entries.push(realm.create('JournalEntry', {
           id: uuid.v4(),
-          park: { id: journalEntry.parkId },
-          attraction: { id: journalEntry.attractionId },
-          dateJournaled: journalEntry.dateJournaled,
+          park: { id: entryValues.parkId },
+          attraction: { id: entryValues.attractionId },
+          dateJournaled: entryValues.dateJournaled,
           dateCreated: Date(),
           dateModified: Date(),
-          minutesWaited: journalEntry.minutesWaited,
-          rating: journalEntry.rating,
-          pointsScored: journalEntry.pointsScored,
-          usedFastPass: journalEntry.usedFastPass,
-          comments: journalEntry.comments
-        });
-        if (journalEntry) {
-          dispatch({
-            type: JOURNAL_ENTRY_CREATE_SUCCESS,
-          });  
-        }
+          minutesWaited: entryValues.minutesWaited,
+          rating: entryValues.rating,
+          pointsScored: entryValues.pointsScored,
+          usedFastPass: entryValues.usedFastPass,
+          comments: entryValues.comments  
+        },
+        true
+      ));
+        
+      // dispatch success
+      if (journal) {
+        dispatch({
+          type: JOURNAL_ENTRY_CREATE_SUCCESS,
+          journal: journal
+        });  
+      }
       });
     } catch (error) {
       dispatch({
