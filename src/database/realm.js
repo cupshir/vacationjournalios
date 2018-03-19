@@ -11,6 +11,8 @@ User.schema = {
         firstName: 'string',
         lastName: 'string',
         email: 'string',
+        activeJournal: { type: 'Journal' },
+        journals: { type: 'list', objectType: 'Journal' },
         jwtToken: 'string'
     }
 }
@@ -46,10 +48,9 @@ Journal.schema = {
     properties: {
         id: { type: 'string', indexed: true },
         name: 'string',
-        entries: { type: 'list', objectType: 'JournalEntry' },
+        journalEntries: { type: 'list', objectType: 'JournalEntry' },
         dateCreated: 'date',
-        dateModified: 'date',
-        user: { type: 'User' }
+        dateModified: 'date'
     }
 }
 

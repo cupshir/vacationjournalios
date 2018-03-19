@@ -1,5 +1,4 @@
 import { user } from './userReducer';
-import { journal } from './journalReducer';
 import { parks } from './parkReducer';
 import { attractions } from './attractionReducer';
 
@@ -10,6 +9,5 @@ will be passed onto combineReducers method at src/app.js
 export {
     user,
     parks,
-    attractions,
-    journal
+    attractions
 }
