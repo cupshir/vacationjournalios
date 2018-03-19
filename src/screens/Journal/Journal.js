@@ -11,6 +11,10 @@ import {
 import {
   SearchBar
 } from 'react-native-elements';
+import { 
+  IconsMap,
+  IconsLoaded
+} from '../../AppIcons';
 import { connect } from 'react-redux';
 import moment from 'moment';
 import * as userActions from '../../store/actions/userActions';
@@ -21,12 +25,6 @@ import LoadingMickey from '../../components/LoadingMickey';
 
 class Journal extends Component {
   static navigatorButtons = {
-      rightButtons: [
-        {
-          //title: '+',
-          id: 'addEntry'
-        }
-      ],
       leftButtons: [
         {
           title: 'Journals',
@@ -79,7 +77,16 @@ class Journal extends Component {
       navBarNoBorder: true
     });
 
-    
+    IconsLoaded.then(() => {
+      this.props.navigator.setButtons({
+        rightButtons: [
+          {
+            id: 'addEntry',
+            icon: IconsMap['add']
+          }
+        ]
+      });
+    });
   }
 
   // navigate to journal list screen
@@ -264,23 +271,20 @@ class Journal extends Component {
     // load journalEntries from props if filteredEntries in state is null (this is so something loads when view first renders) 
     const filteredEntries = this.state.filteredEntries !== null ? this.state.filteredEntries : this.props.user.activeJournal.journalEntries;
 
-    // get section headers of filtered entries
-    //const sectionHeaders = this.getListOfUniqueDates(filteredEntries);
-
     // Split filtered array into sections array
     const journalEntriesBySection = this.splitJournalEntriesIntoSections(filteredEntries);
 
     return (
       <View>
-        {searchInput}
-        <View style={styles.sectionContainer}>
-          <SectionList
-            sections={journalEntriesBySection.map(function(object, i) {
-              return { title: object[0], data: object[1] };
-            })}
-            renderItem={this.renderItem}
-            renderSectionHeader={this.renderSectionHeader}
-            keyExtractor={ (item, index) => index } />
+          {searchInput}
+          <View style={styles.listContainer}>
+            <SectionList
+              sections={journalEntriesBySection.map(function(object, i) {
+                return { title: object[0], data: object[1] };
+              })}
+              renderItem={this.renderItem}
+              renderSectionHeader={this.renderSectionHeader}
+              keyExtractor={ (item, index) => index } />
         </View>
       </View>
     );
@@ -299,8 +303,8 @@ var styles = StyleSheet.create({
     borderTopColor: 'white',
     marginTop: -10
   },
-  sectionContainer: {
-    marginBottom: 100
+  listContainer: {
+    marginBottom: 75
   },
   searchInput: {
     backgroundColor: '#EEEEEE',
