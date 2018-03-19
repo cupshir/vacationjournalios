@@ -1,11 +1,13 @@
 import React, { Component } from 'react';
 import {
     View,
+    ScrollView,
     StyleSheet,
     TextInput,
     Picker,
     Modal,
-    TouchableHighlight,
+    FlatList,
+    TouchableOpacity,
     AlertIOS
 } from 'react-native';
 import { connect } from 'react-redux';
@@ -13,13 +15,17 @@ import { bindActionCreators } from 'redux';
 import { 
     Rating,
     CheckBox,
+    SearchBar,
     Text
 } from 'react-native-elements';
+import Icon from 'react-native-vector-icons/Ionicons'
 import DatePicker from 'react-native-datepicker';
 import * as userActions from '../../store/actions/userActions';
 
 import { JOURNAL_SAVING } from '../../store/actions/actionTypes'
 import LoadingMickey from '../../components/LoadingMickey';
+import ListItem from '../../components/ListItem';
+import ListItemAttraction from '../../components/ListItemAttraction';
 
 class CreateJournalEntry extends Component {
     static navigatorButtons = {
@@ -35,12 +41,10 @@ class CreateJournalEntry extends Component {
         super(props);
         this.state = {
             selectedPark: {
-                parkRawSelectedValue: '',
                 parkId: '',
                 parkName: '',
             },
             selectedAttraction: {
-                attractionRawSelectedValue: '',
                 attractionId: '',
                 attractionName: '',
                 attractionHasScore: false,
@@ -62,6 +66,7 @@ class CreateJournalEntry extends Component {
                 rating: '',
                 minutesWaited: ''
             },
+            filteredAttractions: null,
             parkModalVisible: false,
             attractionModalVisible: false,
             renderAttractions: false
@@ -150,50 +155,43 @@ class CreateJournalEntry extends Component {
     }
 
     // handle park change
-    //  itemValue contains parkId^parkName
-    //  raw value is saved for setting the correct item in the picker
     //  selectedAttraction is cleared out to reset attraction picker when park changes 
     //      (this forces attractions to reload for newly selected park)
-    handleParkChange = (itemValue) => {
-        const array = itemValue.split('^');
+    handleParkChange = (parkId, parkName) => {
         this.setState({
             selectedPark: {
-                parkRawSelectedValue: itemValue,
-                parkId: array[0],
-                parkName: array[1]
+                parkId: parkId,
+                parkName: parkName
             },
             formValues: {
                 ...this.state.formValues,
-                parkId: parseInt(array[0], 10),
+                parkId: parseInt(parkId, 10),
                 attractionId: ''
             },
             selectedAttraction: {
-                attractionRawSelectedValue: '',
                 attractionId: '',
                 attractionName: '',
                 attractionHasScore: false
             },
+            filteredAttractions: null,
             renderAttractions: true,
             parkModalVisible: false
         });
     }
 
     // handle attraction change
-    // itemValue contains attractionId^attractionName^attractionHasScore
-    //  raw value is saved for setting the correct item in the picker
-    handleAttractionChange = (itemValue) => {
-        const array = itemValue.split('^');
+    handleAttractionChange = (attraction) => {
         this.setState({ 
             selectedAttraction: {
-                attractionRawSelectedValue: itemValue,
-                attractionId: array[0],
-                attractionName: array[1],
-                attractionHasScore: (array[2] == 'true')
+                attractionId: attraction.attractionid,
+                attractionName: attraction.attractionname,
+                attractionHasScore: (attraction.attractionhasscore == true)
             },
             formValues: {
                 ...this.state.formValues,
-                attractionId: parseInt(array[0],10)
+                attractionId: attraction.attractionid
             },
+            filteredAttractions: null,
             attractionModalVisible: false
         });
     }
@@ -206,6 +204,29 @@ class CreateJournalEntry extends Component {
                 dateJournaled: date
             }
         })
+    }
+
+    handleSearch = (searchInput) => {
+        // create object from attractions filtered by selectedpark
+        const unFilteredAttractions = this.props.attractions.attractions.filter((attraction) => {
+            return (attraction.parkid === parseInt(this.state.selectedPark.parkId, 10))
+        });
+
+        // create object to filter
+        let filteredAttractions = unFilteredAttractions;
+    
+        // if search input contains text, filter by that text
+        if (searchInput !== '') {      
+          filteredAttractions = unFilteredAttractions.filter((attraction) => {
+              return (attraction.attractionname.toLowerCase().includes(searchInput.toLowerCase()))
+          });
+        }
+    
+        // Save the updated filtered into state
+        this.setState({
+            ...this.state,
+            filteredAttractions: filteredAttractions
+        });
     }
 
     // handle save press
@@ -320,7 +341,7 @@ class CreateJournalEntry extends Component {
     // Render points scored input
     renderPointsScored = () => {
         return (
-            <View style={styles.pointsRow}>
+            <View style={styles.pointsSection}>
                 <TextInput
                     style={styles.points}
                     onChangeText={this.handlePointsScoredChange}
@@ -330,57 +351,84 @@ class CreateJournalEntry extends Component {
         )
     }
 
+      // Render Search Input (placed here to keep view below easier to read)
+    renderSearchInput = () => {
+        return (
+        <SearchBar
+            platform='ios'
+            lightTheme
+            containerStyle={styles.searchContainer}
+            inputStyle={styles.searchInput}
+            onChangeText={this.handleSearch}
+            icon={{
+            style: {
+                marginLeft: 4
+            }
+            }}
+            clearIcon={{
+            name: 'close'
+            }}
+            placeholder='Search' />
+        );
+    }
+
     // Render attractions picker
     renderAttractionsPicker = () => {
         // Double Check for selected park and attractions data, return if one or other not found
         if(!this.state.selectedPark.parkId || !this.props.attractions.attractions){ return; }
 
-        // Create new list of filtered attractions by selected park
-        const parkAttractions = this.props.attractions.attractions.filter((attraction) => {
-            return (attraction.parkid === parseInt(this.state.selectedPark.parkId, 10))
-        });
+
+        // Load filteredAttractions from state, if not there load new filtered by parkId list from Props (this is so attractions load the first time)
+        const filteredAttractions = this.state.filteredAttractions !== null ? this.state.filteredAttractions :        
+            this.props.attractions.attractions.filter((attraction) => {
+                return (attraction.parkid === parseInt(this.state.selectedPark.parkId, 10))
+            });
+
+        // build search input
+        const searchInput = this.renderSearchInput();
 
         // Render Attractions field
         return (
             <View>
-                <TouchableHighlight
+                <TouchableOpacity
                     onPress={() => { this.setAttractionModalVisible(true); }} >
-                        <Text style={styles.parkAttractionText}>
-                            { this.state.selectedAttraction.attractionName !== '' ? this.state.selectedAttraction.attractionName : 'Select an Attraction'}
-                        </Text>
-                </TouchableHighlight>
+                        <View style={styles.parkAttractionTitle}>
+                            <Text style={styles.parkAttractionText}>
+                                { this.state.selectedAttraction.attractionName !== '' ? this.state.selectedAttraction.attractionName : 'Select an Attraction'}
+                            </Text>
+                            <Icon style={styles.parkAttractionArrow} color='lightgrey' name="ios-arrow-forward" />
+                        </View>
+                </TouchableOpacity>
 
                 <Modal
                     animationType="slide"
                     transparent={true}
                     visible={this.state.attractionModalVisible}>
                         <View style={styles.modalContainer}>
-                            <View style={styles.modalPickerHeader}>
-                                <TouchableHighlight 
+                            <View style={styles.modalHeader}>
+                                <TouchableOpacity
                                     style={styles.modalCloseButton}
-                                    onPress={() => { 
-                                        if(this.state.selectedAttraction.attractionRawSelectedValue === '') {
-                                            const firstAttraction = parkAttractions[0];
-                                            this.handleAttractionChange(firstAttraction.attractionid + '^' + firstAttraction.attractionname + '^' + firstAttraction.attractionhasscore)
-                                        } else {
-                                            this.setAttractionModalVisible(false); 
-                                        }
-                                    }} >
-                                        <Text style={styles.modalCloseButtonText}>Ok</Text>
-                                </TouchableHighlight>
+                                    onPress={() => { this.setAttractionModalVisible(false); }} >
+                                    <Text style={styles.modalCloseButtonText}>Cancel</Text>
+                                </TouchableOpacity>
+                                <Text style={styles.modalTitle}>Select Attraction</Text>
+                                {searchInput}
                             </View>
-                                <View style={styles.modalPickerBody}>                        
-                                <Picker
-                                    selectedValue={this.state.selectedAttraction.attractionRawSelectedValue}
-                                    onValueChange={itemValue => this.handleAttractionChange(itemValue)} >
-                                        {parkAttractions.map((i, index) => (
-                                            <Picker.Item key={index} label={i.attractionname} value={i.attractionid + '^' + i.attractionname + '^' + i.attractionhasscore} />
-                                        ))}
-                                </Picker>
+                            <View style={styles.modalBody}>
+                            <FlatList
+                                data={filteredAttractions}
+                                renderItem={({ item }) =>     
+                                    <ListItemAttraction
+                                        item={item}
+                                        onPress={this.handleAttractionChange}
+                                        viewStyle={styles.listView}
+                                        textStyle={styles.listText}
+                                    />}
+                                keyExtractor={item => item.attractionid.toString()} />
                             </View>
                         </View>
                 </Modal>
-        </View>
+            </View>
         );
     }
 
@@ -418,18 +466,25 @@ class CreateJournalEntry extends Component {
 
         // Render form
         return (
-            <View style={styles.container}>
-                <View style={styles.parkAttractionSelector}>
-                    <TouchableHighlight
-                        onPress={() => { this.setParkModalVisible(true); }}>
-                            <Text style={styles.parkAttractionText}>{ this.state.selectedPark.parkName !== '' ? this.state.selectedPark.parkName : 'Select a Park'}</Text>
-                    </TouchableHighlight>
+            <ScrollView style={styles.container}>
+                <View style={styles.parkAttractionSection}>
+                    <TouchableOpacity
+                        onPress={() => { this.setParkModalVisible(true); }} >
+                            <View style={styles.parkAttractionTitle}>
+                                <Text style={styles.parkAttractionText}>
+                                    { this.state.selectedPark.parkName !== '' ? this.state.selectedPark.parkName : 'Select a Park'}
+                                </Text>
+                                <Icon style={styles.parkAttractionArrow} color='lightgrey' name="ios-arrow-forward" />
+                            </View>
+                    </TouchableOpacity>
                     {attractionPicker}
                 </View>
-                <View style={styles.userImage}>
-                    <Text>User Image</Text>
+                <View style={styles.userImageSection}>
+                    <View style={styles.tempUserImage}>
+                        <Text>User Image</Text>
+                    </View>
                 </View>
-                <View style={styles.journaledDateMinutes}>
+                <View style={styles.minutesWaitedDateJournaledSection}>
                     <TextInput
                         style={styles.minuteswaited}
                         onChangeText={this.handleMinutesWaitedChange}
@@ -456,7 +511,7 @@ class CreateJournalEntry extends Component {
                         }}
                     />
                 </View>
-                <View style={styles.fastpassRating}>
+                <View style={styles.ratingFastPassSection}>
                     <Rating
                         type="star"
                         fractions={0}
@@ -473,7 +528,7 @@ class CreateJournalEntry extends Component {
                     />
                 </View>
                 {pointsScored}
-                <View>
+                <View style={styles.commentsSection}>
                     <TextInput
                         style={styles.comments}
                         onChangeText={this.handleCommentsChange}
@@ -490,32 +545,30 @@ class CreateJournalEntry extends Component {
                     transparent={true}
                     visible={this.state.parkModalVisible}>
                         <View style={styles.modalContainer}>
-                            <View style={styles.modalPickerHeader}>
-                                <TouchableHighlight
-                                style={styles.modalCloseButton}
-                                onPress={() => { 
-                                    if(this.state.selectedPark.parkRawSelectedValue === '') {
-                                        const firstPark = this.props.parks.parks[0];
-                                        this.handleParkChange(firstPark.parkid + '^' + firstPark.parkname);
-                                    } else {
-                                        this.setParkModalVisible(false);
-                                    }
-                                }}>
-                                    <Text style={styles.modalCloseButtonText}>Ok</Text>
-                                </TouchableHighlight>
+                            <View style={styles.modalHeader}>
+                                <TouchableOpacity
+                                    style={styles.modalCloseButton}
+                                    onPress={() => { this.setParkModalVisible(false); }} >
+                                    <Text style={styles.modalCloseButtonText}>Cancel</Text>
+                                </TouchableOpacity>
+                                <Text style={styles.modalTitle}>Select A Park</Text>
                             </View>
-                            <View style={styles.modalPickerBody}>
-                                <Picker
-                                    selectedValue={this.state.selectedPark.parkRawSelectedValue}
-                                    onValueChange={itemValue => this.handleParkChange(itemValue)} >
-                                        {this.props.parks.parks.map((i, index) => (
-                                            <Picker.Item key={index} label={i.parkname} value={i.parkid + '^' + i.parkname} />
-                                        ))}
-                                </Picker>
+                            <View style={styles.modalBody}>
+                            <FlatList
+                                data={this.props.parks.parks}
+                                renderItem={({ item }) =>     
+                                    <ListItem
+                                        id={item.parkid.toString()}
+                                        title={item.parkname}
+                                        onPress={this.handleParkChange}
+                                        viewStyle={styles.listView}
+                                        textStyle={styles.listText}
+                                    />}
+                                keyExtractor={item => item.parkid.toString()} />
                             </View>
                         </View>
                 </Modal>
-            </View>
+            </ScrollView>
         )
     }
 }
@@ -527,53 +580,112 @@ var styles = StyleSheet.create({
         alignItems: 'center'
     },
     modalContainer: {
-        flex: 1,
-        justifyContent: 'flex-end',
-        backgroundColor: 'rgba(0,0,0,0.5)'
+        flex: 1
     },
-    modalPickerHeader: {
+    modalHeader: {
         backgroundColor: 'white',
         borderStyle: 'solid',
-        borderBottomWidth: 1,
-        borderBottomColor: 'lightgrey'
+        borderBottomWidth: .5,
+        borderBottomColor: 'lightgrey',
+        paddingTop: 50,
+        paddingBottom: 5
     },
-    modalPickerBody: {
-        backgroundColor: 'white'
+    modalTitle: {
+        paddingLeft: 15,
+        paddingTop: 20,
+        fontSize: 35,
+        fontWeight: 'bold'
     },
     modalCloseButton: {
-        alignSelf: 'flex-end',
-        padding: 10
+        paddingLeft: 25,
+        paddingTop: 5
     },
     modalCloseButtonText: {
         fontSize: 16,
         color: 'blue'
     },
-    container: {
-        flex: 1
+    searchContainer: {
+        backgroundColor: 'white',
+        alignSelf: 'stretch',
+        borderTopColor: 'white',
+        borderBottomColor: 'white',
+        marginTop: -5,
+        marginBottom: -5
     },
-    parkAttractionSelector: {
+    searchInput: {
+        backgroundColor: '#EEEEEE',
+        color: 'black',
+        borderRadius: 5,
+        marginLeft: 15,
+        marginRight: 15
+    },
+    modalBody: {
+        flex: 1,
+        backgroundColor: 'white',
+        paddingBottom: 50
+    },
+    listView: {
+      padding: 5,
+      paddingRight: 10,
+      paddingLeft: 10,
+      borderBottomColor: 'lightgrey',
+      borderBottomWidth: 1
+    },
+    listText: {
+      color: 'blue',
+      textAlign: 'center',
+      fontSize: 20
+    },
+    container: {
+        flex: 1,
+        backgroundColor: '#DDDDDD'
+    },
+    parkAttractionSection: {
         flexDirection: 'column',
-        marginRight: 25,
-        marginLeft: 25
+        backgroundColor: 'white',
+        marginTop: 30,
+        marginBottom: 15
+    },
+    parkAttractionTitle: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderBottomWidth: .5,
+        borderBottomColor: 'lightgrey',
+        paddingTop: 5,
+        paddingBottom: 5,
+        paddingRight: 15,
+        paddingLeft: 15
     },
     parkAttractionText: {
-        textAlign: 'center',
+        color: 'blue',
         fontSize: 20,
-        marginTop: 5,
-        marginBottom: 5
+        paddingRight: 10
     },
-    userImage: {
-        marginRight: 25,
-        marginLeft: 25,
+    parkAttractionArrow: {
+        fontSize: 24
+    },
+    userImageSection: {
+        backgroundColor: 'white',
+        padding: 15,
+        marginTop: 15,
+        marginBottom: 15
+    },
+    tempUserImage: {
         borderWidth: 1,
         height: 150
     },
-    journaledDateMinutes: {
+    minutesWaitedDateJournaledSection: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginRight: 25,
-        marginLeft: 25,
-        marginTop: 10
+        backgroundColor: 'white',
+        borderBottomWidth: .5,
+        borderBottomColor: 'white',
+        marginTop: 15,
+        paddingRight: 15,
+        paddingLeft: 15,
+        paddingTop: 10,
+        paddingBottom: 10
     },
     datepicker: {
         width: 160,
@@ -588,19 +700,29 @@ var styles = StyleSheet.create({
         fontSize: 18,
         textAlign: 'center'
     },
-    fastpassRating: {
+    ratingFastPassSection: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginRight: 25,
-        marginLeft: 25,
+        backgroundColor: 'white',
+        paddingRight: 15,
+        paddingLeft: 15
     },
     fastpass: {
         backgroundColor: '#ffffff',
         borderColor: 'transparent'
     },
+    pointsSection: {
+        backgroundColor: 'white',
+        borderTopWidth: .5,
+        borderTopColor: 'white',
+        borderBottomWidth: .5,
+        borderBottomColor: 'white',
+        paddingRight: 15,
+        paddingLeft: 15,
+        paddingTop: 10,
+        paddingBottom: 10,
+    },
     points: {
-        marginRight: 25,
-        marginLeft: 25,
         borderWidth: .5,
         borderColor: '#aaa',
         borderRadius: 5,
@@ -609,14 +731,19 @@ var styles = StyleSheet.create({
         fontSize: 18,
         textAlign: 'center'
     },
+    commentsSection: {
+        backgroundColor: 'white',
+        paddingRight: 15,
+        paddingLeft: 15,
+        paddingTop: 10,
+        paddingBottom: 10,
+        marginBottom: 30
+    },
     comments: {
-        marginRight: 25,
-        marginLeft: 25,
-        marginTop: 10,
         borderWidth: .5,
         borderColor: '#aaa',
         borderRadius: 5,
-        height: 100
+        height: 150
     }
 });
 
