@@ -46,7 +46,11 @@ class ListItem extends PureComponent {
         ]
 
         return (
-            <Swipeout left={leftSwipeButtons} right={rightSwipeButtons} autoClose={true} backgroundColor={'white'}>
+            <Swipeout 
+                left={this.props.onEditPress ? leftSwipeButtons : null} 
+                right={this.props.onDeletePress ? rightSwipeButtons : null} 
+                autoClose={true} 
+                backgroundColor={'white'} >
                 <TouchableOpacity onPress={this.onPress}>
                     <View style={this.props.viewStyle ? this.props.viewStyle : null}>
                         <Text style={this.props.textStyle ? this.props.textStyle : null}>
@@ -62,9 +66,10 @@ class ListItem extends PureComponent {
 ListItem.propTypes = {  
     id: PropTypes.string.isRequired,
     title: PropTypes.string.isRequired,
-    onPress: PropTypes.func.isRequired,
-    onEditPress: PropTypes.func.isRequired,
-    onDeletePress: PropTypes.func.isRequired,
+    item: PropTypes.object,
+    onPress: PropTypes.func,
+    onEditPress: PropTypes.func,
+    onDeletePress: PropTypes.func,
     viewStyle: PropTypes.any,
     textStyle: PropTypes.any
 };
