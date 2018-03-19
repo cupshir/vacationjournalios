@@ -7,22 +7,16 @@ import {
   TouchableOpacity,
   AlertIOS 
 } from "react-native";
+import { 
+  IconsMap,
+  IconsLoaded
+} from '../../AppIcons';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import * as userActions from '../../store/actions/userActions';
-import realm from '../../database/realm'
 import ListItem from "../../components/ListItem";
 
 class JournalList extends Component {
-  static navigatorButtons = {
-    rightButtons: [
-      {
-        title: '+',
-        id: 'addJournal'
-      }
-    ]
-  };
-
   constructor(props) {
     super(props);  
     this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
@@ -43,14 +37,29 @@ class JournalList extends Component {
   }
 
   componentDidMount() {
+    // hack to show navbar border (so parent search box looks like ios Native)
     this.props.navigator.setStyle({
       navBarNoBorder: false
     })
+
+    // Set nav buttons
+    IconsLoaded.then(() => {
+      this.props.navigator.setButtons({
+        rightButtons: [
+          {
+            id: 'addJournal',
+            icon: IconsMap['add']
+          }
+        ]
+      });
+    });
   }
 
   // row on press event
   onPress = (id, name) => {
+    // load active journal
     this.props.dispatch(userActions.getJournalAndSetAsActiveJournal(this.props.user.userId, id));
+    // navigate to Journal screen
     this.props.navigator.push({
       screen: 'vacationjournalios.Journal',
       title: name,
@@ -123,8 +132,8 @@ class JournalList extends Component {
     if (!this.props.user.journals.length) {
       return (
         <View style={styles.messageContainer}>
-        <Text>Create a journal button</Text>
-      </View>
+          <Text>Create a journal button</Text>
+        </View>
       );
     }
     
@@ -148,13 +157,14 @@ var styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: 'stretch'
   },
   listView: {
     padding: 5,
+    paddingRight: 10,
+    paddingLeft: 10,
     borderBottomColor: 'lightgrey',
-    borderBottomWidth: 1,
-    width: 300
+    borderBottomWidth: 1
   },
   listText: {
     color: 'blue',
