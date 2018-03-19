@@ -1,7 +1,8 @@
 import React, { Component } from "react";
 import { 
     View, 
-    StyleSheet ,
+    StyleSheet,
+    TextInput,
     AlertIOS
 } from "react-native";
 import { 
@@ -20,8 +21,8 @@ class CreateJournal extends Component {
     static navigatorButtons = {
         rightButtons: [
             {
-                title: 'Save',
-                id: 'save'
+                title: 'Done',
+                id: 'done'
             }
         ]
     };
@@ -30,10 +31,10 @@ class CreateJournal extends Component {
         super(props);
         this.state = { 
             formValues: {
-                vacationName: ''                                                             
+                journalName: ''                                                             
             },
             formErrors: {
-                vacationName: ''
+                journalName: ''
             }
         };
         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
@@ -42,8 +43,8 @@ class CreateJournal extends Component {
     // handle navigation event
     onNavigatorEvent(event) {
         if (event.type == 'NavBarButtonPress') {
-            if (event.id == 'save') {
-                this.handleSave();
+            if (event.id == 'done') {
+                this.handleDone();
             } 
         }
     }
@@ -55,13 +56,13 @@ class CreateJournal extends Component {
     }
 
     // handle save event
-    handleSave = () => {
+    handleDone = () => {
         if(this.props.user.userId) {
             // Check if ready to submit
             const ready = this.readyForSubmit(this.state.formValues)
 
             if(ready) {
-                this.props.dispatch(userActions.createJournal(this.state.formValues.vacationName, this.props.user.userId));
+                this.props.dispatch(userActions.createJournal(this.state.formValues.journalName, this.props.user.userId));
                 this.props.navigator.push({
                     screen: 'vacationjournalios.Journal',
                     title: this.state.formValues.vacationName,
@@ -120,30 +121,30 @@ class CreateJournal extends Component {
         );
     }
 
-    handleVacationNameChange = (value) => {
-        let vacationNameError;
+    handleJournalNameChange = (value) => {
+        let journalNameError;
 
         // Check input for errors, if found set error message
         if (!value) {
-            vacationNameError = 'Please enter a vacation name.';
+            journalNameError = 'Please enter a journal name.';
         }
 
         // Set state and error messages
         this.setState({ 
             formValues: {
                 ...this.state.formValues, 
-                vacationName: value
+                journalName: value
             },
             formErrors: {
                 ...this.state.formErrors,
-                vacationName: vacationNameError
+                journalName: journalNameError
             }
         });
     }
     
     render() {
         // Check if errors exist in state.formErrors
-        const vacationNameError = (this.state.formErrors.vacationName !== '') ? this.renderError(this.state.formErrors.vacationName) : null;
+        const journalNameError = (this.state.formErrors.journalName !== '') ? this.renderError(this.state.formErrors.journalName) : null;
         
         // Loading Mickey Graphic
         if (this.props.user.status === 'saving') {
@@ -157,12 +158,16 @@ class CreateJournal extends Component {
         return (
             <View style={styles.container}>
                 <View style={styles.form}>
-                    <FormLabel>Name for new Journal</FormLabel>
-                    <FormInput 
-                        onChangeText={this.handleVacationNameChange}
-                        placeholder='Enter vacation name'
+                    <TextInput 
+                        style={styles.input}
+                        multiline={true}
+                        numberOfLines={2}
+                        maxLength={400}
+                        onChangeText={this.handleJournalNameChange}
+                        placeholder='Enter journal name'
                     />
-                    {vacationNameError}
+                    {journalNameError}
+                    <Text>What other attributes should a journal have? date?</Text>
                 </View>
             </View> 
         );
@@ -172,11 +177,17 @@ class CreateJournal extends Component {
 var styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'stretch'
     },
     form: {
-        width: 300
+        margin: 15
+    },
+    input: {
+        padding: 5,
+        borderWidth: .5,
+        borderColor: '#aaa',
+        borderRadius: 5,
+        height: 75
     }
 })
 
