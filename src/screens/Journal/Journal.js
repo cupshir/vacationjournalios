@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { 
-  View, 
+  View,
   Text,
   Button,
   FlatList,
@@ -19,7 +19,7 @@ import { connect } from 'react-redux';
 import moment from 'moment';
 import * as userActions from '../../store/actions/userActions';
 
-import ListItemAttraction from "../../components/ListItemAttraction";
+import ListItemJournal from "../../components/ListItemJournal";
 import SectionHeader from "../../components/SectionHeader";
 import LoadingMickey from '../../components/LoadingMickey';
 
@@ -159,7 +159,7 @@ class Journal extends Component {
 
   // render row item
   renderItem = ({ item }) => (
-    <ListItemAttraction
+    <ListItemJournal
       item={item}
       onPress={this.onPress}
       onEditPress={this.onEditPress}
