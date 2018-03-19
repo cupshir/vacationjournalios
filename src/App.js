@@ -17,17 +17,27 @@ Navigation.startTabBasedApp({
 		{
 			label: 'Home',
 			screen: 'vacationjournalios.Dashboard',
-			title: 'Dashboard'
+			title: 'Dashboard',
+			navigatorStyle: {
+				largeTitle: true
+			}
 		},
 		{
 			label: 'Profile',
 			screen: 'vacationjournalios.Profile',
-			title: 'Profile'
+			title: 'Profile',
+			navigatorStyle: {
+				largeTitle: true
+			}
 		},
 		{
 			label: 'Journal',
 			screen: 'vacationjournalios.Journal',
-			title: 'Journal'
+			title: 'Select A Journal',
+			navigatorStyle: {
+				largeTitle: true,
+				navBarNoBorder: true
+			}
 		}
 	],
 	tabsStyle: {
