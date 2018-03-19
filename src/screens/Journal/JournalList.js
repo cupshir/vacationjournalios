@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
-import * as journalActions from '../../store/actions/journalActions';
+import * as userActions from '../../store/actions/userActions';
 import realm from '../../database/realm'
 import ListItem from "../../components/ListItem";
 
@@ -42,9 +42,15 @@ class JournalList extends Component {
     }
   }
 
+  componentDidMount() {
+    this.props.navigator.setStyle({
+      navBarNoBorder: false
+    })
+  }
+
   // row on press event
   onPress = (id, name) => {
-    this.props.dispatch(journalActions.getJournal(id));
+    this.props.dispatch(userActions.getJournalAndSetAsActiveJournal(this.props.user.userId, id));
     this.props.navigator.push({
       screen: 'vacationjournalios.Journal',
       title: name,
@@ -82,7 +88,7 @@ class JournalList extends Component {
     // verify typed name matches journal name
     if(enteredName === name ) {
       // match, delete journal by id
-      this.props.dispatch(journalActions.deleteJournal(id));
+      this.props.dispatch(userActions.deleteJournal(id, this.props.user.activeJournal.id));
     } else {
       // dont match, display alert and do nothing
       AlertIOS.alert('Names dont match. Journal not deleted!')
@@ -114,7 +120,7 @@ class JournalList extends Component {
     }
 
     // if no journals exist, display message to create one
-    if (!this.props.journal.journals.length) {
+    if (!this.props.user.journals.length) {
       return (
         <View style={styles.messageContainer}>
         <Text>Create a journal button</Text>
@@ -125,7 +131,7 @@ class JournalList extends Component {
     return (
       <View style={styles.container}>
         <FlatList
-          data={this.props.journal.journals}
+          data={this.props.user.journals}
           renderItem={this.renderItem}
           keyExtractor={item => item.id}
           />
@@ -159,8 +165,7 @@ var styles = StyleSheet.create({
 
 function mapStateToProps(state) {
   return {
-    user: state.user,
-    journal: state.journal
+    user: state.user
   }
 }
 
