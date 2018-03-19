@@ -194,11 +194,11 @@ class SignIn extends Component {
         const passwordError = (this.state.formErrors.password !== '') ? this.renderError(this.state.formErrors.password) : null;
 
         // Check if authentication errors exist in redux store
-        const authenticationError = (this.props.authenticationStatus === 'failed') ? this.renderError(this.props.authenticationErrorMessage) : null;
+        const authenticationError = (this.props.status === 'failed') ? this.renderError(this.props.errorMessage) : null;
 
 
         // Loading Mickey Graphic
-        if (this.props.authenticationStatus === 'requesting') {
+        if (this.props.status === 'requesting') {
             return (
                 <View style={styles.container}>
                     <LoadingMickey />
@@ -271,8 +271,8 @@ var styles = StyleSheet.create({
 
 function mapStateToProps(state) {
     return {
-      authenticationErrorMessage: state.user.authenticationErrorMessage,
-      authenticationStatus: state.user.authenticationStatus,
+      errorMessage: state.user.errorMessage,
+      status: state.user.status,
       authenticated: state.user.authenticated
     }
   }

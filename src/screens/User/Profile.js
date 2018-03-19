@@ -16,6 +16,8 @@ import LoadingMickey from '../../components/LoadingMickey';
 
 class Profile extends Component {
   componentDidMount() {
+    // Check if user in local storage and load user
+    // TODO: Change function to better reflect this
     this.props.dispatch(userActions.loadUserFromRealm());
 
     // TODO: Update to load from realm, but leave for populating realm (until better way is finished)
@@ -43,8 +45,7 @@ class Profile extends Component {
           break;
         }
         case 'signOut': {
-          this.props.dispatch(userActions.signOutUser());
-          //this.handleSignOut();
+          this.handleSignOut();
           break;
         }
     }
@@ -79,9 +80,9 @@ class Profile extends Component {
         </View>
         <View style={styles.middleContainer}>
           <Text >email: {this.props.user.email}</Text>
-          <Text>First Name: {this.props.user.firstname}</Text>
-          <Text>Last Name: {this.props.user.lastname}</Text>
-          <Text>User ID: {this.props.user.userid}</Text>
+          <Text>First Name: {this.props.user.firstName}</Text>
+          <Text>Last Name: {this.props.user.lastName}</Text>
+          <Text>User ID: {this.props.user.userId}</Text>
         </View>
         <View style={styles.lowerContainer}>
           <TouchableOpacity style={styles.button} onPress={() => this.handleItemPress('signOut')}>
