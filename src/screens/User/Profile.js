@@ -8,10 +8,6 @@ import {
 } from "react-native";
 import * as userActions from '../../store/actions/userActions';
 
-// temp for dev
-import * as parkActions from '../../store/actions/parkActions';
-import * as attractionActions from '../../store/actions/attractionActions';
-
 import LoadingMickey from '../../components/LoadingMickey';
 
 class Profile extends Component {
@@ -19,10 +15,6 @@ class Profile extends Component {
     // Check if user in local storage and load user
     // TODO: Change function to better reflect this
     this.props.dispatch(userActions.loadUserFromRealm());
-
-    // TODO: Update to load from realm, but leave for populating realm (until better way is finished)
-    this.props.dispatch(parkActions.requestParks());
-    this.props.dispatch(attractionActions.requestAttractions());
   }
 
 
