@@ -11,26 +11,22 @@ import {
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { 
-    FormLabel, 
-    FormInput,
     Rating,
     CheckBox,
     Text
 } from 'react-native-elements';
 import DatePicker from 'react-native-datepicker';
-
 import * as userActions from '../../store/actions/userActions';
 
 import { JOURNAL_SAVING } from '../../store/actions/actionTypes'
-
 import LoadingMickey from '../../components/LoadingMickey';
 
 class CreateJournalEntry extends Component {
     static navigatorButtons = {
         rightButtons: [
           {
-              title: 'Save',
-              id: 'save'
+              title: 'Done',
+              id: 'done'
           }
         ]
     };
@@ -75,8 +71,8 @@ class CreateJournalEntry extends Component {
 
     onNavigatorEvent(event) { 
         if (event.type == 'NavBarButtonPress') {
-            if (event.id == 'save') {
-                this.handleSavePress();
+            if (event.id == 'done') {
+                this.handleDonePress();
             }
         }
     }
@@ -213,7 +209,7 @@ class CreateJournalEntry extends Component {
     }
 
     // handle save press
-    handleSavePress = () => {
+    handleDonePress = () => {
         // Check if form is ready to submit
         const ready = this.readyForSubmit(this.state.formValues)
 
