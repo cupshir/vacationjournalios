@@ -7,25 +7,27 @@ import {
 } from "react-native";
 import PropTypes from 'prop-types';
 import Swipeout from 'react-native-swipeout';
-import moment from 'moment';
 
+// custom ListItem
 class ListItemAttraction extends PureComponent {
     // Press event
     onPress = () => {
-        this.props.onPress(this.props.item.id);
+        this.props.onPress(this.props.item);
     };
 
     // Edit event
     onEditPress = () => {
-        this.props.onEditPress(this.props.item.id);
+        this.props.onEditPress(this.props.item);
     }
 
     // Delete event
     onDeletePress = () => {
-        this.props.onDeletePress(this.props.item.id);
+        this.props.onDeletePress(this.props.item);
     }
 
+    // Render component
     render() {
+        // right swipe buttons
         const rightSwipeButtons = [
             {
                 text: 'Delete',
@@ -34,6 +36,7 @@ class ListItemAttraction extends PureComponent {
             }
         ]
 
+        // left swipe buttons
         const leftSwipeButtons = [
             {
                 text: 'Edit',
@@ -42,73 +45,33 @@ class ListItemAttraction extends PureComponent {
             }
         ]
 
-        // Format date
-        const dateJournaled = moment(this.props.item.dateJournaled).format('MM-DD-YYYY hh:mm a');
-
+        // render List
+        // if no edit or delete function are passed, dont render swipe buttons
         return (
-            <View style={styles.container}>
-                <Swipeout 
-                    left={leftSwipeButtons} 
-                    right={rightSwipeButtons} 
-                    autoClose={true} 
-                    backgroundColor={'white'} >
-                        <TouchableOpacity onPress={this.onPress}>
-                            <View style={styles.row}>
-                                <View style={styles.image}>
-                                    <Text>Pic</Text>
-                                </View>
-                                <View style={styles.contentContainer}>
-                                    <Text style={styles.contentHeader}>
-                                        {this.props.item.attraction.name}
-                                    </Text>
-                                    <Text style={styles.contentText}>
-                                        {this.props.item.park.name}
-                                    </Text>
-                                    <Text style={styles.contentText}>
-                                        {dateJournaled}
-                                    </Text>
-                                </View>
-                            </View>
-                        </TouchableOpacity>
-                </Swipeout>
-            </View>
+            <Swipeout 
+                left={this.props.onEditPress ? leftSwipeButtons : null} 
+                right={this.props.onDeletePress ? rightSwipeButtons : null} 
+                autoClose={true} 
+                backgroundColor={'white'} >
+                <TouchableOpacity onPress={this.onPress}>
+                    <View style={this.props.viewStyle ? this.props.viewStyle : null}>
+                        <Text style={this.props.textStyle ? this.props.textStyle : null}>
+                            {this.props.item.attractionname}
+                        </Text>
+                    </View>
+                </TouchableOpacity>
+            </Swipeout>
         );
     }
 }
 
-var styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'stretch'
-    },
-    row: {
-        borderBottomColor: 'lightgrey',
-        borderBottomWidth: 1,
-        flexDirection: 'row'
-    },
-    image: {
-        borderColor: 'black',
-        borderWidth: 1,
-        borderStyle: 'solid',
-        width: 100,
-        height: 75,
-        marginLeft: 15,
-    },
-    contentContainer: {
-        marginLeft: 5,
-        marginRight: 15
-    },
-    contentHeader: {
-        fontSize: 18
-    },
-    contentText: {
-        fontSize: 14
-    }
-})
-
 ListItemAttraction.propTypes = {  
-    item: PropTypes.object.isRequired
+    item: PropTypes.object.isRequired,
+    onPress: PropTypes.func,
+    onEditPress: PropTypes.func,
+    onDeletePress: PropTypes.func,
+    viewStyle: PropTypes.any,
+    textStyle: PropTypes.any
 };
 
 export default ListItemAttraction;
