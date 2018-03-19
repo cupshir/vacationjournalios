@@ -5,6 +5,7 @@ import {
     StyleSheet,
     TouchableOpacity
 } from "react-native";
+import PropTypes from 'prop-types';
 import Swipeout from 'react-native-swipeout';
 
 // custom ListItem - TODO: add prop types
@@ -57,5 +58,15 @@ class ListItem extends PureComponent {
         );
     }
 }
+
+ListItem.propTypes = {  
+    id: PropTypes.string.isRequired,
+    title: PropTypes.string.isRequired,
+    onPress: PropTypes.func.isRequired,
+    onEditPress: PropTypes.func.isRequired,
+    onDeletePress: PropTypes.func.isRequired,
+    viewStyle: PropTypes.any,
+    textStyle: PropTypes.any
+};
 
 export default ListItem;
