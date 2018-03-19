@@ -12,7 +12,7 @@ import {
 } from 'react-native-elements';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
-import * as journalActions from '../../store/actions/journalActions';
+import * as userActions from '../../store/actions/userActions';
 
 import LoadingMickey from '../../components/LoadingMickey';
 
@@ -48,15 +48,26 @@ class CreateJournal extends Component {
         }
     }
 
+    componentDidMount() {
+        this.props.navigator.setStyle({
+            navBarNoBorder: false
+        })
+    }
+
     // handle save event
     handleSave = () => {
-        if(this.props.user.userid) {
+        if(this.props.user.userId) {
             // Check if ready to submit
             const ready = this.readyForSubmit(this.state.formValues)
 
             if(ready) {
-                this.props.dispatch(journalActions.createJournal(this.state.formValues.vacationName, this.props.user.userid));
-                this.props.navigator.popToRoot();
+                this.props.dispatch(userActions.createJournal(this.state.formValues.vacationName, this.props.user.userId));
+                this.props.navigator.push({
+                    screen: 'vacationjournalios.Journal',
+                    title: this.state.formValues.vacationName,
+                    animated: true,
+                    animationType: 'fade'
+                });
             } else {
                 AlertIOS.alert('Please enter a journal name');
             }
@@ -135,7 +146,7 @@ class CreateJournal extends Component {
         const vacationNameError = (this.state.formErrors.vacationName !== '') ? this.renderError(this.state.formErrors.vacationName) : null;
         
         // Loading Mickey Graphic
-        if (this.props.journal.status === 'saving') {
+        if (this.props.user.status === 'saving') {
             return (
                 <View style={styles.container}>
                     <LoadingMickey />
@@ -171,7 +182,6 @@ var styles = StyleSheet.create({
 
 function mapStateToProps(state) {
     return {
-      journal: state.journal,
       user: state.user
     }
 }
