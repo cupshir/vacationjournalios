@@ -19,7 +19,9 @@ import {
 } from 'react-native-elements';
 import DatePicker from 'react-native-datepicker';
 
-import * as journalActions from '../../store/actions/journalActions';
+import * as userActions from '../../store/actions/userActions';
+
+import { JOURNAL_SAVING } from '../../store/actions/actionTypes'
 
 import LoadingMickey from '../../components/LoadingMickey';
 
@@ -77,6 +79,12 @@ class CreateJournalEntry extends Component {
                 this.handleSavePress();
             }
         }
+    }
+
+    componentDidMount() {
+        this.props.navigator.setStyle({
+            navBarNoBorder: false
+        })
     }
 
     // set park modal visible
@@ -213,7 +221,10 @@ class CreateJournalEntry extends Component {
             // scrub values (changes strings to numbers, etc)
             const submitValues = this.prepareValuesForDB(this.state.formValues);
             // save journal entry to realm db
-            this.props.dispatch(journalActions.createJournalEntry(this.props.journal.journal.id, submitValues));
+            this.props.dispatch(userActions.createJournalEntry(this.props.user.activeJournal.id, submitValues));
+            
+            // TODO: 
+            this.props.navigator.popToRoot();
         } else {
             // TODO: better message
             AlertIOS.alert('not ready to submit')
@@ -247,7 +258,7 @@ class CreateJournalEntry extends Component {
         returnValues.attractionId = values.attractionId;
         returnValues.rating = values.rating;
         returnValues.usedFastPass = values.usedFastPass;
-        returnValues.dateJournaled = values.dateJournaled;
+        returnValues.dateJournaled = new Date(values.dateJournaled);
         returnValues.comments = values.comments;
 
         return returnValues;
@@ -318,8 +329,7 @@ class CreateJournalEntry extends Component {
                     style={styles.points}
                     onChangeText={this.handlePointsScoredChange}
                     placeholder='Points Scored'
-                    value={this.state.formValues.pointsScored}
-                />
+                    value={this.state.formValues.pointsScored} />
             </View>
         )
     }
@@ -378,6 +388,7 @@ class CreateJournalEntry extends Component {
         );
     }
 
+
     // render View
     render() {
         // Check if errors exist in state.formErrors
@@ -398,16 +409,6 @@ class CreateJournalEntry extends Component {
         let pointsScored = null;
         if (this.state.selectedAttraction.attractionHasScore) {
             pointsScored = this.renderPointsScored();
-        }
-
-
-        // Loading Mickey Graphic
-        if (this.props.journal.status === 'saving') {
-            return (
-                <View style={styles.container}>
-                    <LoadingMickey />
-                </View>
-            );
         }
 
         // Check that parks and attractions exist in redux store
@@ -444,7 +445,7 @@ class CreateJournalEntry extends Component {
                         date={this.state.formValues.dateJournaled}
                         mode="datetime"
                         placeholder="Select Date"
-                        format="MM-DD-YYYY, hh:mm a"
+                        format="MM/DD/YYYY, hh:mm a"
                         confirmBtnText="Ok"
                         cancelBtnText="Cancel"
                         onDateChange={this.handleDateJournaledChange}
@@ -627,7 +628,6 @@ function mapStateToProps(state) {
     return {
         parks: state.parks,
         attractions: state.attractions,
-        journal: state.journal,
         user: state.user
     }
 }
