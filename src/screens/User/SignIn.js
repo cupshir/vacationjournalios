@@ -12,6 +12,8 @@ import {
     FormValidationMessage,
     Text
      } from 'react-native-elements';
+import { Navigation } from 'react-native-navigation';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import * as userActions from '../../store/actions/userActions';
@@ -204,11 +206,13 @@ class SignIn extends Component {
                     <LoadingMickey />
                 </View>
             );
+        } else if (this.props.status === 'success') {
+            Navigation.dismissModal();
         }
         
         // Render Sign In Form
         return (
-        <View style={styles.container}>
+        <KeyboardAwareScrollView style={styles.container}>
             <View style={styles.upper}>
                 <Text style={styles.image}>Sign In Graphic</Text>
             </View>
@@ -235,7 +239,7 @@ class SignIn extends Component {
                     {passwordError}
                 </View>
             </View>
-        </View>
+        </KeyboardAwareScrollView>
         )
     }
 }

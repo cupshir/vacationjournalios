@@ -1,5 +1,6 @@
 import request from 'superagent';
-import realm from '../../database/realm';
+//import realm from '../../database/realm';
+import realm from '../actions/userActions';
 
 import {
     API_URL,

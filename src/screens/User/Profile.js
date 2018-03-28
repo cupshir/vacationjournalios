@@ -12,11 +12,21 @@ import LoadingMickey from '../../components/LoadingMickey';
 
 class Profile extends Component {
   componentDidMount() {
-    // Check if user in local storage and load user
-    // TODO: Change function to better reflect this
-    this.props.dispatch(userActions.loadUserFromRealm());
+    // Try to load cached realm user
+    this.props.dispatch(userActions.loadUserFromCache());
+    //userActions.realmUtility();
   }
 
+  componentDidUpdate() {
+    if (this.props.user.authenticated) {
+      if (this.props.parks.status == null) {
+        //this.props.dispatch(userActions.loadParksFromRealm());
+      }
+      if (this.props.attractions.status == null) {
+        //this.props.dispatch(userActions.loadAttractionsFromRealm());
+      }
+    }
+  }
 
   handleItemPress = (item) => {
     switch(item) {
@@ -127,7 +137,9 @@ var styles = StyleSheet.create({
 
 function mapStateToProps(state) {
   return {
-    user: state.user
+    user: state.user,
+    parks: state.parks,
+    attractions: state.attractions
   }
 }
 

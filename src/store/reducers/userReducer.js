@@ -30,7 +30,6 @@ const initialState = {
   userId: null,
   firstName: null,
   lastName: null,
-  token: null,
   journals: [],
   activeJournal: null,
   status: null,
@@ -54,7 +53,6 @@ export function user(state = initialState, action) {
         lastName: action.lastName,
         activeJournal: action.activeJournal,
         journals: action.journals,
-        token: action.token,
         status: 'success',
         errorMessage: null
       };
@@ -68,6 +66,7 @@ export function user(state = initialState, action) {
     case AUTHENTICATION_ERROR_CLEAR:
       return {
         ...state,
+        status: null,
         errorMessage: null
       }
     case JOURNAL_LOADING:
@@ -145,8 +144,7 @@ export function user(state = initialState, action) {
         activeJournal: null,
         journals: null,
         firstname: null,
-        lastname: null,
-        token: null
+        lastname: null
       };
     default:
       return state;

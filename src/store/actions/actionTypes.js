@@ -1,6 +1,10 @@
 // TODO: Update to be dynamic
 //export const API_URL = process.env.REACT_APP_API_URL;
 export const API_URL = 'https://vacationjournal-express-api.herokuapp.com/api';
+export const AUTH_URL = 'https://ros.upshir.com:9443';
+export const REALM_URL = 'realms://ros.upshir.com:9443';
+export const REALM_PARKS_PATH = 'seedDataParks';
+export const REALM_USER_PATH = '~/vacationJournal';
 
 // User Types
 export const SIGN_OUT_USER = 'USER::SIGN_OUT_USER';

@@ -23,7 +23,7 @@ export function attractions(state = initialState, action) {
         case LOAD_ATTRACTIONS_SUCCESS:
             return {
                 ...state,
-                attractions: action.payload.body.data,
+                attractions: action.attractions,
                 status: 'success'
             };
         case LOAD_ATTRACTIONS_FAILED:

@@ -12,6 +12,8 @@ import {
     FormValidationMessage,
     Text
 } from 'react-native-elements';
+import { Navigation } from 'react-native-navigation';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import * as userActions from '../../store/actions/userActions';
@@ -233,12 +235,12 @@ class SignUp extends Component {
         if(this.readyForSubmit(this.state.formValues)){
             // Create and populate credentials object
             let credentials = [];
-            credentials.firstname = this.state.formValues.firstName;
-            credentials.lastname = this.state.formValues.lastName;
+            credentials.firstName = this.state.formValues.firstName;
+            credentials.lastName = this.state.formValues.lastName;
             credentials.email = this.state.formValues.email;
             credentials.password = this.state.formValues.password;
 
-            this.props.dispatch(userActions.signUpUser(credentials));
+            this.props.dispatch(userActions.registerUser(credentials));
         } else {
             // TODO: Dynamic alert to better direct what to do
             AlertIOS.alert('Please correct form errrors and try again')
@@ -309,10 +311,14 @@ class SignUp extends Component {
                 <LoadingMickey />
                 </View>
             );
+        } else if (this.props.status === 'success') {
+            Navigation.dismissModal();
         }
 
         return (
-        <View style={styles.container}>
+        <KeyboardAwareScrollView 
+            style={styles.container}
+            extraScrollHeight={50}>
             <ScrollView style={styles.form}>
                 <View>
                     {authenticationError}
@@ -366,7 +372,7 @@ class SignUp extends Component {
                     {lastNameError}
                 </View>
             </ScrollView>
-        </View>
+        </KeyboardAwareScrollView>
         )
     }
 }

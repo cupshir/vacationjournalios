@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import {
     View,
+    KeyboardAvoidingView,
     ScrollView,
     StyleSheet,
     TextInput,
@@ -18,11 +19,11 @@ import {
     SearchBar,
     Text
 } from 'react-native-elements';
-import Icon from 'react-native-vector-icons/Ionicons'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import Icon from 'react-native-vector-icons/Ionicons';
 import DatePicker from 'react-native-datepicker';
 import * as userActions from '../../store/actions/userActions';
 
-import { JOURNAL_SAVING } from '../../store/actions/actionTypes'
 import LoadingMickey from '../../components/LoadingMickey';
 import ListItem from '../../components/ListItem';
 import ListItemAttraction from '../../components/ListItemAttraction';
@@ -40,6 +41,8 @@ class CreateJournalEntry extends Component {
     constructor(props) {
         super(props);
         this.state = {
+            parks: [],
+            attractions: [],
             selectedPark: {
                 parkId: '',
                 parkName: '',
@@ -86,6 +89,14 @@ class CreateJournalEntry extends Component {
         this.props.navigator.setStyle({
             navBarNoBorder: false
         })
+
+        if(this.state.parks.length == 0) {
+            this.setState({
+                ...state,
+                parks: userActions.parkRealm.objects('Park')
+            })
+        }
+
     }
 
     // set park modal visible
@@ -183,13 +194,13 @@ class CreateJournalEntry extends Component {
     handleAttractionChange = (attraction) => {
         this.setState({ 
             selectedAttraction: {
-                attractionId: attraction.attractionid,
-                attractionName: attraction.attractionname,
-                attractionHasScore: (attraction.attractionhasscore == true)
+                attractionId: attraction.id,
+                attractionName: attraction.name,
+                attractionHasScore: (attraction.hasscore == true)
             },
             formValues: {
                 ...this.state.formValues,
-                attractionId: attraction.attractionid
+                attractionId: attraction.id
             },
             filteredAttractions: null,
             attractionModalVisible: false
@@ -209,7 +220,7 @@ class CreateJournalEntry extends Component {
     handleSearch = (searchInput) => {
         // create object from attractions filtered by selectedpark
         const unFilteredAttractions = this.props.attractions.attractions.filter((attraction) => {
-            return (attraction.parkid === parseInt(this.state.selectedPark.parkId, 10))
+            return (attraction.park.id === parseInt(this.state.selectedPark.parkId, 10))
         });
 
         // create object to filter
@@ -218,7 +229,7 @@ class CreateJournalEntry extends Component {
         // if search input contains text, filter by that text
         if (searchInput !== '') {      
           filteredAttractions = unFilteredAttractions.filter((attraction) => {
-              return (attraction.attractionname.toLowerCase().includes(searchInput.toLowerCase()))
+              return (attraction.name.toLowerCase().includes(searchInput.toLowerCase()))
           });
         }
     
@@ -381,7 +392,7 @@ class CreateJournalEntry extends Component {
         // Load filteredAttractions from state, if not there load new filtered by parkId list from Props (this is so attractions load the first time)
         const filteredAttractions = this.state.filteredAttractions !== null ? this.state.filteredAttractions :        
             this.props.attractions.attractions.filter((attraction) => {
-                return (attraction.parkid === parseInt(this.state.selectedPark.parkId, 10))
+                return (attraction.park.id === parseInt(this.state.selectedPark.parkId, 10))
             });
 
         // build search input
@@ -424,7 +435,7 @@ class CreateJournalEntry extends Component {
                                         viewStyle={styles.listView}
                                         textStyle={styles.listText}
                                     />}
-                                keyExtractor={item => item.attractionid.toString()} />
+                                keyExtractor={item => item.id.toString()} />
                             </View>
                         </View>
                 </Modal>
@@ -466,7 +477,8 @@ class CreateJournalEntry extends Component {
 
         // Render form
         return (
-            <ScrollView style={styles.container}>
+            <KeyboardAwareScrollView style={styles.container}>
+            
                 <View style={styles.parkAttractionSection}>
                     <TouchableOpacity
                         onPress={() => { this.setParkModalVisible(true); }} >
@@ -558,17 +570,18 @@ class CreateJournalEntry extends Component {
                                 data={this.props.parks.parks}
                                 renderItem={({ item }) =>     
                                     <ListItem
-                                        id={item.parkid.toString()}
-                                        title={item.parkname}
+                                        id={item.id.toString()}
+                                        title={item.name}
                                         onPress={this.handleParkChange}
                                         viewStyle={styles.listView}
                                         textStyle={styles.listText}
                                     />}
-                                keyExtractor={item => item.parkid.toString()} />
+                                keyExtractor={item => item.id.toString()} />
                             </View>
                         </View>
                 </Modal>
-            </ScrollView>
+            </KeyboardAwareScrollView>
+
         )
     }
 }

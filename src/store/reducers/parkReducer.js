@@ -23,7 +23,7 @@ export function parks(state = initialState, action) {
         case LOAD_PARKS_SUCCESS:
             return {
                 ...state,
-                parks: action.payload.body.data,
+                parks: action.parks,
                 status: 'success'
             };
         case LOAD_PARKS_FAILED:

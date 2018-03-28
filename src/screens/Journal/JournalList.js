@@ -18,7 +18,10 @@ import ListItem from "../../components/ListItem";
 
 class JournalList extends Component {
   constructor(props) {
-    super(props);  
+    super(props);
+    this.state = {
+      parks: []
+    }  
     this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
   }
 
@@ -56,25 +59,32 @@ class JournalList extends Component {
   }
 
   // row on press event
-  onPress = (id, name) => {
+  onPress = (journalId, journalName) => {
     // load active journal
-    this.props.dispatch(userActions.getJournalAndSetAsActiveJournal(this.props.user.userId, id));
-    // navigate to Journal screen
-    this.props.navigator.push({
-      screen: 'vacationjournalios.Journal',
-      title: name,
-      animated: true,
-      animationType: 'fade'
-    });
+    const realmUser = userActions.userRealm.objectForPrimaryKey('Person', this.props.user.userId);
+    const journal = userActions.userRealm.objectForPrimaryKey('Journal', journalId);
+    if (journal) {
+      this.props.dispatch(userActions.setActiveJournal(realmUser, journal));
+      // navigate to Journal screen
+      this.props.navigator.push({
+        screen: 'vacationjournalios.Journal',
+        title: journalName,
+        animated: true,
+        animationType: 'fade'
+      });
+    } else {
+      AlertIOS.alert('Failed to load journal');
+    }
+
   }
 
   // row edit press event
-  onEditPress = (id) => {
-    AlertIOS.alert('TODO: Edit Journal id: ', id);
+  onEditPress = (journalId) => {
+    AlertIOS.alert('TODO: Edit Journal id: ', journalId);
   }
 
   // row delete press event
-  onDeletePress = (id, name) => {
+  onDeletePress = (journalId, journalName) => {
     // display confirm prompt, user must type matching name to delete
     AlertIOS.prompt(
       'Confirm Delete',
@@ -86,18 +96,18 @@ class JournalList extends Component {
         },
         {
           text: 'Delete',
-          onPress: (enteredName) => this.handleDeleteJournal(id, name, enteredName)
+          onPress: (enteredName) => this.handleDeleteJournal(journalId, journalName, enteredName)
         }
       ]
     );
   }
 
   // handle delete journal
-  handleDeleteJournal = (id, name, enteredName) => {
+  handleDeleteJournal = (journalId, journalName, enteredName) => {
     // verify typed name matches journal name
-    if(enteredName === name ) {
+    if(enteredName === journalName ) {
       // match, delete journal by id
-      this.props.dispatch(userActions.deleteJournal(id, this.props.user.activeJournal.id));
+      this.props.dispatch(userActions.deleteJournal(journalId, this.props.user.activeJournal.id));
     } else {
       // dont match, display alert and do nothing
       AlertIOS.alert('Names dont match. Journal not deleted!')
