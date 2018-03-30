@@ -41,8 +41,8 @@ class CreateJournalEntry extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            parks: [],
-            attractions: [],
+            parks: userActions.parkRealm.objects('Park'),
+            attractions: userActions.parkRealm.objects('Attraction'),
             selectedPark: {
                 parkId: '',
                 parkName: '',
@@ -89,14 +89,6 @@ class CreateJournalEntry extends Component {
         this.props.navigator.setStyle({
             navBarNoBorder: false
         })
-
-        if(this.state.parks.length == 0) {
-            this.setState({
-                ...state,
-                parks: userActions.parkRealm.objects('Park')
-            })
-        }
-
     }
 
     // set park modal visible
@@ -176,7 +168,7 @@ class CreateJournalEntry extends Component {
             },
             formValues: {
                 ...this.state.formValues,
-                parkId: parseInt(parkId, 10),
+                parkId: parkId,
                 attractionId: ''
             },
             selectedAttraction: {
@@ -219,8 +211,8 @@ class CreateJournalEntry extends Component {
 
     handleSearch = (searchInput) => {
         // create object from attractions filtered by selectedpark
-        const unFilteredAttractions = this.props.attractions.attractions.filter((attraction) => {
-            return (attraction.park.id === parseInt(this.state.selectedPark.parkId, 10))
+        const unFilteredAttractions = this.state.attractions.filter((attraction) => {
+            return (attraction.park.id === this.state.selectedPark.parkId)
         });
 
         // create object to filter
@@ -248,11 +240,23 @@ class CreateJournalEntry extends Component {
         if (ready) {
             // scrub values (changes strings to numbers, etc)
             const submitValues = this.prepareValuesForDB(this.state.formValues);
-            // save journal entry to realm db
-            this.props.dispatch(userActions.createJournalEntry(this.props.user.activeJournal.id, submitValues));
+            // Get Person
+            const person = userActions.userRealm.objectForPrimaryKey('Person', this.props.user.userId);
+            // Get Park
+            const park = userActions.parkRealm.objectForPrimaryKey('Park', submitValues.parkId);
+            // Get Attraction
+            const attraction = userActions.parkRealm.objectForPrimaryKey('Attraction', submitValues.attractionId);
+
+            if (park && attraction && person) {
+                // save journal entry to realm db
+                this.props.dispatch(userActions.createJournalEntry(person, park, attraction, submitValues));
+
+                this.props.navigator.popToRoot();
+            } else {
+                AlertIOS.alert('Failed to get person, park, or attraction from realm')
+            }
             
-            // TODO: 
-            this.props.navigator.popToRoot();
+        
         } else {
             // TODO: better message
             AlertIOS.alert('not ready to submit')
@@ -386,13 +390,13 @@ class CreateJournalEntry extends Component {
     // Render attractions picker
     renderAttractionsPicker = () => {
         // Double Check for selected park and attractions data, return if one or other not found
-        if(!this.state.selectedPark.parkId || !this.props.attractions.attractions){ return; }
+        if(!this.state.selectedPark.parkId || !this.state.attractions){ return; }
 
 
         // Load filteredAttractions from state, if not there load new filtered by parkId list from Props (this is so attractions load the first time)
         const filteredAttractions = this.state.filteredAttractions !== null ? this.state.filteredAttractions :        
-            this.props.attractions.attractions.filter((attraction) => {
-                return (attraction.park.id === parseInt(this.state.selectedPark.parkId, 10))
+            this.state.attractions.filter((attraction) => {
+                return (attraction.park.id === this.state.selectedPark.parkId)
             });
 
         // build search input
@@ -466,8 +470,8 @@ class CreateJournalEntry extends Component {
             pointsScored = this.renderPointsScored();
         }
 
-        // Check that parks and attractions exist in redux store
-        if (!this.props.parks.parks.length || !this.props.attractions.attractions.length) {
+        // Check that parks and attractions exist in state
+        if (!this.state.parks.length || !this.state.attractions.length) {
             return (
                 <View style={styles.messageContainer}>
                     <Text>Parks and/or attractions data missing. Add better handling later...</Text>
@@ -567,7 +571,7 @@ class CreateJournalEntry extends Component {
                             </View>
                             <View style={styles.modalBody}>
                             <FlatList
-                                data={this.props.parks.parks}
+                                data={this.state.parks}
                                 renderItem={({ item }) =>     
                                     <ListItem
                                         id={item.id.toString()}
@@ -762,8 +766,6 @@ var styles = StyleSheet.create({
 
 function mapStateToProps(state) {
     return {
-        parks: state.parks,
-        attractions: state.attractions,
         user: state.user
     }
 }

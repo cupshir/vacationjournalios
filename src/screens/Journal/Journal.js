@@ -87,6 +87,13 @@ class Journal extends Component {
         ]
       });
     });
+
+    // Update screen title
+    if (this.props.user.activeJournal) {
+      this.props.navigator.setTitle({
+        title: (this.props.user.activeJournal ? this.props.user.activeJournal.name : 'Select A Journal')
+      });
+    }
   }
 
   // navigate to journal list screen

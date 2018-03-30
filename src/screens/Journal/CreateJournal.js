@@ -62,8 +62,8 @@ class CreateJournal extends Component {
             const ready = this.readyForSubmit(this.state.formValues)
 
             if(ready) {
-                const realmUser = userActions.userRealm.objectForPrimaryKey('Person', this.props.user.userId);
-                this.props.dispatch(userActions.createJournal(this.state.formValues.journalName, realmUser));
+                const person = userActions.userRealm.objectForPrimaryKey('Person', this.props.user.userId);
+                this.props.dispatch(userActions.createJournal(this.state.formValues.journalName, person));
                 this.props.navigator.push({
                     screen: 'vacationjournalios.Journal',
                     title: this.state.formValues.vacationName,

@@ -299,3 +299,37 @@ export function getJournalAndSetAsActiveJournal(realmUser, journalId) {
     }
   }
 }
+
+
+
+
+
+
+// Local Storage functions
+
+// Save item to local storage
+const _saveItem = async (key, value) => {
+  try {
+    await AsyncStorage.setItem(key, value);
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Get item from local storage
+const _getItem = async (key) => {
+  try {
+    return await AsyncStorage.getItem(key);
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Remove item from local storage
+const _removeItem = async (key) => {
+  try {
+    return await AsyncStorage.removeItem(key);
+  } catch (error) {
+    throw error;
+  }
+};

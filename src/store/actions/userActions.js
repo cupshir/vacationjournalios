@@ -1,6 +1,6 @@
-import request from 'superagent';
+//import request from 'superagent';
 import uuid from 'react-native-uuid';
-import { AsyncStorage } from 'react-native';
+//import { AsyncStorage } from 'react-native';
 import { Navigation } from 'react-native-navigation';
 import Realm from 'realm';
 import {
@@ -112,9 +112,9 @@ export function registerUser(userObject) {
         return dispatch(authenticationError(e));
       }
 
-      // load user into redux, close signup modal
+      // load user into redux
       if (newUser) {
-        dispatch(loadUserFromRealm(newUser));
+        return dispatch(loadUserFromRealm(newUser));
       } else {
         // something went wrong - user object missing
         console.log('newUserObject missing: ', newUser);
@@ -127,22 +127,6 @@ export function registerUser(userObject) {
     })
   }
 }
-
-// Load user using realm object
-function loadUserFromRealm(user) {
-  return {
-      type: AUTHENTICATION_SUCCESS,
-      userId: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      activeJournal: user.activeJournal,
-      journals: user.journals
-    }
-}
-
-
-
 
 // // Signin user by verifying email / password and then authenticate user
 export function signInUser(email, password) {
@@ -163,29 +147,25 @@ export function signInUser(email, password) {
           }
         });
 
-        // authentication successful, open users realm
-        const config = {
+        // Open userRealm
+        userRealm = new Realm({
           schema: [Person, Park, Attraction, Journal, JournalEntry],
           sync: {
-            user: user,
+            user,
             url: `${REALM_URL}/${REALM_USER_PATH}`,
           }
-        }
-        
-        userRealm = Realm.open(config)
-          .then((userRealm) => {
-            // Load user object from realm
-            const userObject = userRealm.objectForPrimaryKey('Person', user.identity);
+        });
 
-            // load user into redux
-            if (userObject != null) {
-              dispatch(loadUserFromRealm(userObject));
-            } else {
-              // something went wrong - user object missing
-              console.log('newUserObject missing: ', userObject);
-              return dispatch(authenticationError('Something went wrong with userObject'));
-            }
-          });
+        const userObject = userRealm.objectForPrimaryKey('Person', user.identity);
+
+        // load user into redux
+        if (userObject) {
+          return dispatch(loadUserFromRealm(userObject));
+        } else {
+          // something went wrong - user object missing
+          console.log('userObject missing: ', userObject);
+          return dispatch(authenticationError('Something went wrong with userObject'));
+        }
       })
       .catch(error => {
         console.log('Error authenticating: ', error)
@@ -201,107 +181,57 @@ export function loadUserFromCache() {
     const user = Realm.Sync.User.current;
 
     if (user) {
-        // Open userRealm
-        userRealm = new Realm({
-          schema: [Person, Park, Attraction, Journal, JournalEntry],
-          sync: {
-            user,
-            url: `${REALM_URL}/${REALM_USER_PATH}`,
-          }
-        });
-
-        // Open the park/attraction seed realm
-        parkRealm = new Realm({
-          schema: [Park, Attraction],
-          sync: {
-            user,
-            url: `${REALM_URL}/${REALM_PARKS_PATH}`
-          }
-        });
-
-        const userObject = userRealm.objectForPrimaryKey('Person', user.identity);
-
-        // load user into redux
-        if (userObject) {
-          dispatch(loadUserFromRealm(userObject));
-        } else {
-          // something went wrong - user object missing
-          console.log('userObject missing: ', userObject);
-          return dispatch(authenticationError('Something went wrong with userObject'));
+      // Open userRealm
+      userRealm = new Realm({
+        schema: [Person, Park, Attraction, Journal, JournalEntry],
+        sync: {
+          user,
+          url: `${REALM_URL}/${REALM_USER_PATH}`,
         }
+      });
+
+      // Open the park/attraction seed realm
+      parkRealm = new Realm({
+        schema: [Park, Attraction],
+        sync: {
+          user,
+          url: `${REALM_URL}/${REALM_PARKS_PATH}`
+        }
+      });
+
+      const userObject = userRealm.objectForPrimaryKey('Person', user.identity);
+
+      // load user into redux
+      if (userObject) {
+        return dispatch(loadUserFromRealm(userObject));
+      } else {
+        // something went wrong - user object missing
+        console.log('userObject missing: ', userObject);
+        return dispatch(authenticationError('Something went wrong with userObject'));
+      }
     } 
     // user doesnt exist
     return null;
   }
 }
 
-// // Load Realm using cached user
-// function loadRealmFromCachedUser(cachedUser) {
-//   let returnRealm = null;
-//   if (cachedUser) {
-//     try {
-//       returnRealm = new Realm({
-//         schema: [Person, Park, Attraction, Journal, JournalEntry],
-//         sync: {
-//           user: cachedUser,
-//           url: 'realm://10.114.14.115:9080/~/vacationjournal',
-//         }
-//       })
-//     } catch(error) {
-//       console.log('catchError: ', error);
-//       return null;
-//     }
-//   }
 
-//   return returnRealm;
-// }
 
-// // Load user from realm into Redux
-// export function loadUserFromCache() {
-//   const cachedUser = Realm.Sync.User.current;
-//   let syncedRealm = new Promise((resolve, reject) => {
-//     const returnRealm = new Realm({
-//       schema: [Person, Park, Attraction, Journal, JournalEntry],
-//       sync: {
-//         user: cachedUser,
-//         url: 'realm://10.114.14.115:9080/~/vacationjournal',
-//       }
-//     });
-//     resolve(returnRealm);
-//   })
 
-//   realm.then((syncedRealm) => {
-    
-//   })
 
-// }
+// Load user using realm object
+export function loadUserFromRealm(user) {
+  return {
+    type: AUTHENTICATION_SUCCESS,
+    userId: user.id,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    activeJournal: user.activeJournal,
+    journals: user.journals
+  }
+}
 
-// // Load user from realm into Redux
-// export function loadUserFromCache2() {
-//   return function(dispatch) {
-//     const cachedUser = Realm.Sync.User.current;
-//     let userObject = null;
-//     console.log('cached: ', cachedUser);
-//     if (cachedUser) {
-//       realm = loadRealmFromCachedUser(cachedUser);
-//       console.log('realm: ', realm);
-//       if(realm){
-//         userObject = realm.objectForPrimaryKey('User', cachedUser.identity);
-//       }
-//       console.log('userObject: ', userObject);
-//       if (userObject) {
-//         dispatch(loadReduxUserFromRealm(userObject, false));
-//       } else {
-//         dispatch(authenticationError('Failed to get user object from Realm'));
-//       }
-//     } else {
-//       dispatch(authenticationError('No user in cache. Please connect to the internet and sign in or create an account'));
-//     }
-//   }
-// }
-
- 
-  
 // Authentication Error
 export function authenticationError(error) {
   return {
@@ -317,12 +247,11 @@ export function authenticationErrorClear() {
   }
 }
   
-// Signout User and clear userId from local storage
+// Signout User
 export function signOutUser() {
   return function (dispatch) {
     const user = Realm.Sync.User.current;
     user.logout();
-    //_removeItem('userId');
     dispatch({
       type: SIGN_OUT_USER
     }); 
@@ -333,8 +262,7 @@ export function signOutUser() {
 
 // Journal Actions
 
-
-  // Get Journals by userId
+// Get Journals by userId
 export function getJournals(userId) {
   return (dispatch) => {
     if(userId) {
@@ -386,73 +314,77 @@ export function getJournal(journalId) {
 }
 
 // Get Journal by Id and set as activeJournal
-export function setActiveJournal(realmUser, journal) {
+export function setActiveJournal(person, journal) {
   return (dispatch) => {
-    if (realmUser && journal) {
+    if (person && journal) {
       try {
        userRealm.write(() => {
-          realmUser.activeJournal = journal;
+          person.activeJournal = journal;
         });
         // send updated user object to redux store
-        dispatch({
+        return dispatch({
           type: JOURNAL_LOAD_SUCCESS,
           activeJournal: journal
         });
       } catch (error) {
+        // Action failed
         console.log('setActiveJournal Failed: ', error);
+        dispatch({
+          type: JOURNAL_ACTION_FAILED,
+          error: 'Failed to set active journal: Error writing active journal to person'
+        });
       }
       } else {
         // Action failed
         dispatch({
           type: JOURNAL_ACTION_FAILED,
-          error: 'Failed to set active journal: missing realmUser or journal'
+          error: 'Failed to set active journal: missing person or journal'
         });
       }
   }
 }
 
 // Create Journal in local Realm
-export function createJournal(journalName, realmUser) {
+export function createJournal(journalName, person) {
   return (dispatch) => {
-    if (realmUser) {
+    if (person) {
       try {
-        // write new journal to users journals list
         userRealm.write(() => {
           // create new journal
           const newJournal = userRealm.create('Journal', {
               id: uuid.v4(),
               name: journalName,
-              owner: realmUser.id,
+              owner: person.id,
               dateCreated: new Date(),
               dateModified: new Date(),
             },
             true
           );
           // add journal to users journals
-          realmUser.journals.push(newJournal);
+          person.journals.push(newJournal);
           // set active journal
-          realmUser.activeJournal = newJournal;
+          person.activeJournal = newJournal;
 
           // load journals and activeJournal into Redux
-          dispatch({
+          return dispatch({
             type: JOURNAL_CREATE_SUCCESS,
-            journals: realmUser.journals,
+            journals: person.journals,
             activeJournal: newJournal
           });
         });
       } catch (error) {
         console.log('createJournalFailed: ', error);
-        dispatch({
+        return dispatch({
           type: JOURNAL_ACTION_FAILED,
           error: error
         });  
       }        
     } else {
       // something went wrong
-      console.log('createJournalFailed missing realm user');
-      dispatch({
+      console.log('createJournalFailed missing person');
+      return dispatch({
         type: JOURNAL_ACTION_FAILED,
-        error: 'Missing realmUser. Failed to create journal'
+        error: 'Missing person. Failed to create journal'
       });          
     }
   }
@@ -473,12 +405,12 @@ export function deleteJournal(journalId, activeJournalId) {
         // delete journal object
         userRealm.delete(journal);
         
-        dispatch({
+        return dispatch({
           type: JOURNAL_DELETE_SUCCESS
         });
       })
     } catch (error) {
-      dispatch({
+      return dispatch({
         type: JOURNAL_ACTION_FAILED,
         error: error
       });  
@@ -487,42 +419,91 @@ export function deleteJournal(journalId, activeJournalId) {
 }
 
 // Save Journal Entry to Realm
-export function createJournalEntry(journalId, entryValues) {
+export function createJournalEntry(person, park, attraction, entryValues) {
   return (dispatch) => {
     dispatch({
       type: JOURNAL_SAVING
     });
     try {
-      // Get Journal
-      let journal = userRealm.objectForPrimaryKey('Journal', journalId);
-      if (journal) {
-        userRealm.write(() => {
-          // save entry to journal
-          journal.journalEntries.push(userRealm.create('JournalEntry', {
-            id: uuid.v4(),
-            park: { id: entryValues.parkId },
-            attraction: { id: entryValues.attractionId },
-            dateJournaled: entryValues.dateJournaled,
-            dateCreated: Date(),
-            dateModified: Date(),
-            minutesWaited: entryValues.minutesWaited,
-            rating: entryValues.rating,
-            pointsScored: entryValues.pointsScored,
-            usedFastPass: entryValues.usedFastPass,
-            comments: entryValues.comments  
-            },
+      userRealm.write(() => {
+        const selectedPark = userRealm.create('Park', {
+          id: park.id,
+          name: park.name,
+          dateCreated: park.dateCreated,
+          dateModified: park.dateModified,
+          dateSynced: new Date()
+          }, 
+          true
+        );
+
+        if (selectedPark) {
+          const selectedAttraction = userRealm.create('Attraction', {
+            id: attraction.id,
+            name: attraction.name,
+            park: { id: selectedPark.id },
+            description: attraction.description,
+            heightToRide: attraction.heightToRide,
+            hasScore: attraction.hasScore,
+            dateCreated: attraction.dateCreated,
+            dateModified: attraction.dateModified,
+            dateSynced: new Date()
+            }, 
             true
-          ));
-          // dispatch success
-          dispatch({
-            type: JOURNAL_ENTRY_CREATE_SUCCESS,
-            activeJournal: journal
+          );
+          
+          if (selectedAttraction) {
+            // save new journal entry
+            const newJournalEntry = userRealm.create('JournalEntry', {
+              id: uuid.v4(),
+              park: { id: selectedPark.id },
+              attraction: { id: selectedAttraction.id },
+              dateJournaled: entryValues.dateJournaled,
+              dateCreated: Date(),
+              dateModified: Date(),
+              minutesWaited: entryValues.minutesWaited,
+              rating: entryValues.rating,
+              pointsScored: entryValues.pointsScored,
+              usedFastPass: entryValues.usedFastPass,
+              comments: entryValues.comments  
+              },
+              true
+            );
+
+            if (newJournalEntry) {
+              // add journal entry to journal
+              person.activeJournal.journalEntries.push(newJournalEntry);
+            } else {
+              console.log('Create New Journal Entry Failed');
+              return dispatch({
+                type: JOURNAL_ACTION_FAILED,
+                error: 'Create New Journal Entry Failed'
+              });                
+            }
+
+          } else {
+            console.log('Create Attraction Failed');
+            return dispatch({
+              type: JOURNAL_ACTION_FAILED,
+              error: 'Create Attraction Failed'
+            });  
+          }
+        } else {
+          console.log('Create Park Failed');
+          return dispatch({
+            type: JOURNAL_ACTION_FAILED,
+            error: 'Create Park Failed'
           });  
-        });
-      }
+        }
+
+        // dispatch success
+        return dispatch({
+          type: JOURNAL_ENTRY_CREATE_SUCCESS,
+          activeJournal: person.activeJournal
+        });  
+      });
     } catch (error) {
       console.log('createJournalEntryError: ', error);
-      dispatch({
+      return dispatch({
         type: JOURNAL_ACTION_FAILED,
         error: error
       });  
@@ -541,7 +522,7 @@ export function deleteJournalEntry(journalEntryId) {
           // delete journal entry object
           userRealm.delete(journalEntry);
   
-          dispatch({
+          return dispatch({
             type: JOURNAL_ENTRY_DELETE_SUCCESS
           });
         })
@@ -561,307 +542,3 @@ export function deleteJournalEntry(journalEntryId) {
   }
 }
 
-
-
-
-
-
-
-
-// Attraction and Park Actions
-// TODO: Load from shared realm file
-
-export function loadParksFromRealm() {
-  return (dispatch) => {
-    // Get all parks
-    const parks = realm.objects('Park');
-    dispatch({
-      type: LOAD_PARKS_SUCCESS,
-      parks: parks
-    });  
-  }
-}
-
-export function loadAttractionsFromRealm() {
-  return (dispatch) => {
-    // get all attractions
-    const attractions = realm.objects('Attraction');
-    console.log(attractions)
-    dispatch({
-      type: LOAD_ATTRACTIONS_SUCCESS,
-      attractions: attractions
-    });
-  }
-}
-
-
-// Request all attractions from API and save to realm
-export function requestAttractions() {
-  return function(dispatch) {
-    // Set start status
-    dispatch({
-      type: REQUEST_ATTRACTIONS_START
-    });
-    request
-      .get(`${API_URL}/attractionswithpark`)
-      .then(response => {
-        realm.write(() => {
-          response.body.data.forEach(attraction => {
-            realm.create('Attraction', {
-                id: attraction.attractionid,
-                name: attraction.attractionname,
-                description: attraction.attractiondescription,
-                heightToRide: 0,
-                hasScore: attraction.attractionhasscore,
-                park: {
-                  id: attraction.attractionparkid
-                }
-              },
-              true
-            );
-          });
-          dispatch({
-            type: REQUEST_ATTRACTIONS_SUCCESS,
-            payload: response
-          });
-        });
-      })
-      .catch(error => {
-        console.log('catch error: ', error)
-        dispatch({
-          type: REQUEST_ATTRACTIONS_FAILED,
-          error: error
-        });
-      });
-  }
-}
-
-// Request all parks from api and save to realm
-export function requestParks() {
-  return function(dispatch) {
-    // Set start status
-    dispatch({
-      type: REQUEST_PARKS_START
-    });
-    request
-      .get(`${API_URL}/parks`)
-      .then(response => {
-        realm.write(() => {
-          response.body.data.forEach(park => {
-            realm.create('Park', {
-                id: park.parkid,
-                name: park.parkname
-              },
-              true
-            );
-          });
-          dispatch({
-            type: REQUEST_PARKS_SUCCESS,
-            payload: response
-          });
-        })
-      })
-      .catch(error => {
-        dispatch({
-          type: REQUEST_PARKS_FAILED,
-          error: error
-        });
-      });
-  }
-}
-
-// Temp populate attractions from API into realm
-function seedAttractions() {
-  return function(dispatch) {
-    request
-      .get(`${API_URL}/attractionswithpark`)
-      .then(response => {
-        realm.write(() => {
-          response.body.data.forEach(attraction => {
-            realm.create('Attraction', {
-                id: attraction.attractionid,
-                name: attraction.attractionname,
-                description: attraction.attractiondescription,
-                heightToRide: 0,
-                hasScore: attraction.attractionhasscore,
-                park: {
-                  id: attraction.attractionparkid
-                }
-              },
-              true
-            );
-          });
-          dispatch({
-            type: REQUEST_ATTRACTIONS_SUCCESS,
-            payload: response
-          });
-        });
-      })
-      .catch(error => {
-        console.log('catch error: ', error)
-        dispatch({
-          type: REQUEST_ATTRACTIONS_FAILED,
-          error: error
-        });
-      });   
-  }
-}
-
-
-
-
-// Utility functions
-
-// temp, remove before go live
-export function realmUtility() {
-
-  const fullRealmURL = `${REALM_URL}/${REALM_PARKS_PATH}`;
-
-  const realm_server = REALM_URL;
-  const username = 'vacationjournal-admin';
-  const password = 'wdw2021Go!';
-  const source_realm_path = `${REALM_URL}/parksDataTemp`;
-  const target_realm_path = `${REALM_URL}/seedDataParks`;
-
-
-  Realm.Sync.User.login(AUTH_URL, username, password).then(user => {
-    console.log('user: ', user);
-
-    console.log("done");
-  }).catch(error => {
-    console.log('Login Failed: ', error);
-  });
-}
-
-// next few functions for copying seed date to user realm
-// copy object from source realm to new realm
-function copyObject(obj, objSchema, targetRealm) {
-  const copy = {};
-  for (var key in objSchema.properties) {
-    const prop = objSchema.properties[key];
-    if (!prop.hasOwnProperty('objectType')) {
-      copy[key] = obj[key];
-    }
-    else if (prop['type'] == "list") {
-      copy[key] = [];
-    }
-    else {
-      copy[key] = null;
-    }
-  }
-
-  // Add object to target realm
-  targetRealm.create(objSchema.name, copy);
-}
-
-// return matching objects in 2 realms
-function getMatchingObjectInOtherRealm(sourceObj, source_realm, target_realm, class_name) {
-  const allObjects = source_realm.objects(class_name);
-  const ndx = allObjects.indexOf(sourceObj);
-
-  // Get object on same position in target realm
-  return target_realm.objects(class_name)[ndx];
-}
-
-// copy links from source realm to new realm
-function addLinksToObject(sourceObj, targetObj, objSchema, source_realm, target_realm) {
-  for (var key in objSchema.properties) {
-    const prop = objSchema.properties[key];
-    if (prop.hasOwnProperty('objectType')) {
-      if (prop['type'] == "list") {
-        var targetList = targetObj[key];
-        sourceObj[key].forEach((linkedObj) => {
-          const obj = getMatchingObjectInOtherRealm(linkedObj, source_realm, target_realm, prop.objectType);
-          targetList.push(obj);
-        });
-      }
-      else {
-        // Find the position of the linked object
-        const linkedObj = sourceObj[key];
-        if (linkedObj === null) {
-          continue;
-        }
-
-        // set link to object on same position in target realm
-        targetObj[key] = getMatchingObjectInOtherRealm(linkedObj, source_realm, target_realm, prop.objectType);
-      }
-    }
-  }
-}
-
-// Copy source realm to new realm
-function copyRealm(user, source_realm_url, target_realm_url) {
-  //open source realm
-  const source_realm = new Realm({
-    sync: {
-      user: user,
-      url: source_realm_url,
-    }
-  });
-  const source_realm_schema = source_realm.schema;
-
-  const target_realm = new Realm({
-    sync: {
-      user: user,
-      url: target_realm_url,
-    }
-  });
-
-  target_realm.write(() => {
-    // Copy all objects, but ignore links for now
-    source_realm_schema.forEach((objSchema) => {
-      console.log('Copying objects: ', objSchema['name']);
-      const allObjects = source_realm.objects(objSchema['name']);
-
-      allObjects.forEach((obj) => {
-        copyObject(obj, objSchema, target_realm)
-      });
-    });
-
-    // Do a second pass to add links
-    source_realm_schema.forEach((objSchema) => {
-      console.log('Updating links in: ', objSchema['name']);
-      const allSourceObjects = source_realm.objects(objSchema['name']);
-      const allTargetObjects = target_realm.objects(objSchema['name']);
-
-      for (var i = 0; i < allSourceObjects.length; ++i) {
-        const sourceObject = allSourceObjects[i];
-        const targetObject = allTargetObjects[i];
-
-        addLinksToObject(sourceObject, targetObject, objSchema, source_realm, target_realm);
-      }
-    });
-  });
-}
-
-
-
-
-// Local Storage functions
-
-// Save item to local storage
-const _saveItem = async (key, value) => {
-  try {
-    await AsyncStorage.setItem(key, value);
-  } catch (error) {
-    throw error;
-  }
-};
-
-// Get item from local storage
-const _getItem = async (key) => {
-  try {
-    return await AsyncStorage.getItem(key);
-  } catch (error) {
-    throw error;
-  }
-};
-
-// Remove item from local storage
-const _removeItem = async (key) => {
-  try {
-    return await AsyncStorage.removeItem(key);
-  } catch (error) {
-    throw error;
-  }
-};

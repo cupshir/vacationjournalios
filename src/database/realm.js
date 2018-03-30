@@ -25,7 +25,6 @@ Park.schema = {
     properties: {
         id: { type: 'string', indexed: true },
         name: { type: 'string' },
-        attractions: { type: 'list', objectType: 'Attraction' },
         dateCreated: 'date',
         dateModified: 'date',
         dateSynced: 'date'
@@ -45,6 +44,7 @@ Attraction.schema = {
         hasScore: 'bool',
         dateCreated: 'date',
         dateModified: 'date',
+        dateSynced: 'date'
     }
 }
 
@@ -57,6 +57,7 @@ Journal.schema = {
         name: 'string',
         owner: 'string',
         journalEntries: { type: 'list', objectType: 'JournalEntry' },
+        parks: { type: 'list', objectType: 'Park'},
         dateCreated: 'date',
         dateModified: 'date'
     }
@@ -68,8 +69,6 @@ JournalEntry.schema = {
     primaryKey: 'id',
     properties: {
         id: { type: 'string', indexed: true },
-        journal: { type: 'Journal' },
-        owner: { type: 'Person' },
         park: { type: 'Park' },
         attraction: { type: 'Attraction' },
         dateJournaled: 'date',

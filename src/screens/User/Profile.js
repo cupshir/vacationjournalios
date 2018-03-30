@@ -14,18 +14,13 @@ class Profile extends Component {
   componentDidMount() {
     // Try to load cached realm user
     this.props.dispatch(userActions.loadUserFromCache());
+    //this.props.dispatch(userActions.authenticationError('test'));
+    // const user = userActions.testloadUserFromCache();
+    // console.log('profileUser1: ', user);
+    // if (user) {
+    //   this.props.dispatch(userActions.loadUserFromRealm(user));
+    // }
     //userActions.realmUtility();
-  }
-
-  componentDidUpdate() {
-    if (this.props.user.authenticated) {
-      if (this.props.parks.status == null) {
-        //this.props.dispatch(userActions.loadParksFromRealm());
-      }
-      if (this.props.attractions.status == null) {
-        //this.props.dispatch(userActions.loadAttractionsFromRealm());
-      }
-    }
   }
 
   handleItemPress = (item) => {
@@ -138,8 +133,6 @@ var styles = StyleSheet.create({
 function mapStateToProps(state) {
   return {
     user: state.user,
-    parks: state.parks,
-    attractions: state.attractions
   }
 }
 
