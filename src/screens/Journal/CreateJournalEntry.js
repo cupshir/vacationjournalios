@@ -11,8 +11,6 @@ import {
     TouchableOpacity,
     AlertIOS
 } from 'react-native';
-import { connect } from 'react-redux';
-import { bindActionCreators } from 'redux';
 import { 
     Rating,
     CheckBox,
@@ -22,7 +20,8 @@ import {
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import Icon from 'react-native-vector-icons/Ionicons';
 import DatePicker from 'react-native-datepicker';
-import * as userActions from '../../store/actions/userActions';
+
+//import * as userActions from '../../store/actions/userActions';
 
 import LoadingMickey from '../../components/LoadingMickey';
 import ListItem from '../../components/ListItem';
@@ -41,8 +40,8 @@ class CreateJournalEntry extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            parks: userActions.parkRealm.objects('Park'),
-            attractions: userActions.parkRealm.objects('Attraction'),
+            //parks: userActions.parkRealm.objects('Park'),
+            //attractions: userActions.parkRealm.objects('Attraction'),
             selectedPark: {
                 parkId: '',
                 parkName: '',
@@ -241,20 +240,20 @@ class CreateJournalEntry extends Component {
             // scrub values (changes strings to numbers, etc)
             const submitValues = this.prepareValuesForDB(this.state.formValues);
             // Get Person
-            const person = userActions.userRealm.objectForPrimaryKey('Person', this.props.user.userId);
+            //const person = userActions.userRealm.objectForPrimaryKey('Person', this.props.user.userId);
             // Get Park
-            const park = userActions.parkRealm.objectForPrimaryKey('Park', submitValues.parkId);
+            //const park = userActions.parkRealm.objectForPrimaryKey('Park', submitValues.parkId);
             // Get Attraction
-            const attraction = userActions.parkRealm.objectForPrimaryKey('Attraction', submitValues.attractionId);
+            //const attraction = userActions.parkRealm.objectForPrimaryKey('Attraction', submitValues.attractionId);
 
-            if (park && attraction && person) {
-                // save journal entry to realm db
-                this.props.dispatch(userActions.createJournalEntry(person, park, attraction, submitValues));
+            // if (park && attraction && person) {
+            //     // save journal entry to realm db
+            //     //this.props.dispatch(userActions.createJournalEntry(person, park, attraction, submitValues));
 
-                this.props.navigator.popToRoot();
-            } else {
-                AlertIOS.alert('Failed to get person, park, or attraction from realm')
-            }
+            //     this.props.navigator.popToRoot();
+            // } else {
+            //     AlertIOS.alert('Failed to get person, park, or attraction from realm')
+            // }
             
         
         } else {
@@ -764,10 +763,4 @@ var styles = StyleSheet.create({
     }
 });
 
-function mapStateToProps(state) {
-    return {
-        user: state.user
-    }
-}
-
-export default connect(mapStateToProps)(CreateJournalEntry);
+export default CreateJournalEntry;

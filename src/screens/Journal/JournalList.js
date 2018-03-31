@@ -11,9 +11,8 @@ import {
   IconsMap,
   IconsLoaded
 } from '../../AppIcons';
-import { connect } from 'react-redux';
-import { bindActionCreators } from 'redux';
-import * as userActions from '../../store/actions/userActions';
+
+// import * as userActions from '../../store/actions/userActions';
 import ListItem from "../../components/ListItem";
 
 class JournalList extends Component {
@@ -61,10 +60,10 @@ class JournalList extends Component {
   // row on press event
   onPress = (journalId, journalName) => {
     // load active journal
-    const realmUser = userActions.userRealm.objectForPrimaryKey('Person', this.props.user.userId);
-    const journal = userActions.userRealm.objectForPrimaryKey('Journal', journalId);
+    //const realmUser = userActions.userRealm.objectForPrimaryKey('Person', this.props.user.userId);
+    //const journal = userActions.userRealm.objectForPrimaryKey('Journal', journalId);
     if (journal) {
-      this.props.dispatch(userActions.setActiveJournal(realmUser, journal));
+      //this.props.dispatch(userActions.setActiveJournal(realmUser, journal));
       // navigate to Journal screen
       this.props.navigator.push({
         screen: 'vacationjournalios.Journal',
@@ -107,7 +106,7 @@ class JournalList extends Component {
     // verify typed name matches journal name
     if(enteredName === journalName ) {
       // match, delete journal by id
-      this.props.dispatch(userActions.deleteJournal(journalId, this.props.user.activeJournal.id));
+      //this.props.dispatch(userActions.deleteJournal(journalId, this.props.user.activeJournal.id));
     } else {
       // dont match, display alert and do nothing
       AlertIOS.alert('Names dont match. Journal not deleted!')
@@ -130,27 +129,28 @@ class JournalList extends Component {
   // render list
   render() {
     // if user not logged in, display signin message
-    if(!this.props.user.authenticated) {
-      return (
-        <View style={styles.messageContainer}>
-          <Text>TODO: Sign In Message with modal button</Text>
-        </View>
-      );
-    }
+    // if(!this.props.user.authenticated) {
+    //   return (
+    //     <View style={styles.messageContainer}>
+    //       <Text>TODO: Sign In Message with modal button</Text>
+    //     </View>
+    //   );
+    // }
 
-    // if no journals exist, display message to create one
-    if (!this.props.user.journals.length) {
-      return (
-        <View style={styles.messageContainer}>
-          <Text>Create a journal button</Text>
-        </View>
-      );
-    }
+    // // if no journals exist, display message to create one
+    // if (!this.props.user.journals.length) {
+    //   return (
+    //     <View style={styles.messageContainer}>
+    //       <Text>Create a journal button</Text>
+    //     </View>
+    //   );
+    // }
+    const temp = [];
     
     return (
       <View style={styles.container}>
         <FlatList
-          data={this.props.user.journals}
+          data={temp}
           renderItem={this.renderItem}
           keyExtractor={item => item.id}
           />
@@ -183,10 +183,4 @@ var styles = StyleSheet.create({
   }
 })
 
-function mapStateToProps(state) {
-  return {
-    user: state.user
-  }
-}
-
-export default connect(mapStateToProps)(JournalList);
+export default JournalList;

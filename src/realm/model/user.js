@@ -2,6 +2,9 @@
 
 import Realm from 'realm';
 
+// Realm Model for userRealm
+
+// Person Model
 export class Person extends Realm.Object {}
 Person.schema = {
     name: 'Person',
@@ -18,6 +21,7 @@ Person.schema = {
     }
 }
 
+// Park Model
 export class Park extends Realm.Object {}
 Park.schema = {
     name: 'Park',
@@ -31,6 +35,7 @@ Park.schema = {
     }
 }
 
+// Attraction Model
 export class Attraction extends Realm.Object {}
 Attraction.schema = {
     name: 'Attraction',
@@ -48,6 +53,7 @@ Attraction.schema = {
     }
 }
 
+// Journal Model
 export class Journal extends Realm.Object {}
 Journal.schema = {
     name: 'Journal',
@@ -63,6 +69,7 @@ Journal.schema = {
     }
 }
 
+// JournalEntry Model
 export class JournalEntry extends Realm.Object {}
 JournalEntry.schema = {
     name: 'JournalEntry',

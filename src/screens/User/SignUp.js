@@ -1,4 +1,3 @@
-
 import React, { Component } from 'react';
 import {
     View,
@@ -12,14 +11,11 @@ import {
     FormValidationMessage,
     Text
 } from 'react-native-elements';
-import { Navigation } from 'react-native-navigation';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { connect } from 'react-redux';
-import { bindActionCreators } from 'redux';
-import * as userActions from '../../store/actions/userActions';
+
+import { registerUser } from '../../realm/userService';
 
 import LoadingMickey from '../../components/LoadingMickey';
-
 
 class SignUp extends Component {
     static navigatorButtons = {
@@ -55,7 +51,9 @@ class SignUp extends Component {
                 confirmPassword: '',
                 firstName: '',
                 lastName: ''
-            }
+            },
+            signUpError: '',
+            isLoading: false
         };
         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
     }
@@ -66,7 +64,6 @@ class SignUp extends Component {
             if (event.id == 'signUp') {
                 this.handleSignUp();
             } else if (event.id =='cancel') {
-                this.props.dispatch(userActions.authenticationErrorClear());
                 this.props.navigator.dismissModal({});
             }
         }
@@ -240,7 +237,22 @@ class SignUp extends Component {
             credentials.email = this.state.formValues.email;
             credentials.password = this.state.formValues.password;
 
-            this.props.dispatch(userActions.registerUser(credentials));
+            registerUser(credentials).then((user) => {
+                // success
+                // update profile screen with user info
+                this.props.updateUserInState(user);
+                // close modal
+                this.props.navigator.dismissModal();
+            }).catch((error) => {
+                // failed
+                console.log('handleSignUpError: ', error);
+                // set error message in state
+                this.setState({
+                    ...this.state,
+                    signUpError: error.message,
+                    isLoading: false
+                });
+            });
         } else {
             // TODO: Dynamic alert to better direct what to do
             AlertIOS.alert('Please correct form errrors and try again')
@@ -293,7 +305,7 @@ class SignUp extends Component {
 
     // Render Form
     render() {
-        // Check for error messages
+        // Check for form errors in state
         const emailError = (this.state.formErrors.email !== '') ? this.renderError(this.state.formErrors.email) : null;
         const confirmEmailError = (this.state.formErrors.confirmEmail !== '') ? this.renderError(this.state.formErrors.confirmEmail) : null;
         const passwordError = (this.state.formErrors.password !== '') ? this.renderError(this.state.formErrors.password) : null;
@@ -301,27 +313,26 @@ class SignUp extends Component {
         const firstNameError = (this.state.formErrors.firstName !== '') ? this.renderError(this.state.formErrors.firstName) : null;
         const lastNameError = (this.state.formErrors.lastName !== '') ? this.renderError(this.state.formErrors.lastName) : null;
         
-        // Check if authentication errors exist in redux store
-        const authenticationError = (this.props.status === 'failed') ? this.renderError(this.props.errorMessage) : null;
+        // Check if sign in errors in state
+        const signUpError = (this.state.signUpError !== '') ? this.renderError(this.state.signUpError) : null;
 
         // Loading Mickey Graphic
-        if (this.props.status === 'requesting') {
+        if (this.state.isLoading === true) {
             return (
                 <View style={styles.container}>
-                <LoadingMickey />
+                    <LoadingMickey />
                 </View>
             );
-        } else if (this.props.status === 'success') {
-            Navigation.dismissModal();
         }
 
+        // Render form
         return (
         <KeyboardAwareScrollView 
             style={styles.container}
             extraScrollHeight={50}>
             <ScrollView style={styles.form}>
                 <View>
-                    {authenticationError}
+                    {signUpError}
                     <FormLabel>Email</FormLabel>
                     <FormInput 
                         onChangeText={this.handleEmailChange}
@@ -394,12 +405,5 @@ var styles = StyleSheet.create({
     }
   });
 
-function mapStateToProps(state) {
-    return {
-        errorMessage: state.user.errorMessage,
-        status: state.user.status,
-        authenticated: state.user.authenticated
-    }
-}
 
-export default connect(mapStateToProps)(SignUp);
+export default SignUp;

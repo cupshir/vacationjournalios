@@ -11,9 +11,8 @@ import {
     FormValidationMessage,
     Text
 } from 'react-native-elements';
-import { connect } from 'react-redux';
-import { bindActionCreators } from 'redux';
-import * as userActions from '../../store/actions/userActions';
+
+//import * as userActions from '../../store/actions/userActions';
 
 import LoadingMickey from '../../components/LoadingMickey';
 
@@ -57,25 +56,25 @@ class CreateJournal extends Component {
 
     // handle save event
     handleDone = () => {
-        if(this.props.user.userId) {
-            // Check if ready to submit
-            const ready = this.readyForSubmit(this.state.formValues)
+        // if(this.props.user.userId) {
+        //     // Check if ready to submit
+        //     const ready = this.readyForSubmit(this.state.formValues)
 
-            if(ready) {
-                const person = userActions.userRealm.objectForPrimaryKey('Person', this.props.user.userId);
-                this.props.dispatch(userActions.createJournal(this.state.formValues.journalName, person));
-                this.props.navigator.push({
-                    screen: 'vacationjournalios.Journal',
-                    title: this.state.formValues.vacationName,
-                    animated: true,
-                    animationType: 'fade'
-                });
-            } else {
-                AlertIOS.alert('Please enter a journal name');
-            }
-        } else {
-            AlertIOS.alert('Please sign in on profile page');
-        }
+        //     if(ready) {
+        //         const person = userActions.userRealm.objectForPrimaryKey('Person', this.props.user.userId);
+        //         this.props.dispatch(userActions.createJournal(this.state.formValues.journalName, person));
+        //         this.props.navigator.push({
+        //             screen: 'vacationjournalios.Journal',
+        //             title: this.state.formValues.vacationName,
+        //             animated: true,
+        //             animationType: 'fade'
+        //         });
+        //     } else {
+        //         AlertIOS.alert('Please enter a journal name');
+        //     }
+        // } else {
+        //     AlertIOS.alert('Please sign in on profile page');
+        // }
     }
 
     // Check if form is ready for submit and return true/false
@@ -148,13 +147,13 @@ class CreateJournal extends Component {
         const journalNameError = (this.state.formErrors.journalName !== '') ? this.renderError(this.state.formErrors.journalName) : null;
         
         // Loading Mickey Graphic
-        if (this.props.user.status === 'saving') {
-            return (
-                <View style={styles.container}>
-                    <LoadingMickey />
-                </View>
-            );
-        }
+        // if (this.props.user.status === 'saving') {
+        //     return (
+        //         <View style={styles.container}>
+        //             <LoadingMickey />
+        //         </View>
+        //     );
+        // }
 
         return (
             <View style={styles.container}>
@@ -192,10 +191,4 @@ var styles = StyleSheet.create({
     }
 })
 
-function mapStateToProps(state) {
-    return {
-      user: state.user
-    }
-}
-
-export default connect(mapStateToProps)(CreateJournal);
+export default CreateJournal;

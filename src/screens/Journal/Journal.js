@@ -15,9 +15,9 @@ import {
   IconsMap,
   IconsLoaded
 } from '../../AppIcons';
-import { connect } from 'react-redux';
 import moment from 'moment';
-import * as userActions from '../../store/actions/userActions';
+
+//import * as userActions from '../../store/actions/userActions';
 
 import ListItemJournal from "../../components/ListItemJournal";
 import SectionHeader from "../../components/SectionHeader";
@@ -48,28 +48,28 @@ class Journal extends Component {
         this.onJournalListPress();
       }
       if (event.id == 'addEntry') {
-        if (this.props.user.activeJournal) {
-          this.props.navigator.push({
-            screen: 'vacationjournalios.CreateJournalEntry',
-            title: 'Add Journal Entry',
-            animated: true,
-            animationType: 'fade'
-          });
-        } else {
-          AlertIOS.alert('Please select a journal')
-        }
+        // if (this.props.user.activeJournal) {
+        //   this.props.navigator.push({
+        //     screen: 'vacationjournalios.CreateJournalEntry',
+        //     title: 'Add Journal Entry',
+        //     animated: true,
+        //     animationType: 'fade'
+        //   });
+        // } else {
+        //   AlertIOS.alert('Please select a journal')
+        // }
       }
     }
   }
 
-  componentDidUpdate() {
-    // Update screen title
-    if (this.props.user.activeJournal) {
-      this.props.navigator.setTitle({
-        title: (this.props.user.activeJournal ? this.props.user.activeJournal.name : 'Select A Journal')
-      });
-    }
-  }
+  // componentDidUpdate() {
+  //   // Update screen title
+  //   if (this.props.user.activeJournal) {
+  //     this.props.navigator.setTitle({
+  //       title: (this.props.user.activeJournal ? this.props.user.activeJournal.name : 'Select A Journal')
+  //     });
+  //   }
+  // }
 
   // Hack to make nav bar look like native IOS with search under title without border
   componentDidMount() {
@@ -89,11 +89,11 @@ class Journal extends Component {
     });
 
     // Update screen title
-    if (this.props.user.activeJournal) {
-      this.props.navigator.setTitle({
-        title: (this.props.user.activeJournal ? this.props.user.activeJournal.name : 'Select A Journal')
-      });
-    }
+    // if (this.props.user.activeJournal) {
+    //   this.props.navigator.setTitle({
+    //     title: (this.props.user.activeJournal ? this.props.user.activeJournal.name : 'Select A Journal')
+    //   });
+    // }
   }
 
   // navigate to journal list screen
@@ -141,7 +141,7 @@ class Journal extends Component {
     // verify typed text is CONFIRM
     if(enteredText === 'CONFIRM' ) {
       // match, delete journal by id
-      this.props.dispatch(userActions.deleteJournalEntry(id));
+      //this.props.dispatch(userActions.deleteJournalEntry(id));
     } else {
       // dont match, display alert and do nothing
       AlertIOS.alert('Incorrect CONFIRM text entered. Journal entry not deleted!')
@@ -150,11 +150,11 @@ class Journal extends Component {
 
   handleSearch = (searchInput) => {
     // create filter object from all journal entries in props
-    let filteredEntries = this.props.user.activeJournal.journalEntries;
+    let filteredEntries = null;
 
     // if search input contains text, filter by that text
     if (searchInput !== '') {      
-      filteredEntries = this.props.user.activeJournal.journalEntries.filtered('attraction.name CONTAINS[c] $0 || park.name CONTAINS[c] $0', searchInput);
+      //filteredEntries = this.props.user.activeJournal.journalEntries.filtered('attraction.name CONTAINS[c] $0 || park.name CONTAINS[c] $0', searchInput);
     }
 
     // Save the updated filtered into state
@@ -255,36 +255,36 @@ class Journal extends Component {
 
   render() {
     // TODO: This isnt working, figure out why...
-    if (this.props.user.status === 'saving') {
-      return (
-        <View style={styles.container}>
-          <LoadingMickey />
-        </View>
-      );
-    }
+    // if (this.props.user.status === 'saving') {
+    //   return (
+    //     <View style={styles.container}>
+    //       <LoadingMickey />
+    //     </View>
+    //   );
+    // }
 
     // Check for active Journal
-    if (!this.props.user.activeJournal) {
-      return (
-        <View style={styles.container}>
-          <Button title='Select A Journal' onPress={this.onJournalListPress} />
-        </View>
-      );
-    }
+    // if (!this.props.user.activeJournal) {
+    //   return (
+    //     <View style={styles.container}>
+    //       <Button title='Select A Journal' onPress={this.onJournalListPress} />
+    //     </View>
+    //   );
+    // }
 
     // build search input
     const searchInput = this.renderSearchInput();
 
     // load journalEntries from props if filteredEntries in state is null (this is so something loads when view first renders) 
-    const filteredEntries = this.state.filteredEntries !== null ? this.state.filteredEntries : this.props.user.activeJournal.journalEntries;
+    //const filteredEntries = this.state.filteredEntries !== null ? this.state.filteredEntries : null;
 
     // Split filtered array into sections array
-    const journalEntriesBySection = this.splitJournalEntriesIntoSections(filteredEntries);
+    //const journalEntriesBySection = this.splitJournalEntriesIntoSections(filteredEntries);
 
     return (
       <View>
           {searchInput}
-          <View style={styles.listContainer}>
+          {/* <View style={styles.listContainer}>
             <SectionList
               sections={journalEntriesBySection.map(function(object, i) {
                 return { title: object[0], data: object[1] };
@@ -292,7 +292,7 @@ class Journal extends Component {
               renderItem={this.renderItem}
               renderSectionHeader={this.renderSectionHeader}
               keyExtractor={ (item, index) => index } />
-        </View>
+        </View> */}
       </View>
     );
   }
@@ -322,10 +322,4 @@ var styles = StyleSheet.create({
   }
 })
 
-function mapStateToProps(state) {
-  return {
-    user: state.user
-  }
-}
-
-export default connect(mapStateToProps)(Journal);
+export default Journal;

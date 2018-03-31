@@ -8,15 +8,10 @@ import {
 	IconsLoaded
 } from './AppIcons';
 
-import { Provider } from 'react-redux';
 import { registerScreens } from './screens';
 
-// Initialize Redux Store
-import configureStore from './store/configureStore';
-const store = configureStore();
-
 // Register screens passing store
-registerScreens(store, Provider);
+registerScreens();
 
 // After icon map has loaded, start app
 IconsLoaded.then(() => {

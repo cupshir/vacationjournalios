@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import { connect } from 'react-redux';
 import {
     View,
     StyleSheet
@@ -54,4 +53,4 @@ var styles = StyleSheet.create({
   }
 })
 
-export default connect()(Dashboard);
+export default Dashboard;
