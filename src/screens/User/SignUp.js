@@ -230,6 +230,11 @@ class SignUp extends Component {
     // Handle Submit Click
     handleSignUp = () => {
         if(this.readyForSubmit(this.state.formValues)){
+            // start loading animation
+            this.setState({
+                ...this.state,
+                isLoading: true
+            });
             // Create and populate credentials object
             let credentials = [];
             credentials.firstName = this.state.formValues.firstName;
@@ -237,11 +242,13 @@ class SignUp extends Component {
             credentials.email = this.state.formValues.email;
             credentials.password = this.state.formValues.password;
 
+            // Attempt registration
             registerUser(credentials).then((user) => {
-                // success
-                // update profile screen with user info
-                this.props.updateUserInState(user);
-                // close modal
+                // success - stoping loading animation and close modal
+                this.setState({
+                    ...this.state,
+                    isLoading: false
+                })
                 this.props.navigator.dismissModal();
             }).catch((error) => {
                 // failed
@@ -317,7 +324,7 @@ class SignUp extends Component {
         const signUpError = (this.state.signUpError !== '') ? this.renderError(this.state.signUpError) : null;
 
         // Loading Mickey Graphic
-        if (this.state.isLoading === true) {
+        if (this.state.isLoading) {
             return (
                 <View style={styles.container}>
                     <LoadingMickey />

@@ -7,6 +7,7 @@ import {
 } from "react-native";
 
 import {
+    currentUser,
     loadUserFromCache,
     signOutUser
 } from '../../realm/userService';
@@ -17,22 +18,22 @@ class Profile extends Component {
     constructor(props) {
         super(props);
         this.state = { 
-            currentUser: {
-                id: '',
-                email: '',
-                firstName: '',
-                lastName: ''
-            },
+            currentUser: null,
             authenticated: false,
             isLoading: true
         };
+        this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
     }
 
     // on mount try to load user from cache
     componentDidMount() {
         loadUserFromCache().then((user) => {
             // Success - update user in state
-            this.updateUserInState(user);
+            this.setState({
+                ...this.state,
+                isLoading: true
+            })
+            this.updateCurrentUserInState(user);
         }).catch((error) => {
             // Failed no cache user - clear user in state
             this.setState({
@@ -43,20 +44,31 @@ class Profile extends Component {
         });
     }
 
+    // Navigator button event
+    onNavigatorEvent(event) {
+        if (event.id === 'willAppear') {
+            if (currentUser) {
+                this.updateCurrentUserInState(currentUser);
+            }
+        }
+    }
+
     // Update user info in state
-    updateUserInState = (user) => {
+    updateCurrentUserInState = (user) => {
         if (user) {
             this.setState({
                 ...this.state,
-                currentUser: {
-                    id: user.id,
-                    email: user.email,
-                    firstName: user.firstName,
-                    lastName: user.lastName
-                },
+                currentUser: user,
                 authenticated: true,
                 isLoading: false
             });
+        } else {
+            this.setState({
+                ...this.state,
+                currentUser: null,
+                authenticated: false,
+                isLoading: false
+            })
         }
     }
 
@@ -67,9 +79,6 @@ class Profile extends Component {
                 this.props.navigator.showModal({
                     screen: 'vacationjournalios.SignIn',
                     title: 'Sign In',
-                    passProps: {
-                        updateUserInState: this.updateUserInState
-                    },
                     animated: true
                 });
                 break;
@@ -78,9 +87,6 @@ class Profile extends Component {
                 this.props.navigator.showModal({
                     screen: 'vacationjournalios.SignUp',
                     title: 'Sign Up',
-                    passProps: {
-                        updateUserInState: this.updateUserInState
-                    },
                     animated: true
                 });
                 break;
@@ -102,12 +108,7 @@ class Profile extends Component {
             // Success - clear user from state
             this.setState({
                 ...this.state,
-                currentUser: {
-                    id: '',
-                    email: '',
-                    firstName: '',
-                    lastName: ''
-                },
+                currentUser: null,
                 authenticated: false,
                 isLoading: false
             });
@@ -125,7 +126,7 @@ class Profile extends Component {
     // Render Profile Screen
     render() {
         // Loading Mickey Graphic
-        if (this.state.isLoading == true) {
+        if (this.state.isLoading) {
             return (
                 <View style={styles.container}>
                     <LoadingMickey />
@@ -134,7 +135,7 @@ class Profile extends Component {
         }
 
         // If user preset show profile
-        if(this.state.isLoading == false && this.state.currentUser.id != '') {
+        if(this.state.authenticated) {
             return (
                 <View style={styles.container}>
                     <View style={styles.upperContainer}>
@@ -145,6 +146,11 @@ class Profile extends Component {
                         <Text>First Name: {this.state.currentUser.firstName}</Text>
                         <Text>Last Name: {this.state.currentUser.lastName}</Text>
                         <Text>User ID: {this.state.currentUser.id}</Text>
+                        <Text>Journal Count: {(this.state.currentUser.journals.length > 0) ? this.state.currentUser.journals.length : 0} </Text>
+                        <Text>Active Journal: {(this.state.currentUser.activeJournal) ? this.state.currentUser.activeJournal.name : null}</Text>
+                        <Text>Active Journal Entries: {(this.state.currentUser.activeJournal && this.state.currentUser.activeJournal.journalEntries.length > 0) ? this.state.currentUser.activeJournal.journalEntries.length : 0}</Text>
+                        <Text>Date User Created: {this.state.currentUser.dateCreated.toString()}</Text>
+                        <Text>Date User Modified: {this.state.currentUser.dateModified.toString()}</Text>
                     </View>
                     <View style={styles.lowerContainer}>
                         <TouchableOpacity style={styles.button} onPress={() => this.handleItemPress('signOut')}>

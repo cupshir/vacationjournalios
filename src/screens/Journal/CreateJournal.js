@@ -12,7 +12,10 @@ import {
     Text
 } from 'react-native-elements';
 
-//import * as userActions from '../../store/actions/userActions';
+import {
+    currentUser,
+    createJournal
+} from '../../realm/userService';
 
 import LoadingMickey from '../../components/LoadingMickey';
 
@@ -29,18 +32,23 @@ class CreateJournal extends Component {
     constructor(props) {
         super(props);
         this.state = { 
+            currentUser: null,
             formValues: {
                 journalName: ''                                                             
             },
             formErrors: {
                 journalName: ''
-            }
+            },
+            isLoading: false
         };
         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
     }
 
     // handle navigation event
     onNavigatorEvent(event) {
+        if (event.id === 'willAppear') {
+            this.updateCurrentUserInState(currentUser);
+        }
         if (event.type == 'NavBarButtonPress') {
             if (event.id == 'done') {
                 this.handleDone();
@@ -54,27 +62,49 @@ class CreateJournal extends Component {
         })
     }
 
+    updateCurrentUserInState = (user) => {
+        if (user) {
+            this.setState({
+                ...this.state,
+                currentUser: user
+            });
+        } else {
+            this.setState({
+                ...this.state,
+                currentUser: null
+            });
+        }
+    }
+
     // handle save event
     handleDone = () => {
-        // if(this.props.user.userId) {
-        //     // Check if ready to submit
-        //     const ready = this.readyForSubmit(this.state.formValues)
+        // Check if ready to submit
+        const ready = this.readyForSubmit(this.state.formValues)
 
-        //     if(ready) {
-        //         const person = userActions.userRealm.objectForPrimaryKey('Person', this.props.user.userId);
-        //         this.props.dispatch(userActions.createJournal(this.state.formValues.journalName, person));
-        //         this.props.navigator.push({
-        //             screen: 'vacationjournalios.Journal',
-        //             title: this.state.formValues.vacationName,
-        //             animated: true,
-        //             animationType: 'fade'
-        //         });
-        //     } else {
-        //         AlertIOS.alert('Please enter a journal name');
-        //     }
-        // } else {
-        //     AlertIOS.alert('Please sign in on profile page');
-        // }
+        if(ready) {
+            createJournal(this.state.formValues.journalName, this.state.currentUser).then((newJournal) => {
+                // Success - stop animation
+                this.setState({
+                    ...this.state,
+                    isLoading: false
+                });
+                // Navigate back to journal screen
+                this.props.navigator.push({
+                    screen: 'vacationjournalios.Journal',
+                    title: newJournal.name,
+                    animated: true,
+                    animationType: 'fade'
+                });
+            }).catch((error) => {
+                // Failed - stop animation
+                this.setState({
+                    ...this.state,
+                    isLoading: false
+                });
+            });
+        } else {
+            AlertIOS.alert('Please enter a journal name');
+        }
     }
 
     // Check if form is ready for submit and return true/false
@@ -147,13 +177,13 @@ class CreateJournal extends Component {
         const journalNameError = (this.state.formErrors.journalName !== '') ? this.renderError(this.state.formErrors.journalName) : null;
         
         // Loading Mickey Graphic
-        // if (this.props.user.status === 'saving') {
-        //     return (
-        //         <View style={styles.container}>
-        //             <LoadingMickey />
-        //         </View>
-        //     );
-        // }
+        if (this.state.isLoading) {
+            return (
+                <View style={styles.container}>
+                    <LoadingMickey />
+                </View>
+            );
+        }
 
         return (
             <View style={styles.container}>

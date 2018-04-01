@@ -80,34 +80,44 @@ export function registerUser(userObject) {
 // Signin user by verifying email / password and then load realms
 export function signInUser(email, password) {
     return new Promise((resolve, reject) => {
-        // make authentication request
-        Realm.Sync.User.login(AUTH_URL, email, password)
-        .then(user => {
-            // Open the park/attraction seed realm
-            parkRealm = new Realm({
-                schema: [Park, Attraction],
-                sync: {
-                    user,
-                    url: `${REALM_URL}/${REALM_PARKS_PATH}`
-                }
-            });
+        const userCheck = Realm.Sync.User.current;
+        if (!userCheck) {
+            // make authentication request
+            Realm.Sync.User.login(AUTH_URL, email, password)
+            .then(user => {
+                // Open the park/attraction seed realm
+                parkRealm = new Realm({
+                    schema: [Park, Attraction],
+                    sync: {
+                        user,
+                        url: `${REALM_URL}/${REALM_PARKS_PATH}`
+                    }
+                });
 
-            // Open userRealm
-            userRealm = new Realm({
-                schema: [Person, Park, Attraction, Journal, JournalEntry],
-                sync: {
-                    user,
-                    url: `${REALM_URL}/${REALM_USER_PATH}`,
+                // Had problems with opening as new realm, using this method...not sure if correct...but for now its working
+                const userConfig = {
+                    schema: [Person, Park, Attraction, Journal, JournalEntry],
+                    sync: {
+                        user,
+                        url: `${REALM_URL}/${REALM_USER_PATH}`
+                    }
                 }
-            });
+                Realm.open(userConfig).then(realm => {
+                    userRealm = realm;
 
-            currentUser = userRealm.objectForPrimaryKey('Person', user.identity);
-            console.log('signInSuccess: ', currentUser);
-            resolve(currentUser);
-        }).catch(error => {
-            console.log('Error authenticating: ', error);
+                    currentUser = userRealm.objectForPrimaryKey('Person', user.identity);
+                    
+                    resolve(currentUser);
+                }).catch((error) => {
+                    reject(error);
+                });
+            }).catch(error => {
+                reject(error);
+            });
+        } else {
+            const error = { message: 'User already signed in' };
             reject(error);
-        });
+        }
     });
 }
 
@@ -147,17 +157,17 @@ export function loadUserFromCache() {
 // Signout User and close out realms
 export function signOutUser() {
     return new Promise((resolve, reject) => {
-        if(currentUser) {
-            currentUser = null;
-            Realm.Sync.User.current.logout();
-            userRealm = null;
-            parkRealm = null;      
-            console.log('signOutUserSuccess');
-            resolve(currentUser);
-        }
+        currentUser = null;
+        Realm.Sync.User.current.logout();
+        userRealm = null;
+        parkRealm = null;      
+        console.log('signOutUserSuccess');
+        resolve(currentUser);
+        
         reject('Something went wrong with signout');
     });
 }
+
 
 // End User Functions
 
@@ -186,157 +196,196 @@ export function getJournal(journalId) {
 }
 
 // Get Journal by Id and set as activeJournal
-export function setActiveJournal(person, journal) {
-    if (person && journal) {
-      try {
-       userRealm.write(() => {
-          person.activeJournal = journal;
-        });
-        // send updated user object to redux store
-      } catch (error) {
-        // Action failed
-        console.log('setActiveJournal Failed: ', error);
-      }
-      } else {
-        // Action failed
-      }
-  
+export function setActiveJournal(journalId) {
+    return new Promise((resolve, reject) => {
+        // Check for current user and userRealm
+        if(!currentUser) {
+            reject('Missing Current User');
+        } else if (!userRealm){
+            reject('Missing userRealm');
+        }
+
+        // Get journal object
+        const journal = userRealm.objectForPrimaryKey('Journal', journalId);
+
+        if(journal) {
+            try {
+                // write journal to user's active journal
+                userRealm.write(() => {
+                    currentUser.activeJournal = journal;
+                });
+            } catch (error) {
+                reject('Something went wrong with realm write')
+            }
+            resolve(journal);
+        } else {
+            reject('Something went wrong with loading journal from realm');
+        }
+    });  
 }
 
 // Create Journal in local Realm
 export function createJournal(journalName, person) {
-    if (person) {
-      try {
-        userRealm.write(() => {
-          // create new journal
-          const newJournal = userRealm.create('Journal', {
-              id: uuid.v4(),
-              name: journalName,
-              owner: person.id,
-              dateCreated: new Date(),
-              dateModified: new Date(),
-            },
-            true
-          );
-          // add journal to users journals
-          person.journals.push(newJournal);
-          // set active journal
-          person.activeJournal = newJournal;
+    return new Promise((resolve, reject) => {
+        if (person) {
+            try {
+                userRealm.write(() => {
+                    // create new journal
+                    const newJournal = userRealm.create('Journal', {
+                        id: uuid.v4(),
+                        name: journalName,
+                        owner: person.id,
+                        dateCreated: new Date(),
+                        dateModified: new Date(),
+                        },
+                        true
+                    );
+                    // add journal to users journals
+                    person.journals.push(newJournal);
+                    // set active journal
+                    person.activeJournal = newJournal;
 
-          // load journals and activeJournal into Redux
-        });
-      } catch (error) {
-        console.log('createJournalFailed: ', error);
-      }        
-    } else {
-      // something went wrong
-      console.log('createJournalFailed missing person');
-    }
-  
+                    resolve(newJournal);
+                });
+            } catch (error) {
+                console.log('createJournalFailed: ', error);
+                reject('Create Journal Failed')
+            }        
+        } else {
+        // something went wrong
+        console.log('createJournalFailed missing person');
+        reject('Missing person. Failed to create journal');
+        }
+    })
+ 
 }
 
 // Delete Journal from local Realm
-export function deleteJournal(journalId, activeJournalId) {
-    try {
-      if (journalId === activeJournalId) {
-      }
-      // get Journal object to delete
-      const journal = userRealm.objectForPrimaryKey('Journal', journalId);
-      userRealm.write(() => {
-        // delete journal object
-        userRealm.delete(journal);
-        
-      })
-    } catch (error) {
-    }
-  
+export function deleteJournal(journalId) {
+    return new Promise((resolve, reject) => {
+        try {
+            // get Journal object to delete
+            const journal = userRealm.objectForPrimaryKey('Journal', journalId);
+
+            userRealm.write(() => {
+                // delete journal object
+                userRealm.delete(journal);    
+            })
+            reslove();
+        } catch (error) {
+            reject('Failed to delete journal');
+        }
+    })
+}
+
+// Get Journal Entry by Id
+export function getJournalEntryById(journalEntryId) {
+    return new Promise((resolve, reject) => {
+        const journalEntry = userRealm.objectForPrimaryKey('JournalEntry', journalEntryId);
+
+        if (journalEntry) {
+            resolve(journalEntry);
+        } else {
+            reject('Failed to load Journal Entry');
+        }
+    });
 }
 
 // Save Journal Entry to Realm
-export function createJournalEntry(person, park, attraction, entryValues) {
-    try {
-      userRealm.write(() => {
-        const selectedPark = userRealm.create('Park', {
-          id: park.id,
-          name: park.name,
-          dateCreated: park.dateCreated,
-          dateModified: park.dateModified,
-          dateSynced: new Date()
-          }, 
-          true
-        );
+export function createJournalEntry(park, attraction, entryValues, isEdit) {
+    return new Promise((resolve, reject) => {
+        try {
+            userRealm.write(() => {
+                const selectedPark = userRealm.create('Park', {
+                    id: park.id,
+                    name: park.name,
+                    dateCreated: park.dateCreated,
+                    dateModified: park.dateModified,
+                    dateSynced: new Date()
+                    }, 
+                    true
+                );
 
-        if (selectedPark) {
-          const selectedAttraction = userRealm.create('Attraction', {
-            id: attraction.id,
-            name: attraction.name,
-            park: { id: selectedPark.id },
-            description: attraction.description,
-            heightToRide: attraction.heightToRide,
-            hasScore: attraction.hasScore,
-            dateCreated: attraction.dateCreated,
-            dateModified: attraction.dateModified,
-            dateSynced: new Date()
-            }, 
-            true
-          );
-          
-          if (selectedAttraction) {
-            // save new journal entry
-            const newJournalEntry = userRealm.create('JournalEntry', {
-              id: uuid.v4(),
-              park: { id: selectedPark.id },
-              attraction: { id: selectedAttraction.id },
-              dateJournaled: entryValues.dateJournaled,
-              dateCreated: Date(),
-              dateModified: Date(),
-              minutesWaited: entryValues.minutesWaited,
-              rating: entryValues.rating,
-              pointsScored: entryValues.pointsScored,
-              usedFastPass: entryValues.usedFastPass,
-              comments: entryValues.comments  
-              },
-              true
-            );
+                if (selectedPark) {
+                    const selectedAttraction = userRealm.create('Attraction', {
+                        id: attraction.id,
+                        name: attraction.name,
+                        park: { id: selectedPark.id },
+                        description: attraction.description,
+                        heightToRide: attraction.heightToRide,
+                        hasScore: attraction.hasScore,
+                        dateCreated: attraction.dateCreated,
+                        dateModified: attraction.dateModified,
+                        dateSynced: new Date()
+                        }, 
+                        true
+                    );
+                
+                    if (selectedAttraction) {
+                        // save new journal entry
+                        const newJournalEntry = userRealm.create('JournalEntry', {
+                            id: entryValues.journalEntryId,
+                            park: { id: selectedPark.id },
+                            attraction: { id: selectedAttraction.id },
+                            dateJournaled: entryValues.dateJournaled,
+                            dateCreated: Date(),
+                            dateModified: Date(),
+                            minutesWaited: entryValues.minutesWaited,
+                            rating: entryValues.rating,
+                            pointsScored: entryValues.pointsScored,
+                            usedFastPass: entryValues.usedFastPass,
+                            comments: entryValues.comments  
+                            },
+                            true
+                        );
 
-            if (newJournalEntry) {
-              // add journal entry to journal
-              person.activeJournal.journalEntries.push(newJournalEntry);
-            } else {
-              console.log('Create New Journal Entry Failed');
-            }
+                        if (newJournalEntry) {
+                            // If not edit, add journal entry to journal
+                            if (!isEdit) {
+                                currentUser.activeJournal.journalEntries.push(newJournalEntry);
+                            }
+                            resolve();
+                        } else {
+                            console.log('Create New Journal Entry Failed');
+                            reject('Write Journal Entry failed');
+                        }
 
-          } else {
-            console.log('Create Attraction Failed');
-          }
-        } else {
-          console.log('Create Park Failed');
+                    } else {
+                        console.log('Create Attraction Failed');
+                        reject('Write Attraction failed');
+                    }
+                } else {
+                    console.log('Create Park Failed');
+                    reject('Write Park Failed');
+                }
+            });
+        } catch (error) {
+            console.log('createJournalEntryError: ', error);
+            reject('Write Journal Entry Failed');
         }
-
-        // dispatch success
-      });
-    } catch (error) {
-      console.log('createJournalEntryError: ', error);
-    }
-  
+    })
 }
 
 // Delete Journal Entry from local Realm
 export function deleteJournalEntry(journalEntryId) {
-    try {
-      // get journal entry object to delete
-      const journalEntry = userRealm.objectForPrimaryKey('JournalEntry', journalEntryId);
-      if (journalEntry) {
-        userRealm.write(() => {
-          // delete journal entry object
-          userRealm.delete(journalEntry);
-  
-        })
-      } else {
-        // something failed
-      }
-    } catch (error) {
-    }
-  
+    return new Promise((resolve, reject) => {
+        try {
+            // get journal entry object to delete
+            const journalEntry = userRealm.objectForPrimaryKey('JournalEntry', journalEntryId);
+            if (journalEntry) {
+                userRealm.write(() => {
+                    // delete journal entry object
+                    userRealm.delete(journalEntry);
+                    
+                    resolve();
+                })
+            } else {
+                // something failed
+                reject('Delete Journal Entry Failed');
+            }
+        } catch (error) {
+            reject(error);
+        }
+    })
 }
 

@@ -13,7 +13,9 @@ import {
 } from 'react-native-elements';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
-import { signInUser } from '../../realm/userService';
+import { 
+    signInUser,
+} from '../../realm/userService';
 
 import LoadingMickey from '../../components/LoadingMickey';
 
@@ -121,10 +123,11 @@ class SignIn extends Component {
 
             // attempt sign in user
             signInUser(this.state.formValues.email,this.state.formValues.password).then((user) => {
-                // success
-                // update profile screen with user info
-                this.props.updateUserInState(user);
-                // close modal
+                // success - stop loading animation - close modal
+                this.setState({
+                    ...this.state,
+                    isLoading: false
+                });
                 this.props.navigator.dismissModal();
             }).catch((error) => {
                 // failed
@@ -195,7 +198,7 @@ class SignIn extends Component {
         const authenticationError = (this.state.authenticationError !== '') ? this.renderError(this.state.authenticationError) : null;
 
         // Loading Mickey Graphic
-        if (this.state.isLoading === true) {
+        if (this.state.isLoading) {
             return (
                 <View style={styles.container}>
                     <LoadingMickey />
