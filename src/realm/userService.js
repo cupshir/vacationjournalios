@@ -23,6 +23,12 @@ export let parkRealm;
 export let userRealm;
 export let currentUser;
 
+
+//
+// TODO:  Delete Journal Entries when deleting journal to prevent Orphan records
+//
+
+
 // User Functions
 
 // Register user and build realms
