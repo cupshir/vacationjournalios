@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
+import uuid from 'react-native-uuid';
 import {
     View,
+    KeyboardAvoidingView,
     ScrollView,
     StyleSheet,
     TextInput,
@@ -10,19 +12,22 @@ import {
     TouchableOpacity,
     AlertIOS
 } from 'react-native';
-import { connect } from 'react-redux';
-import { bindActionCreators } from 'redux';
 import { 
-    Rating,
     CheckBox,
     SearchBar,
     Text
 } from 'react-native-elements';
-import Icon from 'react-native-vector-icons/Ionicons'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import Icon from 'react-native-vector-icons/Ionicons';
 import DatePicker from 'react-native-datepicker';
-import * as userActions from '../../store/actions/userActions';
 
-import { JOURNAL_SAVING } from '../../store/actions/actionTypes'
+import {
+    currentUser,
+    parkRealm,
+    createJournalEntry,
+    getJournalEntryById
+} from '../../realm/userService';
+
 import LoadingMickey from '../../components/LoadingMickey';
 import ListItem from '../../components/ListItem';
 import ListItemAttraction from '../../components/ListItemAttraction';
@@ -40,6 +45,8 @@ class CreateJournalEntry extends Component {
     constructor(props) {
         super(props);
         this.state = {
+            parks: parkRealm.objects('Park'),
+            attractions: parkRealm.objects('Attraction'),
             selectedPark: {
                 parkId: '',
                 parkName: '',
@@ -50,12 +57,13 @@ class CreateJournalEntry extends Component {
                 attractionHasScore: false,
             },
             formValues: {
+                journalEntryId: '',
                 parkId: '',
                 attractionId: '',
                 dateJournaled: new Date(),
                 minutesWaited: '',
                 usedFastPass: false,
-                rating: 0,
+                rating: '',
                 pointsScored: '',
                 comments: ''
             },
@@ -69,12 +77,28 @@ class CreateJournalEntry extends Component {
             filteredAttractions: null,
             parkModalVisible: false,
             attractionModalVisible: false,
-            renderAttractions: false
+            renderAttractions: false,
+            submitErrorMessage: null,
+            isEdit: false,
+            isLoading: false
         };
         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
     }
 
     onNavigatorEvent(event) { 
+        if (event.id === 'willAppear') {
+            if (this.props.journalEntryId) {
+                // get journal entry
+                getJournalEntryById(this.props.journalEntryId).then((journalEntry) => {
+                    // success - pass journal entry to edit screen
+                    this.loadEntryIntoState(journalEntry);
+                }).catch((error) => {
+                    // failed
+                    console.log('error: ', error);
+                })
+                console.log('test: ', this.props.journalEntryId);
+            }
+        }
         if (event.type == 'NavBarButtonPress') {
             if (event.id == 'done') {
                 this.handleDonePress();
@@ -85,8 +109,41 @@ class CreateJournalEntry extends Component {
     componentDidMount() {
         this.props.navigator.setStyle({
             navBarNoBorder: false
-        })
+        });
     }
+
+    // populate state with existing data
+    loadEntryIntoState(journalEntry) {
+        if (journalEntry) {
+            this.setState({
+                ...this.state,
+                selectedPark: {
+                    parkId: journalEntry.park.id,
+                    parkName: journalEntry.park.name,
+                },
+                selectedAttraction: {
+                    attractionId: journalEntry.attraction.id,
+                    attractionName: journalEntry.attraction.name,
+                    attractionHasScore: journalEntry.attraction.hasScore ? true : false,
+                },
+                formValues: {
+                    journalEntryId: journalEntry.id,
+                    parkId: journalEntry.park.id,
+                    attractionId: journalEntry.attraction.id,
+                    dateJournaled: journalEntry.dateJournaled,
+                    minutesWaited: journalEntry.minutesWaited.toString(),
+                    usedFastPass: journalEntry.usedFastPass ? true : false,
+                    rating: journalEntry.rating.toString(),
+                    pointsScored: journalEntry.pointsScored ? journalEntry.pointsScored.toString() : '',
+                    comments: journalEntry.comments ? journalEntry.comments :  ''
+                },
+                renderAttractions: true,
+                isEdit: true
+            });
+
+        }
+    }
+
 
     // set park modal visible
     setParkModalVisible(visible) {
@@ -119,7 +176,7 @@ class CreateJournalEntry extends Component {
         this.setState({
             formValues: {
                 ...this.state.formValues, 
-                rating: parseInt(value, 10)
+                rating: value.replace(/[^1-5]/g, '')
             }
         });
     }
@@ -165,7 +222,7 @@ class CreateJournalEntry extends Component {
             },
             formValues: {
                 ...this.state.formValues,
-                parkId: parseInt(parkId, 10),
+                parkId: parkId,
                 attractionId: ''
             },
             selectedAttraction: {
@@ -183,13 +240,13 @@ class CreateJournalEntry extends Component {
     handleAttractionChange = (attraction) => {
         this.setState({ 
             selectedAttraction: {
-                attractionId: attraction.attractionid,
-                attractionName: attraction.attractionname,
-                attractionHasScore: (attraction.attractionhasscore == true)
+                attractionId: attraction.id,
+                attractionName: attraction.name,
+                attractionHasScore: (attraction.hasscore == true)
             },
             formValues: {
                 ...this.state.formValues,
-                attractionId: attraction.attractionid
+                attractionId: attraction.id
             },
             filteredAttractions: null,
             attractionModalVisible: false
@@ -208,8 +265,8 @@ class CreateJournalEntry extends Component {
 
     handleSearch = (searchInput) => {
         // create object from attractions filtered by selectedpark
-        const unFilteredAttractions = this.props.attractions.attractions.filter((attraction) => {
-            return (attraction.parkid === parseInt(this.state.selectedPark.parkId, 10))
+        const unFilteredAttractions = this.state.attractions.filter((attraction) => {
+            return (attraction.park.id === this.state.selectedPark.parkId)
         });
 
         // create object to filter
@@ -218,7 +275,7 @@ class CreateJournalEntry extends Component {
         // if search input contains text, filter by that text
         if (searchInput !== '') {      
           filteredAttractions = unFilteredAttractions.filter((attraction) => {
-              return (attraction.attractionname.toLowerCase().includes(searchInput.toLowerCase()))
+              return (attraction.name.toLowerCase().includes(searchInput.toLowerCase()))
           });
         }
     
@@ -237,11 +294,39 @@ class CreateJournalEntry extends Component {
         if (ready) {
             // scrub values (changes strings to numbers, etc)
             const submitValues = this.prepareValuesForDB(this.state.formValues);
-            // save journal entry to realm db
-            this.props.dispatch(userActions.createJournalEntry(this.props.user.activeJournal.id, submitValues));
+            // Get Park
+            const park = parkRealm.objectForPrimaryKey('Park', submitValues.parkId);
+            // Get Attraction
+            const attraction = parkRealm.objectForPrimaryKey('Attraction', submitValues.attractionId);
+
+            if (park && attraction) {
+                // start loading animation
+                this.setState({
+                    ...this.state,
+                    isLoading: true
+                });
+                // save journal entry to realm db
+                createJournalEntry(park, attraction, submitValues, this.state.isEdit).then(() => {
+                    // success - stop loading animation and pop back to journal
+                    this.setState({
+                        ...this.state,
+                        isLoading: false
+                    });
+                    this.props.navigator.popToRoot();
+                }).catch((error) => {
+                    //  error - stop loading animation
+                    this.setState({
+                        ...this.state,
+                        submitErrorMessage: error,
+                        isLoading: false
+                    })
+                });
+
+            } else {
+                AlertIOS.alert('Failed to get park or attraction from realm')
+            }
             
-            // TODO: 
-            this.props.navigator.popToRoot();
+        
         } else {
             // TODO: better message
             AlertIOS.alert('not ready to submit')
@@ -253,15 +338,19 @@ class CreateJournalEntry extends Component {
     prepareValuesForDB = (values) => {
         // Create return object
         let returnValues = {
-        parkId: '',
-        attractionId: '',
-        minutesWaited: '',
-        pointsScored: '',
-        rating: '',
-        usedFastPass: '',
-        dateJournaled: '',
-        comments: ''
+            journalEntryId: '',
+            parkId: '',
+            attractionId: '',
+            minutesWaited: '',
+            pointsScored: '',
+            rating: '',
+            usedFastPass: '',
+            dateJournaled: '',
+            comments: ''
         };
+
+        // Use existing journal ID or create new UUID for new journal entry
+        returnValues.journalEntryId = (values.journalEntryId !== '') ? values.journalEntryId : uuid.v4();
 
         // If minutes waited is '' update to 0 else pass value
         returnValues.minutesWaited = (values.minutesWaited === '') ? 0 : parseInt(values.minutesWaited, 10); 
@@ -273,7 +362,7 @@ class CreateJournalEntry extends Component {
         // add remaining fields (these are already formated correctly)
         returnValues.parkId = values.parkId;
         returnValues.attractionId = values.attractionId;
-        returnValues.rating = values.rating;
+        returnValues.rating = parseInt(values.rating, 10);
         returnValues.usedFastPass = values.usedFastPass;
         returnValues.dateJournaled = new Date(values.dateJournaled);
         returnValues.comments = values.comments;
@@ -354,34 +443,43 @@ class CreateJournalEntry extends Component {
       // Render Search Input (placed here to keep view below easier to read)
     renderSearchInput = () => {
         return (
-        <SearchBar
-            platform='ios'
-            lightTheme
-            containerStyle={styles.searchContainer}
-            inputStyle={styles.searchInput}
-            onChangeText={this.handleSearch}
-            icon={{
-            style: {
-                marginLeft: 4
-            }
-            }}
-            clearIcon={{
-            name: 'close'
-            }}
-            placeholder='Search' />
+            <SearchBar
+                platform='ios'
+                lightTheme
+                containerStyle={styles.searchContainer}
+                inputStyle={styles.searchInput}
+                onChangeText={this.handleSearch}
+                icon={{
+                style: {
+                    marginLeft: 4
+                }
+                }}
+                clearIcon={{
+                name: 'close'
+                }}
+                placeholder='Search' />
         );
     }
 
     // Render attractions picker
     renderAttractionsPicker = () => {
+        // Loading Graphic
+        if (this.state.isLoading === true) {
+            return (
+                <View style={styles.container}>
+                    <LoadingMickey />
+                </View>
+            );
+        }
+
         // Double Check for selected park and attractions data, return if one or other not found
-        if(!this.state.selectedPark.parkId || !this.props.attractions.attractions){ return; }
+        if(!this.state.selectedPark.parkId || !this.state.attractions){ return; }
 
 
         // Load filteredAttractions from state, if not there load new filtered by parkId list from Props (this is so attractions load the first time)
         const filteredAttractions = this.state.filteredAttractions !== null ? this.state.filteredAttractions :        
-            this.props.attractions.attractions.filter((attraction) => {
-                return (attraction.parkid === parseInt(this.state.selectedPark.parkId, 10))
+            this.state.attractions.filter((attraction) => {
+                return (attraction.park.id === this.state.selectedPark.parkId)
             });
 
         // build search input
@@ -424,7 +522,7 @@ class CreateJournalEntry extends Component {
                                         viewStyle={styles.listView}
                                         textStyle={styles.listText}
                                     />}
-                                keyExtractor={item => item.attractionid.toString()} />
+                                keyExtractor={item => item.id.toString()} />
                             </View>
                         </View>
                 </Modal>
@@ -455,8 +553,8 @@ class CreateJournalEntry extends Component {
             pointsScored = this.renderPointsScored();
         }
 
-        // Check that parks and attractions exist in redux store
-        if (!this.props.parks.parks.length || !this.props.attractions.attractions.length) {
+        // Check that parks and attractions exist in state
+        if (!this.state.parks.length || !this.state.attractions.length) {
             return (
                 <View style={styles.messageContainer}>
                     <Text>Parks and/or attractions data missing. Add better handling later...</Text>
@@ -466,7 +564,8 @@ class CreateJournalEntry extends Component {
 
         // Render form
         return (
-            <ScrollView style={styles.container}>
+            <KeyboardAwareScrollView style={styles.container}>
+            
                 <View style={styles.parkAttractionSection}>
                     <TouchableOpacity
                         onPress={() => { this.setParkModalVisible(true); }} >
@@ -489,8 +588,7 @@ class CreateJournalEntry extends Component {
                         style={styles.minuteswaited}
                         onChangeText={this.handleMinutesWaitedChange}
                         placeholder='Minutes Waited'
-                        value={this.state.formValues.minutesWaited}
-                    />
+                        value={this.state.formValues.minutesWaited} />
                     <DatePicker
                         style={styles.datepicker}
                         date={this.state.formValues.dateJournaled}
@@ -508,24 +606,19 @@ class CreateJournalEntry extends Component {
                             btnTextConfirm: {
                                 color: '#387EF7'
                             }
-                        }}
-                    />
+                        }} />
                 </View>
                 <View style={styles.ratingFastPassSection}>
-                    <Rating
-                        type="star"
-                        fractions={0}
-                        imageSize={40}
-                        onFinishRating={this.handleRatingChange}
-                        style={{ paddingVertical: 10 }}
-                        startingValue={this.state.formValues.rating}
-                    />
+                    <TextInput
+                        style={styles.minuteswaited}
+                        onChangeText={this.handleRatingChange}
+                        placeholder='Rating'
+                        value={this.state.formValues.rating} />
                     <CheckBox
                         title='Fastpass'
                         checked={this.state.formValues.usedFastPass}
                         onPress={this.handleFastpassChange}
-                        containerStyle={styles.fastpass}
-                    />
+                        containerStyle={styles.fastpass} />
                 </View>
                 {pointsScored}
                 <View style={styles.commentsSection}>
@@ -536,8 +629,7 @@ class CreateJournalEntry extends Component {
                         value={this.state.formValues.comments}
                         multiline={true}
                         numberOfLines={5}
-                        maxLength={400}
-                    />
+                        maxLength={400} />
                 </View>
 
                 <Modal
@@ -555,20 +647,19 @@ class CreateJournalEntry extends Component {
                             </View>
                             <View style={styles.modalBody}>
                             <FlatList
-                                data={this.props.parks.parks}
+                                data={this.state.parks}
                                 renderItem={({ item }) =>     
                                     <ListItem
-                                        id={item.parkid.toString()}
-                                        title={item.parkname}
+                                        id={item.id.toString()}
+                                        title={item.name}
                                         onPress={this.handleParkChange}
                                         viewStyle={styles.listView}
-                                        textStyle={styles.listText}
-                                    />}
-                                keyExtractor={item => item.parkid.toString()} />
+                                        textStyle={styles.listText} />}
+                                keyExtractor={item => item.id.toString()} />
                             </View>
                         </View>
                 </Modal>
-            </ScrollView>
+            </KeyboardAwareScrollView>
         )
     }
 }
@@ -625,16 +716,16 @@ var styles = StyleSheet.create({
         paddingBottom: 50
     },
     listView: {
-      padding: 5,
-      paddingRight: 10,
-      paddingLeft: 10,
-      borderBottomColor: 'lightgrey',
-      borderBottomWidth: 1
+        padding: 5,
+        paddingRight: 10,
+        paddingLeft: 10,
+        borderBottomColor: 'lightgrey',
+        borderBottomWidth: 1
     },
     listText: {
-      color: 'blue',
-      textAlign: 'center',
-      fontSize: 20
+        color: 'blue',
+        textAlign: 'center',
+        fontSize: 20
     },
     container: {
         flex: 1,
@@ -747,12 +838,4 @@ var styles = StyleSheet.create({
     }
 });
 
-function mapStateToProps(state) {
-    return {
-        parks: state.parks,
-        attractions: state.attractions,
-        user: state.user
-    }
-}
-
-export default connect(mapStateToProps)(CreateJournalEntry);
+export default CreateJournalEntry;

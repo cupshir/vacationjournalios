@@ -1,4 +1,3 @@
-
 import React, { Component } from 'react';
 import {
     View,
@@ -11,10 +10,12 @@ import {
     FormInput,
     FormValidationMessage,
     Text
-     } from 'react-native-elements';
-import { connect } from 'react-redux';
-import { bindActionCreators } from 'redux';
-import * as userActions from '../../store/actions/userActions';
+} from 'react-native-elements';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+
+import { 
+    signInUser,
+} from '../../realm/userService';
 
 import LoadingMickey from '../../components/LoadingMickey';
 
@@ -44,7 +45,9 @@ class SignIn extends Component {
             formErrors: {
                 email: '',
                 password: ''
-            }
+            },
+            authenticationError: '',
+            isLoading: false
         };
         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
     }
@@ -55,7 +58,6 @@ class SignIn extends Component {
             if (event.id == 'signIn') {
                 this.handleSignIn();
             } else if (event.id =='cancel') {
-                this.props.dispatch(userActions.authenticationErrorClear());
                 this.props.navigator.dismissModal({});
             }
         }
@@ -81,8 +83,7 @@ class SignIn extends Component {
             formErrors: {
                 ...this.state.formErrors,
                 email: emailError
-            },
-            loadingModalActive: false
+            }
         });
     }
 
@@ -114,9 +115,32 @@ class SignIn extends Component {
         const ready = this.readyForSubmit(this.state.formValues)
 
         if(ready) {
-            // TODO: Modify SignIn to be a Modal and dismiss modal sign in successful
-            this.props.dispatch(userActions.signInUser(this.state.formValues.email,this.state.formValues.password));
+            // Set loading state
+            this.setState({
+                ...this.state,
+                isLoading: true
+            });
+
+            // attempt sign in user
+            signInUser(this.state.formValues.email,this.state.formValues.password).then((user) => {
+                // success - stop loading animation - close modal
+                this.setState({
+                    ...this.state,
+                    isLoading: false
+                });
+                this.props.navigator.dismissModal();
+            }).catch((error) => {
+                // failed
+                console.log('signInError: ', error);
+                // set error message in state
+                this.setState({
+                    ...this.state,
+                    authenticationError: error.message,
+                    isLoading: false
+                });
+            });
         } else {
+            // not ready for submit
             AlertIOS.alert('Please enter a valid email address and password')
         }
     }
@@ -165,40 +189,16 @@ class SignIn extends Component {
         );
     }
 
-    handleDismissModal = () => {
-        this.props.navigator.dismissModal({});
-    }
-
-    showLoadingModal = () => {
-        this.setState({
-            ...this.state,
-            loadingModalActive: true
-        });
-        this.props.navigator.showModal({
-            screen: 'vacationjournalios.LoadingModal',
-            animated: true
-        });
-    }
-
-    dismissLoadingModal = () => {
-        this.setState({
-            ...this.state,
-            loadingModalActive: false
-        });
-        this.props.navigator.dismissModal({});
-    }
-
+    // Render Form
     render() {        
-        // Check if errors exist in state.formErrors
+        // Check for formErrors in state
         const emailError = (this.state.formErrors.email !== '') ? this.renderError(this.state.formErrors.email) : null;
         const passwordError = (this.state.formErrors.password !== '') ? this.renderError(this.state.formErrors.password) : null;
-
-        // Check if authentication errors exist in redux store
-        const authenticationError = (this.props.status === 'failed') ? this.renderError(this.props.errorMessage) : null;
-
+        // Check for authentication error in state
+        const authenticationError = (this.state.authenticationError !== '') ? this.renderError(this.state.authenticationError) : null;
 
         // Loading Mickey Graphic
-        if (this.props.status === 'requesting') {
+        if (this.state.isLoading) {
             return (
                 <View style={styles.container}>
                     <LoadingMickey />
@@ -208,34 +208,34 @@ class SignIn extends Component {
         
         // Render Sign In Form
         return (
-        <View style={styles.container}>
-            <View style={styles.upper}>
-                <Text style={styles.image}>Sign In Graphic</Text>
-            </View>
-            <View style={styles.lower}>
-                <View>
-                    {authenticationError}
-                    <FormLabel>Email</FormLabel>
-                    <FormInput 
-                        onChangeText={this.handleEmailChange}
-                        placeholder='Enter email address'
-                        autoCapitalize='none'
-                        autoCorrect={false}
-                    />
-                    {emailError}
-                    <FormLabel>Password</FormLabel>
-                    <FormInput 
-                        onChangeText={this.handlePasswordChange}
-                        placeholder='Enter password'
-                        secureTextEntry={true}
-                        autoCapitalize='none'
-                        autoCorrect={false}
-                        spellCheck={false} 
-                    />
-                    {passwordError}
+            <KeyboardAwareScrollView style={styles.container}>
+                <View style={styles.upper}>
+                    <Text style={styles.image}>Sign In Graphic</Text>
                 </View>
-            </View>
-        </View>
+                <View style={styles.lower}>
+                    {authenticationError}
+                    <View>
+                        <FormLabel>Email</FormLabel>
+                        <FormInput 
+                            onChangeText={this.handleEmailChange}
+                            placeholder='Enter email address'
+                            autoCapitalize='none'
+                            autoCorrect={false}
+                        />
+                        {emailError}
+                        <FormLabel>Password</FormLabel>
+                        <FormInput 
+                            onChangeText={this.handlePasswordChange}
+                            placeholder='Enter password'
+                            secureTextEntry={true}
+                            autoCapitalize='none'
+                            autoCorrect={false}
+                            spellCheck={false} 
+                        />
+                        {passwordError}
+                    </View>
+                </View>
+            </KeyboardAwareScrollView>
         )
     }
 }
@@ -269,12 +269,4 @@ var styles = StyleSheet.create({
     }
 });
 
-function mapStateToProps(state) {
-    return {
-      errorMessage: state.user.errorMessage,
-      status: state.user.status,
-      authenticated: state.user.authenticated
-    }
-  }
-
-export default connect(mapStateToProps)(SignIn);
+export default SignIn;

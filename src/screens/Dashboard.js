@@ -1,13 +1,8 @@
 import React, { Component } from 'react';
-import { connect } from 'react-redux';
 import {
     View,
     StyleSheet
 } from 'react-native';
-
-// temp for dev
-import * as parkActions from '../store/actions/parkActions';
-import * as attractionActions from '../store/actions/attractionActions';
 
 import StatBoxLarge from '../components/StatBoxLarge'
 import StatBoxSmall from '../components/StatBoxSmall'
@@ -19,12 +14,6 @@ class Dashboard extends Component {
   }
   
   onNavigatorEvent(event) {
-  }
-
-  componentDidMount() {
-    // TODO: Update to load from realm, but leave for populating realm (until better way is finished)
-    this.props.dispatch(parkActions.requestParks());
-    this.props.dispatch(attractionActions.requestAttractions());
   }
 
   render() {
@@ -64,4 +53,4 @@ var styles = StyleSheet.create({
   }
 })
 
-export default connect()(Dashboard);
+export default Dashboard;

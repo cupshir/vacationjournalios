@@ -19,21 +19,21 @@ import LoadingModal from './screens/LoadingModal';
 
 
 // register all screens of the app (including internal ones)
-export function registerScreens(store, Provider) {
+export function registerScreens() {
 
-  Navigation.registerComponent('vacationjournalios.Dashboard', () => Dashboard, store, Provider);
-  Navigation.registerComponent('vacationjournalios.Profile', () => Profile, store, Provider);
+  Navigation.registerComponent('vacationjournalios.Dashboard', () => Dashboard);
+  Navigation.registerComponent('vacationjournalios.Profile', () => Profile);
 
-  Navigation.registerComponent('vacationjournalios.Journal', () => Journal, store, Provider);
-  Navigation.registerComponent('vacationjournalios.JournalList', () => JournalList, store, Provider);
-  Navigation.registerComponent('vacationjournalios.CreateJournal', () => CreateJournal, store, Provider);
-  Navigation.registerComponent('vacationjournalios.CreateJournalEntry', () => CreateJournalEntry, store, Provider);
+  Navigation.registerComponent('vacationjournalios.Journal', () => Journal);
+  Navigation.registerComponent('vacationjournalios.JournalList', () => JournalList);
+  Navigation.registerComponent('vacationjournalios.CreateJournal', () => CreateJournal);
+  Navigation.registerComponent('vacationjournalios.CreateJournalEntry', () => CreateJournalEntry);
 
-  Navigation.registerComponent('vacationjournalios.DrawerMenu', () => DrawerMenu, store, Provider);
+  Navigation.registerComponent('vacationjournalios.DrawerMenu', () => DrawerMenu);
   
-  Navigation.registerComponent('vacationjournalios.SignIn', () => SignIn, store, Provider);
-  Navigation.registerComponent('vacationjournalios.SignUp', () => SignUp, store, Provider);
+  Navigation.registerComponent('vacationjournalios.SignIn', () => SignIn);
+  Navigation.registerComponent('vacationjournalios.SignUp', () => SignUp);
 
-  Navigation.registerComponent('vacationjournalios.LoadingModal', () => LoadingModal, store, Provider);
+  Navigation.registerComponent('vacationjournalios.LoadingModal', () => LoadingModal);
 
 }

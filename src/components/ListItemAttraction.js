@@ -56,7 +56,7 @@ class ListItemAttraction extends PureComponent {
                 <TouchableOpacity onPress={this.onPress}>
                     <View style={this.props.viewStyle ? this.props.viewStyle : null}>
                         <Text style={this.props.textStyle ? this.props.textStyle : null}>
-                            {this.props.item.attractionname}
+                            {this.props.item.name}
                         </Text>
                     </View>
                 </TouchableOpacity>
