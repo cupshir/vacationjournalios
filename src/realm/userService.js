@@ -279,6 +279,7 @@ export function deleteJournal(journalId) {
 }
 
 // Get Journal Entry by Id
+// TODO: Delete all Journal Entries under Journal
 export function getJournalEntryById(journalEntryId) {
     return new Promise((resolve, reject) => {
         const journalEntry = userRealm.objectForPrimaryKey('JournalEntry', journalEntryId);
