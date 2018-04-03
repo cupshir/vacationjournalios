@@ -10,7 +10,7 @@ import PropTypes from 'prop-types';
 import Swipeout from 'react-native-swipeout';
 import moment from 'moment';
 
-class ListItemJournal extends PureComponent {
+class ListItemJournalEntry extends PureComponent {
     // Press event
     onPress = () => {
         this.props.onPress(this.props.item.id);
@@ -23,7 +23,7 @@ class ListItemJournal extends PureComponent {
 
     // Delete event
     onDeletePress = () => {
-        this.props.onDeletePress(this.props.item.id, this.props.item.name);
+        this.props.onDeletePress(this.props.item.id);
     }
 
     render() {
@@ -43,26 +43,15 @@ class ListItemJournal extends PureComponent {
             }
         ]
 
-        let photo = (
-            <Text>Placeholder Image</Text>
-        );
+        const photo = (this.props.item.photo === '') 
+        ? <Text>Placeholder Image</Text> 
+        : <Image 
+                style={{ width: 100, height: 75 }}
+                source={{uri: `data:image/png;base64,${this.props.item.photo}`}} 
+            />
 
-        if (this.props.item.photo !== null) {
-            if (this.props.item.photo !== '') {
-                photo = (
-                    <Image 
-                        style={{ width: 100, height: 75 }}
-                        source={{uri: `data:image/png;base64,${this.props.item.photo}`}} 
-                    />
-                );
-            }
-        }
-
-        let dateRange = '';
-
-        if (this.props.item.startDate !== null && this.props.item.endDate !== null) {
-            dateRange = `${moment(this.props.item.startDate).format('MM-DD-YYYY')} - ${moment(this.props.item.endDate).format('MM-DD-YYYY')}`;
-        }
+        // Format date
+        const dateJournaled = moment(this.props.item.dateJournaled).format('MM-DD-YYYY hh:mm a');
 
         return (
             <View style={styles.container}>
@@ -78,10 +67,13 @@ class ListItemJournal extends PureComponent {
                                 </View>
                                 <View style={styles.contentContainer}>
                                     <Text style={styles.contentHeader}>
-                                        {this.props.item.name}
+                                        {this.props.item.attraction.name}
                                     </Text>
                                     <Text style={styles.contentText}>
-                                        {dateRange}
+                                        {this.props.item.park.name}
+                                    </Text>
+                                    <Text style={styles.contentText}>
+                                        {dateJournaled}
                                     </Text>
                                 </View>
                             </View>
@@ -126,8 +118,8 @@ var styles = StyleSheet.create({
     }
 })
 
-ListItemJournal.propTypes = {  
+ListItemJournalEntry.propTypes = {  
     item: PropTypes.object.isRequired
 };
 
-export default ListItemJournal;
+export default ListItemJournalEntry;

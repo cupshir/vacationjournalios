@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>The user can choose to save photos taken in the app to their Photo Library</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>The photo library is used for attaching photos to journal.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>The camera is used for taking journal photos.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>

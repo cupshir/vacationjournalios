@@ -7,10 +7,10 @@ import Profile from './screens/User/Profile';
 import SignIn from './screens/User/SignIn';
 import SignUp from './screens/User/SignUp';
 
-import CreateJournal from './screens/Journal/CreateJournal';
+import EditJournal from './screens/Journal/EditJournal';
 import Journal from './screens/Journal/Journal';
 import JournalList from './screens/Journal/JournalList';
-import CreateJournalEntry from './screens/Journal/CreateJournalEntry';
+import EditJournalEntry from './screens/Journal/EditJournalEntry';
 
 import DrawerMenu from './screens/DrawerMenu';
 
@@ -26,8 +26,8 @@ export function registerScreens() {
 
   Navigation.registerComponent('vacationjournalios.Journal', () => Journal);
   Navigation.registerComponent('vacationjournalios.JournalList', () => JournalList);
-  Navigation.registerComponent('vacationjournalios.CreateJournal', () => CreateJournal);
-  Navigation.registerComponent('vacationjournalios.CreateJournalEntry', () => CreateJournalEntry);
+  Navigation.registerComponent('vacationjournalios.EditJournal', () => EditJournal);
+  Navigation.registerComponent('vacationjournalios.EditJournalEntry', () => EditJournalEntry);
 
   Navigation.registerComponent('vacationjournalios.DrawerMenu', () => DrawerMenu);
   
