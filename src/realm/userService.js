@@ -181,23 +181,41 @@ export function signOutUser() {
 
 // Get Journals by userId
 export function getJournals(userId) {
-    if(userId) {
-      // Get all journals
-      const journals = realm.objects('Journal').filtered('user.id = $0', userId);
-    } else {
-    }
-  
+    return new Promise((resolve, reject) => {
+        if(userId) {
+            // Get all journals
+            const journals = userRealm.objects('Journal').filtered('user.id = $0', userId);
+            if (journals) {
+                // journals found, return them
+                resolve(journals);
+            } else {
+                // failed
+                reject('Failed to load journals: no journals found in realm');
+            }
+        } else {
+            // failed
+            reject('Failed to load journals: missing user id')
+        }
+    });  
 }
 
 // Get Journal by Id
-export function getJournal(journalId) {
-    if (journalId) {
-      const journal = realm.objectForPrimaryKey('Journal', journalId);
-      if (journal) {
-      } else {
-      }
-    } else {
-    }
+export function getJournalById(id) {
+    return new Promise((resolve, reject) => {
+        if (id) {
+            const journal = userRealm.objectForPrimaryKey('Journal', id);
+            if (journal) {
+                // journal found, return it
+                resolve(journal);
+            } else {
+                // failed
+                reject('Failed to load journal: journal not found in realm');
+            }
+        } else {
+            // failed
+            reject('Missing to load journal: missing id');
+        }
+    });
   
 }
 
@@ -231,37 +249,44 @@ export function setActiveJournal(journalId) {
 }
 
 // Create Journal in local Realm
-export function createJournal(journalName, person) {
+export function saveJournal(journal, isEdit) {
     return new Promise((resolve, reject) => {
+        // Get owner of journal
+        const person = userRealm.objectForPrimaryKey('Person', journal.owner);
         if (person) {
             try {
                 userRealm.write(() => {
                     // create new journal
-                    const newJournal = userRealm.create('Journal', {
-                        id: uuid.v4(),
-                        name: journalName,
-                        owner: person.id,
-                        dateCreated: new Date(),
+                    const journalObject = userRealm.create('Journal', {
+                        id: journal.id,
+                        name: journal.name,
+                        photo: journal.photo,
+                        startDate: journal.startDate,
+                        endDate: journal.endDate,
+                        parks: journal.parks,
+                        owner: journal.owner,
+                        dateCreated: journal.createdDate,
                         dateModified: new Date(),
                         },
                         true
                     );
-                    // add journal to users journals
-                    person.journals.push(newJournal);
-                    // set active journal
-                    person.activeJournal = newJournal;
-
-                    resolve(newJournal);
+                    // if not editing, add journal to persons journals and set as active
+                    if (!isEdit) {
+                        person.journals.push(journalObject);
+                        person.activeJournal = journalObject;
+                    }
+    
+                    // success return journal object
+                    resolve(journalObject);
                 });
             } catch (error) {
                 console.log('createJournalFailed: ', error);
-                reject('Create Journal Failed')
+                reject('Create Journal Failed');
             }        
         } else {
-        // something went wrong
-        console.log('createJournalFailed missing person');
-        reject('Missing person. Failed to create journal');
+            reject('Create Journal failed: couldnt find owner');
         }
+
     })
  
 }
@@ -285,6 +310,7 @@ export function deleteJournal(journalId) {
 }
 
 // Get Journal Entry by Id
+// TODO: Delete all Journal Entries under Journal
 export function getJournalEntryById(journalEntryId) {
     return new Promise((resolve, reject) => {
         const journalEntry = userRealm.objectForPrimaryKey('JournalEntry', journalEntryId);
@@ -305,6 +331,7 @@ export function createJournalEntry(park, attraction, entryValues, isEdit) {
                 const selectedPark = userRealm.create('Park', {
                     id: park.id,
                     name: park.name,
+                    photo: '',
                     dateCreated: park.dateCreated,
                     dateModified: park.dateModified,
                     dateSynced: new Date()
@@ -316,6 +343,7 @@ export function createJournalEntry(park, attraction, entryValues, isEdit) {
                     const selectedAttraction = userRealm.create('Attraction', {
                         id: attraction.id,
                         name: attraction.name,
+                        photo: '',
                         park: { id: selectedPark.id },
                         description: attraction.description,
                         heightToRide: attraction.heightToRide,
@@ -336,6 +364,7 @@ export function createJournalEntry(park, attraction, entryValues, isEdit) {
                             dateJournaled: entryValues.dateJournaled,
                             dateCreated: Date(),
                             dateModified: Date(),
+                            photo: entryValues.photo,
                             minutesWaited: entryValues.minutesWaited,
                             rating: entryValues.rating,
                             pointsScored: entryValues.pointsScored,

@@ -6,6 +6,7 @@ import {
     ScrollView,
     StyleSheet,
     TextInput,
+    Image,
     Picker,
     Modal,
     FlatList,
@@ -20,6 +21,7 @@ import {
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import Icon from 'react-native-vector-icons/Ionicons';
 import DatePicker from 'react-native-datepicker';
+import { RNCamera } from 'react-native-camera';
 
 import {
     currentUser,
@@ -32,7 +34,7 @@ import LoadingMickey from '../../components/LoadingMickey';
 import ListItem from '../../components/ListItem';
 import ListItemAttraction from '../../components/ListItemAttraction';
 
-class CreateJournalEntry extends Component {
+class EditJournalEntry extends Component {
     static navigatorButtons = {
         rightButtons: [
           {
@@ -60,6 +62,7 @@ class CreateJournalEntry extends Component {
                 journalEntryId: '',
                 parkId: '',
                 attractionId: '',
+                photo: '',
                 dateJournaled: new Date(),
                 minutesWaited: '',
                 usedFastPass: false,
@@ -74,13 +77,17 @@ class CreateJournalEntry extends Component {
                 rating: '',
                 minutesWaited: ''
             },
+            cameraConfig: {
+                cameraType: RNCamera.Constants.Type.back
+            },
             filteredAttractions: null,
+            cameraModalVisible: false,
             parkModalVisible: false,
             attractionModalVisible: false,
             renderAttractions: false,
             submitErrorMessage: null,
             isEdit: false,
-            isLoading: false
+            isLoading: true
         };
         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
     }
@@ -96,7 +103,11 @@ class CreateJournalEntry extends Component {
                     // failed
                     console.log('error: ', error);
                 })
-                console.log('test: ', this.props.journalEntryId);
+            } else {
+                this.setState({
+                    ...this.state,
+                    isLoading: false
+                })
             }
         }
         if (event.type == 'NavBarButtonPress') {
@@ -130,6 +141,7 @@ class CreateJournalEntry extends Component {
                     journalEntryId: journalEntry.id,
                     parkId: journalEntry.park.id,
                     attractionId: journalEntry.attraction.id,
+                    photo: journalEntry.photo ? journalEntry.photo : '',
                     dateJournaled: journalEntry.dateJournaled,
                     minutesWaited: journalEntry.minutesWaited.toString(),
                     usedFastPass: journalEntry.usedFastPass ? true : false,
@@ -138,10 +150,19 @@ class CreateJournalEntry extends Component {
                     comments: journalEntry.comments ? journalEntry.comments :  ''
                 },
                 renderAttractions: true,
-                isEdit: true
+                isEdit: true,
+                isLoading: false
             });
 
         }
+    }
+
+    // set camera modal visible
+    setCameraModalVisible(visible) {
+        this.setState({
+            ...this.state,
+            cameraModalVisible: visible
+        });
     }
 
 
@@ -159,6 +180,69 @@ class CreateJournalEntry extends Component {
             ...this.state,
             attractionModalVisible: visible
         });
+    }
+
+    toggleCameraType = () => {
+        this.setState({
+            ...this.state,
+            cameraConfig: {
+                type: (this.state.cameraConfig.type === RNCamera.Constants.Type.back) ? RNCamera.Constants.Type.front : RNCamera.Constants.Type.back
+            }
+        })
+    }
+
+    // handle photo change
+    handlePhotoChange = async function() {
+        if (this.camera) {
+            const options = { 
+                quality: .5,
+                base64: true 
+            };
+            this.camera.takePictureAsync(options).then((data) => {
+                this.setState({
+                    formValues: {
+                        ...this.state.formValues,
+                        photo: data.base64
+                    }
+                });
+            }).catch((error) => {
+                console.log('something failed saving photo');
+            })
+        }
+        this.setCameraModalVisible(false);
+    }
+
+    // row delete press event
+    onPhotoDeletePress = () => {
+        // display confirm prompt, user must type CONFIRM to delete
+        AlertIOS.prompt(
+            'Confirm Delete',
+            'Type CONFIRM (all caps) to proceed with deletion',
+            [
+                {
+                    text: 'Cancel',
+                    style: 'cancel'
+                },
+                {
+                    text: 'Delete',
+                    onPress: (enteredText) => this.handleDeletePhoto(enteredText)
+                }
+            ]
+        );
+    }
+
+    handleDeletePhoto = (enteredText) => {
+        if (enteredText === 'CONFIRM') {
+            this.setState({
+                formValues: {
+                    ...this.state.formValues,
+                    photo: ''
+                }
+            });
+        } else {
+            AlertIOS.alert('Incorrect CONFIRM text entered. Photo not deleted!')
+        }
+
     }
 
     // handle minutes waited change
@@ -341,6 +425,7 @@ class CreateJournalEntry extends Component {
             journalEntryId: '',
             parkId: '',
             attractionId: '',
+            photo: '',
             minutesWaited: '',
             pointsScored: '',
             rating: '',
@@ -362,6 +447,7 @@ class CreateJournalEntry extends Component {
         // add remaining fields (these are already formated correctly)
         returnValues.parkId = values.parkId;
         returnValues.attractionId = values.attractionId;
+        returnValues.photo = values.photo;
         returnValues.rating = parseInt(values.rating, 10);
         returnValues.usedFastPass = values.usedFastPass;
         returnValues.dateJournaled = new Date(values.dateJournaled);
@@ -450,12 +536,12 @@ class CreateJournalEntry extends Component {
                 inputStyle={styles.searchInput}
                 onChangeText={this.handleSearch}
                 icon={{
-                style: {
-                    marginLeft: 4
-                }
+                    style: {
+                        marginLeft: 4
+                    }
                 }}
                 clearIcon={{
-                name: 'close'
+                    name: 'close'
                 }}
                 placeholder='Search' />
         );
@@ -530,9 +616,42 @@ class CreateJournalEntry extends Component {
         );
     }
 
+    renderCameraButton = () => {
+        return (
+            <TouchableOpacity
+                onPress={() => { this.setCameraModalVisible(true); }} >
+                    <View style={styles.photo}>
+                        <Icon style={{ fontSize: 80 }} name="ios-camera" /> 
+                    </View>
+            </TouchableOpacity>
+        );
+    }
+
+    renderPhoto = (photo) => {
+        return (
+            <TouchableOpacity
+                onLongPress={() => { this.onPhotoDeletePress(); }} >
+                    <View style={styles.photo}>
+                        <Image 
+                                style={{ width: 300, height: 225 }}
+                                source={{uri: `data:image/png;base64,${photo}`}} 
+                            />
+                    </View>
+            </TouchableOpacity>
+        );
+    }
 
     // render View
     render() {
+        // Loading Graphic
+        if (this.state.isLoading === true) {
+            return (
+                <View style={styles.container}>
+                    <LoadingMickey />
+                </View>
+            );
+        }
+
         // Check if errors exist in state.formErrors
         // TODO: Update form with form errors, message or red colors or something
         const parkIdError = (this.state.formErrors.parkId !== '') ? this.renderError(this.state.formErrors.parkId) : null;
@@ -554,13 +673,17 @@ class CreateJournalEntry extends Component {
         }
 
         // Check that parks and attractions exist in state
-        if (!this.state.parks.length || !this.state.attractions.length) {
+        if (!this.state.parks.length > 0 || !this.state.attractions.length > 0) {
             return (
                 <View style={styles.messageContainer}>
                     <Text>Parks and/or attractions data missing. Add better handling later...</Text>
                 </View>
             )
         }
+
+        const photo = (this.state.formValues.photo === '') 
+                    ? this.renderCameraButton()
+                    : this.renderPhoto(this.state.formValues.photo)
 
         // Render form
         return (
@@ -578,10 +701,13 @@ class CreateJournalEntry extends Component {
                     </TouchableOpacity>
                     {attractionPicker}
                 </View>
-                <View style={styles.userImageSection}>
-                    <View style={styles.tempUserImage}>
-                        <Text>User Image</Text>
-                    </View>
+                <View style={styles.photoSection}>
+                    <TouchableOpacity
+                        onPress={() => { this.setCameraModalVisible(true); }} >
+                            <View style={styles.photo}>
+                                {photo}
+                            </View>
+                    </TouchableOpacity>
                 </View>
                 <View style={styles.minutesWaitedDateJournaledSection}>
                     <TextInput
@@ -634,6 +760,43 @@ class CreateJournalEntry extends Component {
 
                 <Modal
                     animationType="slide"
+                    transparent={false}
+                    visible={this.state.cameraModalVisible}>
+                        <View style={styles.modalContainer}>
+                            <View style={styles.modalHeader}>
+                                <TouchableOpacity
+                                    style={styles.modalCloseButton}
+                                    onPress={() => { this.setCameraModalVisible(false); }} >
+                                        <Text style={styles.modalCloseButtonText}>Cancel</Text>
+                                </TouchableOpacity>
+                                <Text style={styles.modalTitle}>Take Photo</Text>
+                            </View>
+                            <View style={styles.cameraContainer}>
+                                <RNCamera
+                                    ref={ref => {
+                                        this.camera = ref;
+                                    }}
+                                    style = {styles.cameraPreview}
+                                    type={this.state.cameraConfig.type ? this.state.cameraConfig.type : RNCamera.Constants.Type.back}
+                                />
+                                <View style = {styles.cameraButtons}>
+                                    <TouchableOpacity
+                                        onPress={this.toggleCameraType.bind(this)}
+                                    >
+                                        <Icon style={{ fontSize: 60 }} name="ios-reverse-camera-outline" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={this.handlePhotoChange.bind(this)}
+                                    >
+                                        <Icon style={{ fontSize: 60 }} name="ios-camera-outline" />
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                </Modal>
+
+                <Modal
+                    animationType="slide"
                     transparent={true}
                     visible={this.state.parkModalVisible}>
                         <View style={styles.modalContainer}>
@@ -641,21 +804,22 @@ class CreateJournalEntry extends Component {
                                 <TouchableOpacity
                                     style={styles.modalCloseButton}
                                     onPress={() => { this.setParkModalVisible(false); }} >
-                                    <Text style={styles.modalCloseButtonText}>Cancel</Text>
+                                        <Text style={styles.modalCloseButtonText}>Cancel</Text>
                                 </TouchableOpacity>
                                 <Text style={styles.modalTitle}>Select A Park</Text>
                             </View>
                             <View style={styles.modalBody}>
-                            <FlatList
-                                data={this.state.parks}
-                                renderItem={({ item }) =>     
-                                    <ListItem
-                                        id={item.id.toString()}
-                                        title={item.name}
-                                        onPress={this.handleParkChange}
-                                        viewStyle={styles.listView}
-                                        textStyle={styles.listText} />}
-                                keyExtractor={item => item.id.toString()} />
+                                <FlatList
+                                    data={this.state.parks}
+                                    renderItem={({ item }) =>     
+                                        <ListItem
+                                            id={item.id.toString()}
+                                            title={item.name}
+                                            onPress={this.handleParkChange}
+                                            viewStyle={styles.listView}
+                                            textStyle={styles.listText} />
+                                    }
+                                    keyExtractor={item => item.id.toString()} />
                             </View>
                         </View>
                 </Modal>
@@ -756,15 +920,33 @@ var styles = StyleSheet.create({
     parkAttractionArrow: {
         fontSize: 24
     },
-    userImageSection: {
+    photoSection: {
         backgroundColor: 'white',
         padding: 15,
         marginTop: 15,
         marginBottom: 15
     },
-    tempUserImage: {
-        borderWidth: 1,
-        height: 150
+    photo: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    cameraContainer: {
+        flex: 1,
+        flexDirection: 'column'
+    },
+    cameraPreview: {
+        flex: 1,
+        justifyContent: 'flex-end',
+        alignItems: 'center'
+    },
+    cameraButtons: {
+        flex: 0,
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        backgroundColor: '#fff',
+        borderRadius: 5,
+        margin: 20
     },
     minutesWaitedDateJournaledSection: {
         flexDirection: 'row',
@@ -838,4 +1020,4 @@ var styles = StyleSheet.create({
     }
 });
 
-export default CreateJournalEntry;
+export default EditJournalEntry;

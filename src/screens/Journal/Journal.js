@@ -23,7 +23,7 @@ import {
     deleteJournalEntry
 } from '../../realm/userService';
 
-import ListItemJournal from "../../components/ListItemJournal";
+import ListItemJournalEntry from "../../components/ListItemJournalEntry";
 import SectionHeader from "../../components/SectionHeader";
 import LoadingMickey from '../../components/LoadingMickey';
 
@@ -41,7 +41,7 @@ class Journal extends Component {
         super(props);
         this.state = {
             currentUser: null,
-            isLoading: false,
+            isLoading: true,
             filteredEntries: null
         };
         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
@@ -59,7 +59,7 @@ class Journal extends Component {
                 if (this.state.currentUser !== null) {
                     if (this.state.currentUser.activeJournal !== null) {
                         this.props.navigator.push({
-                            screen: 'vacationjournalios.CreateJournalEntry',
+                            screen: 'vacationjournalios.EditJournalEntry',
                             title: 'Add Journal Entry',
                             animated: true,
                             animationType: 'fade'
@@ -106,13 +106,15 @@ class Journal extends Component {
             this.setState({
                 ...this.state,
                 currentUser: user,
-                filteredEntries: null
+                filteredEntries: null,
+                isLoading: false
             });            
         } else {
             this.setState({
                 ...this.state,
                 currentUser: null,
-                filteredEntries: null
+                filteredEntries: null,
+                isLoading: false
             });
         }
     }
@@ -145,8 +147,8 @@ class Journal extends Component {
     // row edit press event
     onEditPress = (id) => {
         this.props.navigator.push({
-            screen: 'vacationjournalios.CreateJournalEntry',
-            title: 'Add Journal Entry',
+            screen: 'vacationjournalios.EditJournalEntry',
+            title: 'Edit Journal Entry',
             passProps: {
                 journalEntryId: id
             },
@@ -227,7 +229,7 @@ class Journal extends Component {
 
     // render row item
     renderItem = ({ item }) => (
-        <ListItemJournal
+        <ListItemJournalEntry
             item={item}
             onPress={this.onPress}
             onEditPress={this.onEditPress}

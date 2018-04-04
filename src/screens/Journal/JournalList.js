@@ -18,7 +18,7 @@ import {
     deleteJournal
 } from '../../realm/userService';
 
-import ListItem from "../../components/ListItem";
+import ListItemJournal from "../../components/ListItemJournal";
 import LoadingMickey from '../../components/LoadingMickey';
 
 class JournalList extends Component {
@@ -39,7 +39,7 @@ class JournalList extends Component {
         if (event.type == 'NavBarButtonPress') {
             if (event.id == 'addJournal') {
                 this.props.navigator.push({
-                    screen: 'vacationjournalios.CreateJournal',
+                    screen: 'vacationjournalios.EditJournal',
                     title: 'Create Journal',
                     animated: true,
                     animationType: 'fade'
@@ -125,12 +125,20 @@ class JournalList extends Component {
     }
 
     // row edit press event
-    onEditPress = (journalId) => {
-        AlertIOS.alert('TODO: Edit Journal id: ', journalId);
+    onEditPress = (id) => {
+        this.props.navigator.push({
+            screen: 'vacationjournalios.EditJournal',
+            title: 'Edit Journal',
+            passProps: {
+                journalId: id
+            },
+            animated: true,
+            animationType: 'fade'
+        });
     }
 
     // row delete press event
-    onDeletePress = (journalId, journalName) => {
+    onDeletePress = (id, journalName) => {
         // display confirm prompt, user must type matching name to delete
         AlertIOS.prompt(
             'Confirm Delete',
@@ -142,7 +150,7 @@ class JournalList extends Component {
                 },
                 {
                     text: 'Delete',
-                    onPress: (enteredName) => this.handleDeleteJournal(journalId, journalName, enteredName)
+                    onPress: (enteredName) => this.handleDeleteJournal(id, journalName, enteredName)
                 }
             ]
         );
@@ -179,12 +187,11 @@ class JournalList extends Component {
 
     // render row item
     renderItem = ({ item }) => (
-        <ListItem
-            id={item.id}
+        <ListItemJournal
+            item={item}
             onPress={this.onPress}
             onEditPress={this.onEditPress}
             onDeletePress={this.onDeletePress}
-            title={item.name}
             viewStyle={styles.listView}
             textStyle={styles.listText} />
     );

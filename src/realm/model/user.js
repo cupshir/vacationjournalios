@@ -14,6 +14,7 @@ Person.schema = {
         email: { type: 'string' },
         firstName: 'string',
         lastName: 'string',
+        profilePhoto: 'string?',
         activeJournal: { type: 'Journal' },
         journals: { type: 'list', objectType: 'Journal' },
         dateCreated: 'date',
@@ -29,6 +30,7 @@ Park.schema = {
     properties: {
         id: { type: 'string', indexed: true },
         name: { type: 'string' },
+        photo: 'string?',
         dateCreated: 'date',
         dateModified: 'date',
         dateSynced: 'date'
@@ -43,6 +45,7 @@ Attraction.schema = {
     properties: {
         id: { type: 'string', indexed: true },
         name: { type: 'string' },
+        photo: 'string?',
         park: { type: 'Park' },
         description: 'string',
         heightToRide: 'int',
@@ -61,6 +64,9 @@ Journal.schema = {
     properties: {
         id: { type: 'string', indexed: true },
         name: 'string',
+        photo: 'string?',
+        startDate: 'date?',
+        endDate: 'date?',
         owner: 'string',
         journalEntries: { type: 'list', objectType: 'JournalEntry' },
         parks: { type: 'list', objectType: 'Park'},
@@ -81,6 +87,7 @@ JournalEntry.schema = {
         dateJournaled: 'date',
         dateCreated: 'date',
         dateModified: 'date',
+        photo: 'string?',
         minutesWaited: 'int',
         rating: 'int',
         pointsScored: 'int?',
