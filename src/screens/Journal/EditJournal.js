@@ -1,20 +1,19 @@
 import React, { Component } from "react";
 import { 
-    View, 
-    StyleSheet,
+    AlertIOS,
     FlatList,
-    Modal,
+    Image,
+    StyleSheet,
+    Switch,
     TextInput,
     TouchableOpacity,
-    Switch,
-    AlertIOS
+    View
 } from "react-native";
 import { 
-    FormLabel, 
-    FormInput,
     FormValidationMessage,
     Text
 } from 'react-native-elements';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import Icon from 'react-native-vector-icons/Ionicons';
 import uuid from 'react-native-uuid';
 import DatePicker from 'react-native-datepicker';
@@ -28,7 +27,7 @@ import {
 } from '../../realm/userService';
 
 import LoadingMickey from '../../components/LoadingMickey';
-
+import CameraModal from "../../components/CameraModal";
 
 class EditJournal extends Component {
     static navigatorButtons = {
@@ -45,7 +44,6 @@ class EditJournal extends Component {
         this.state = { 
             currentUser: null,
             parks: [],
-            parks_checked: [],
             formValues: {
                 id: '',
                 name: '',
@@ -54,7 +52,6 @@ class EditJournal extends Component {
                 startDate: '',
                 endDate: '',
                 parks: [],
-                photo: '',
                 createdDate: '',
                 owner: ''                                                             
             },
@@ -63,32 +60,33 @@ class EditJournal extends Component {
                 date: '',
                 parks: ''
             },
-            cameraConfig: {
-                cameraType: RNCamera.Constants.Type.back
-            },
+            journalLoaded: false,
             cameraModalVisible: false,
-            isLoading: false,
+            isLoading: true,
             isEdit: false
         };
         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
     }
 
-    // handle navigation event
+    // handle navigation events
     onNavigatorEvent(event) {
         if (event.id === 'willAppear') {
             this.updateCurrentUserInState(currentUser);
-            if (this.props.journalId) {
+            // check if a journal id was passed, if so update state with journal data
+            if (this.props.journalId && !this.state.journalLoaded) {
                 // get journal
                 getJournalById(this.props.journalId).then((journal) => {
-                    // success - pass journal entry to edit screen
+                    // success - load journal data into state
                     this.loadJournalIntoState(journal);
                 }).catch((error) => {
-                    // failed
+                    // failed - TODO: add better error handling or remove
                     console.log('error: ', error);
                 });
-            } else {
+            } else if (!this.state.journalLoaded) {
+                // New journal - disable loading animation
                 this.setState({
                     ...this.state,
+                    parks: this.addCheckedPropertyToParks(),
                     isLoading: false
                 })
             }
@@ -100,33 +98,53 @@ class EditJournal extends Component {
         }
     }
 
-    componentWillMount() {
-        let newParks = [];
+    // add checked property to parks object for state
+    addCheckedPropertyToParks = (selectedParks = []) => {
+        let parks = [];
 
-        const parks = parkRealm.objects('Park');
+        // Get parks from park realm
+        const realmParks = parkRealm.objects('Park');
 
-        parks.forEach((park) => {
-            park.checked = false;
-            newParks.push(park);           
-        });
+        // If selected parks, create an array of their ID's
+        const selectedParksArray = [];
+        if (selectedParks.length > 0) {
+            selectedParks.forEach((park) => {
+                selectedParksArray.push(park.id);
+            });
+        }
 
-        this.setState({
-            ...this.state,
-            parks: newParks
-        });
-        
+        // create new array of parks and add checked property for each park
+        realmParks.forEach((park) => {
+            // if park exists in selectedParksArray, checked is true
+            if (selectedParksArray.length > 0) {
+                if (selectedParksArray.includes(park.id)) {
+                    park.checked = true;
+                } else {
+                    park.checked = false;
+                }
+            } else {
+                park.checked = false;
+            }
+
+            parks.push(park);
+        });           
+
+        return parks;        
     }
 
+    // Navbar styling
     componentDidMount() {
         this.props.navigator.setStyle({
             navBarNoBorder: false
         })
     }
 
+    // loads journal data into state and flags isEdit true
     loadJournalIntoState= (journal) => {
         if (journal) {
             this.setState({
                 ...this.state,
+                parks: this.addCheckedPropertyToParks(journal.parks),
                 formValues: {
                     id: journal.id,
                     name: journal.name,
@@ -137,13 +155,15 @@ class EditJournal extends Component {
                     createdDate: journal.dateCreated,
                     owner: journal.owner                                                             
                 },
+                journalLoaded: true,
                 isLoading: false,
                 isEdit: true
-            })
+            });
 
         }
     }
 
+    // loads current user object into state if exists
     updateCurrentUserInState = (user) => {
         if (user) {
             this.setState({
@@ -158,47 +178,38 @@ class EditJournal extends Component {
         }
     }
 
-    // set camera modal visible
-    setCameraModalVisible(visible) {
-        this.setState({
-            ...this.state,
-            cameraModalVisible: visible
+    // launch sign in modal
+    onSignInPress = () => {
+        this.props.navigator.showModal({
+            screen: 'vacationjournalios.SignIn',
+            title: 'Sign In',
+            animated: true
         });
     }
 
-    toggleCameraType = () => {
+    // toggle camera modal
+    toggleCameraModal = () => {
         this.setState({
             ...this.state,
-            cameraConfig: {
-                type: (this.state.cameraConfig.type === RNCamera.Constants.Type.back) ? RNCamera.Constants.Type.front : RNCamera.Constants.Type.back
-            }
-        })
+            cameraModalVisible: !this.state.cameraModalVisible
+        });
     }
 
-    // handle photo change
-    handlePhotoChange = async function() {
-        if (this.camera) {
-            const options = { 
-                quality: .5,
-                base64: true 
-            };
-            this.camera.takePictureAsync(options).then((data) => {
-                this.setState({
-                    formValues: {
-                        ...this.state.formValues,
-                        photo: data.base64
-                    }
-                });
-            }).catch((error) => {
-                console.log('something failed saving photo');
-            })
-        }
-        this.setCameraModalVisible(false);
+    // save photo to state
+    savePhoto = (photo) => {
+        this.setState({
+            ...this.state,
+            formValues: {
+                ...this.state.formValues,
+                photo: photo
+            },
+            cameraModalVisible: false,
+        });
     }
 
-    // row delete press event
+    // photo delete press event
     onPhotoDeletePress = () => {
-        // display confirm prompt, user must type CONFIRM to delete
+        // display confirm prompt, user must type CONFIRM to delete photo
         AlertIOS.prompt(
             'Confirm Delete',
             'Type CONFIRM (all caps) to proceed with deletion',
@@ -215,8 +226,10 @@ class EditJournal extends Component {
         );
     }
 
+    // handle photo delete
     handleDeletePhoto = (enteredText) => {
         if (enteredText === 'CONFIRM') {
+            // confirm text matched, remove photo from state
             this.setState({
                 formValues: {
                     ...this.state.formValues,
@@ -226,19 +239,27 @@ class EditJournal extends Component {
         } else {
             AlertIOS.alert('Incorrect CONFIRM text entered. Photo not deleted!')
         }
-
     }
 
-    // handle save event
+    // handle journal save event
     handleDone = () => {
+        // update selected parks in state
         this.updateSelectedParks();
 
         // Check if ready to submit
         const ready = this.readyForSubmit(this.state.formValues);
 
         if(ready) {
+            // start loading animation
+            this.setState({
+                ...this.state,
+                isLoading: true
+            });
+
+            // Prep values for realm save
             const submitValues = this.prepareValuesForDB(this.state.formValues);
 
+            // save journal to realm
             saveJournal(submitValues, this.state.isEdit).then((journal) => {
                 // Success - stop animation
                 this.setState({
@@ -260,11 +281,11 @@ class EditJournal extends Component {
                 });
             });
         } else {
-            AlertIOS.alert('Missing Name, Start Date, or End Date');
+            AlertIOS.alert('Not ready to submit. Check form for errors.');
         }        
     }
 
-    // Updated selected parksin state
+    // Updated selected parks in state
     updateSelectedParks = () => {
         let parksError = (this.state.formErrors.parks !== '') ? this.state.formErrors.parks : '';
         let selectedParks = (this.state.formErrors.parks.length !== 0) ? this.state.formValues.parks : [];
@@ -276,6 +297,7 @@ class EditJournal extends Component {
             }
         });
 
+        // if parks exist in selectedparks array, clear parks error message
         if (selectedParks.length > 0) {
             parksError = '';
         }
@@ -293,6 +315,7 @@ class EditJournal extends Component {
         });
     }
 
+    // prep return values for realm
     prepareValuesForDB = (values) => {
         // Create return object
         let returnValues = {
@@ -315,7 +338,7 @@ class EditJournal extends Component {
         returnValues.parks = values.parks;
         returnValues.photo = values.photo;
         returnValues.owner = (values.owner !== '') ? values.owner : this.state.currentUser.id;
-        returnValues.createdDate = values.createdDate ? values.createdDate : new Date();
+        returnValues.createdDate = (values.createdDate !== '') ? values.createdDate : new Date();
 
         return returnValues;
     }
@@ -348,10 +371,12 @@ class EditJournal extends Component {
             ready = false;
         }
 
+        // check for an error messages and return false if found
         if (nameError !== '' || dateError !== '' || parksError !== '') {
             ready = false;
         }
 
+        // update form errors in state
         this.setState({
             formErrors: {
                 ...this.state.formErrors,
@@ -414,12 +439,14 @@ class EditJournal extends Component {
             dateError = 'Please enter a start and end date.';
         }
 
+        // Ensure start date is not after end date
         if (this.state.formValues.endDate !== '') {
             if (date > this.state.formValues.endDate) {
                 dateError = 'Start date cant be after end date.';
             }
         }
 
+        // set state and error messages
         this.setState({
             formValues: {
                 ...this.state.formValues,
@@ -441,12 +468,14 @@ class EditJournal extends Component {
             dateError = 'Please enter a start and end date.';
         }
 
+        // Ensure end date is not before start date
         if (this.state.formValues.startDate !== '') {
             if (date < this.state.formValues.startDate) {
                 dateError = 'End date cant be before start date.';
             }
         }
 
+        // set state and error messages
         this.setState({
             formValues: {
                 ...this.state.formValues,
@@ -482,27 +511,31 @@ class EditJournal extends Component {
         )
     };
 
+    // render camera button for triggering camera modal
     renderCameraButton = () => {
         return (
             <TouchableOpacity
-                onPress={() => { this.setCameraModalVisible(true); }} >
-                    <View style={styles.photo}>
-                        <Icon style={{ fontSize: 80 }} name="ios-camera" /> 
-                    </View>
+                onPress={() => { this.toggleCameraModal(); }} 
+            >
+                <View style={styles.photo}>
+                    <Icon style={{ fontSize: 80 }} name="ios-camera" /> 
+                </View>
             </TouchableOpacity>
         );
     }
 
+    // render photo image
     renderPhoto = (photo) => {
         return (
             <TouchableOpacity
-                onLongPress={() => { this.onPhotoDeletePress(); }} >
-                    <View style={styles.photo}>
-                        <Image 
-                                style={{ width: 300, height: 225 }}
-                                source={{uri: `data:image/png;base64,${photo}`}} 
-                            />
-                    </View>
+                onLongPress={() => { this.onPhotoDeletePress(); }} 
+            >
+                <View style={styles.photo}>
+                    <Image 
+                        style={{ width: 300, height: 225 }}
+                        source={{uri: `data:image/png;base64,${photo}`}} 
+                    />
+                </View>
             </TouchableOpacity>
         );
     }
@@ -517,18 +550,29 @@ class EditJournal extends Component {
             );
         }
 
+        // If no current User, display Sign In button
+        if (this.state.currentUser === null) {
+            return (
+                <View style={styles.container}>
+                    <TouchableOpacity style={styles.button} onPress={() => this.onSignInPress()}>
+                        <Text>Sign In</Text>
+                    </TouchableOpacity>
+                </View>
+            );
+        }
+
         // Check if errors exist in state.formErrors
         const nameError = (this.state.formErrors.name !== '') ? this.renderError(this.state.formErrors.name) : null;
         const dateError = (this.state.formErrors.date !== '') ? this.renderError(this.state.formErrors.date) : null;
         const parksError = (this.state.formErrors.parks !== '') ? this.renderError(this.state.formErrors.parks) : null;
     
-
-        const photo = (this.state.formValues.photo === '') 
-        ? this.renderCameraButton()
-        : this.renderPhoto(this.state.formValues.photo)
+        // Check if photo exists, otherwise render camera button
+        const photo = (this.state.formValues.photo !== '') 
+        ? this.renderPhoto(this.state.formValues.photo) 
+        : this.renderCameraButton()
 
         return (
-            <View style={styles.container}>
+            <KeyboardAwareScrollView style={styles.container}>
                 <View style={styles.form}>
                     {nameError}
                     <TextInput 
@@ -538,12 +582,7 @@ class EditJournal extends Component {
                         value={this.state.formValues.name}
                     />
                     <View style={styles.photoSection}>
-                        <TouchableOpacity
-                            onPress={() => { this.setCameraModalVisible(true); }} >
-                                <View style={styles.photo}>
-                                    {photo}
-                                </View>
-                        </TouchableOpacity>
+                        {photo}
                     </View>
                     <TextInput 
                         style={styles.descriptionInput}
@@ -603,52 +642,21 @@ class EditJournal extends Component {
                     />
                 </View>
 
-                <Modal
-                    animationType="slide"
-                    transparent={false}
-                    visible={this.state.cameraModalVisible}>
-                        <View style={styles.modalContainer}>
-                            <View style={styles.modalHeader}>
-                                <TouchableOpacity
-                                    style={styles.modalCloseButton}
-                                    onPress={() => { this.setCameraModalVisible(false); }} >
-                                        <Text style={styles.modalCloseButtonText}>Cancel</Text>
-                                </TouchableOpacity>
-                                <Text style={styles.modalTitle}>Take Photo</Text>
-                            </View>
-                            <View style={styles.cameraContainer}>
-                                <RNCamera
-                                    ref={ref => {
-                                        this.camera = ref;
-                                    }}
-                                    style = {styles.cameraPreview}
-                                    type={this.state.cameraConfig.type ? this.state.cameraConfig.type : RNCamera.Constants.Type.back}
-                                />
-                                <View style = {styles.cameraButtons}>
-                                    <TouchableOpacity
-                                        onPress={this.toggleCameraType.bind(this)}
-                                    >
-                                        <Icon style={{ fontSize: 60 }} name="ios-reverse-camera-outline" />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        onPress={this.handlePhotoChange.bind(this)}
-                                    >
-                                        <Icon style={{ fontSize: 60 }} name="ios-camera-outline" />
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        </View>
-                </Modal>
-
-            </View> 
+                <CameraModal 
+                    type={RNCamera.Constants.Type.back}
+                    quality={'.5'}
+                    savePhoto={this.savePhoto}
+                    visible={this.state.cameraModalVisible}
+                    toggleCameraModal={this.toggleCameraModal}
+                />
+            </KeyboardAwareScrollView> 
         );
     }
 }
 
 var styles = StyleSheet.create({
     container: {
-        flex: 1,
-        alignItems: 'stretch'
+        flex: 1
     },
     form: {
         margin: 15
@@ -657,62 +665,19 @@ var styles = StyleSheet.create({
         padding: 10,
         borderWidth: .5,
         borderColor: '#aaa',
-        borderRadius: 5,
-        marginBottom: 15
+        borderRadius: 5
     },
-    modalContainer: {
-        flex: 1
-    },
-    modalHeader: {
-        backgroundColor: 'white',
-        borderStyle: 'solid',
-        borderBottomWidth: .5,
-        borderBottomColor: 'lightgrey',
-        paddingTop: 50,
-        paddingBottom: 5
-    },
-    modalTitle: {
-        paddingLeft: 15,
-        paddingTop: 20,
-        fontSize: 35,
-        fontWeight: 'bold'
-    },
-    modalCloseButton: {
-        paddingLeft: 25,
-        paddingTop: 5
-    },
-    modalCloseButtonText: {
-        fontSize: 16,
-        color: 'blue'
-    },
+    
     photoSection: {
         backgroundColor: 'white',
-        padding: 15,
-        marginTop: 15,
-        marginBottom: 15
+        padding: 15
     },
     photo: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center'
     },
-    cameraContainer: {
-        flex: 1,
-        flexDirection: 'column'
-    },
-    cameraPreview: {
-        flex: 1,
-        justifyContent: 'flex-end',
-        alignItems: 'center'
-    },
-    cameraButtons: {
-        flex: 0,
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        backgroundColor: '#fff',
-        borderRadius: 5,
-        margin: 20
-    },
+    
     descriptionInput: {
         padding: 5,
         borderWidth: .5,
@@ -725,7 +690,7 @@ var styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 5
+        marginBottom: 15
     },
     checkboxItems: {
         flexDirection: 'row',

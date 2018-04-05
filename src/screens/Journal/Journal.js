@@ -1,13 +1,12 @@
 import React, { Component } from "react";
 import { 
-    View,
-    Text,
-    Button,
-    FlatList,
-    TouchableOpacity,
-    SectionList, 
     AlertIOS, 
-    StyleSheet 
+    Button,
+    SectionList, 
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from "react-native";
 import {
     SearchBar
@@ -50,6 +49,10 @@ class Journal extends Component {
     onNavigatorEvent(event) {
         if (event.id === 'willAppear') {
             this.updateCurrentUserInState(currentUser);
+        
+            this.props.navigator.setTitle({
+                title: ((this.state.currentUser !== null && this.state.currentUser.activeJournal !== null) ? this.state.currentUser.activeJournal.name : 'Select A Journal')
+            });
         }
         if (event.type == 'NavBarButtonPress') {
             if (event.id === 'journals') {
@@ -72,37 +75,31 @@ class Journal extends Component {
         }
     }
 
-    componentDidUpdate() {
-        this.props.navigator.setTitle({
-            title: ((this.state.currentUser !== null && this.state.currentUser.activeJournal !== null) ? this.state.currentUser.activeJournal.name : 'Select A Journal')
-        });
-    }
-
     // Hack to make nav bar look like native IOS with search under title without border
     componentDidMount() {
         this.props.navigator.setStyle({
             navBarNoBorder: true
         });
+    }
 
+    // Render Add journal Entry Button in nav bar
+    renderAddJournalEntryButton = () => {
         IconsLoaded.then(() => {
             this.props.navigator.setButtons({
-            rightButtons: [
-                {
-                    id: 'addEntry',
-                    icon: IconsMap['add']
-                }
-            ]
+                rightButtons: [
+                    {
+                        id: 'addEntry',
+                        icon: IconsMap['add']
+                    }
+                ]
             });
-        });
-
-        // Update screen title
-        this.props.navigator.setTitle({
-            title: ((this.state.currentUser !== null && this.state.currentUser.activeJournal !== null) ? this.state.currentUser.activeJournal.name : 'Select A Journal')
         });
     }
 
+    // update current user in state, if no current user clear user object from state
     updateCurrentUserInState = (user) => {
         if (user) {
+            this.renderAddJournalEntryButton();
             this.setState({
                 ...this.state,
                 currentUser: user,
@@ -110,6 +107,10 @@ class Journal extends Component {
                 isLoading: false
             });            
         } else {
+            // User doesnt exist, hide journal entry button
+            this.props.navigator.setButtons({
+                rightButtons: []
+            });
             this.setState({
                 ...this.state,
                 currentUser: null,
@@ -139,7 +140,7 @@ class Journal extends Component {
         });
     }
 
-    // row on press event
+    // row on press event : TODO
     onPress = (id) => {
 
     }
@@ -233,13 +234,15 @@ class Journal extends Component {
             item={item}
             onPress={this.onPress}
             onEditPress={this.onEditPress}
-            onDeletePress={this.onDeletePress} />
+            onDeletePress={this.onDeletePress} 
+        />
     );
 
     // render Header row
     renderSectionHeader = ({ section }) => (
         <SectionHeader
-            title={section.title} />
+            title={section.title} 
+        />
     );
 
     // Render Search Input (placed here to keep view below easier to read)
@@ -253,7 +256,8 @@ class Journal extends Component {
                 onChangeText={this.handleSearch}
                 icon={{ style: { marginLeft: 4 } }}
                 clearIcon={{ name: 'close' }}
-                placeholder='Search' />
+                placeholder='Search' 
+            />
         );
     }
 
@@ -324,7 +328,8 @@ class Journal extends Component {
                             })}
                         renderItem={this.renderItem}
                         renderSectionHeader={this.renderSectionHeader}
-                        keyExtractor={ (item, index) => index } />
+                        keyExtractor={ (item, index) => index } 
+                    />
                 </View>
             </View>
         );     
