@@ -17,7 +17,6 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import Icon from 'react-native-vector-icons/Ionicons';
 import uuid from 'react-native-uuid';
 import DatePicker from 'react-native-datepicker';
-import { RNCamera } from 'react-native-camera';
 
 import {
     currentUser,
@@ -532,7 +531,8 @@ class EditJournal extends Component {
             >
                 <View style={styles.photo}>
                     <Image 
-                        style={{ width: 300, height: 225 }}
+                        style={{ width: 300, height: 300 }}
+                        resizeMode={'cover'}
                         source={{uri: `data:image/png;base64,${photo}`}} 
                     />
                 </View>
@@ -643,7 +643,6 @@ class EditJournal extends Component {
                 </View>
 
                 <CameraModal 
-                    type={RNCamera.Constants.Type.back}
                     quality={'.5'}
                     savePhoto={this.savePhoto}
                     visible={this.state.cameraModalVisible}
@@ -677,7 +676,6 @@ var styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center'
     },
-    
     descriptionInput: {
         padding: 5,
         borderWidth: .5,

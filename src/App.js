@@ -56,6 +56,9 @@ IconsLoaded.then(() => {
 			tabBarButtonColor: 'black',
 			tabBarSelectedButtonColor: '#0080FF',
 			tabBarBackgroundColor: '#F9F9F9'
+		},
+		appStyle: {
+			orientation: 'portrait'
 		}
 	});
 })
