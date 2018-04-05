@@ -280,9 +280,7 @@ export function saveJournal(journal, isEdit) {
         } else {
             reject('Create Journal failed: couldnt find owner');
         }
-
-    })
- 
+    });
 }
 
 // Delete Journal from local Realm

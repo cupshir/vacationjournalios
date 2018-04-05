@@ -1,20 +1,17 @@
 import React, { Component } from 'react';
 import uuid from 'react-native-uuid';
 import {
-    View,
-    KeyboardAvoidingView,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    Image,
-    Picker,
-    Modal,
+    AlertIOS,
     FlatList,
+    Image,
+    Modal,
+    StyleSheet,
+    Switch,
+    TextInput,
     TouchableOpacity,
-    AlertIOS
+    View,
 } from 'react-native';
 import { 
-    CheckBox,
     SearchBar,
     Text
 } from 'react-native-elements';
@@ -31,6 +28,7 @@ import {
 } from '../../realm/userService';
 
 import LoadingMickey from '../../components/LoadingMickey';
+import CameraModal from "../../components/CameraModal";
 import ListItem from '../../components/ListItem';
 import ListItemAttraction from '../../components/ListItemAttraction';
 
@@ -47,7 +45,7 @@ class EditJournalEntry extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            parks: parkRealm.objects('Park'),
+            parks: currentUser.activeJournal.parks,
             attractions: parkRealm.objects('Attraction'),
             selectedPark: {
                 parkId: '',
@@ -76,9 +74,6 @@ class EditJournalEntry extends Component {
                 dateJournaled: '',
                 rating: '',
                 minutesWaited: ''
-            },
-            cameraConfig: {
-                cameraType: RNCamera.Constants.Type.back
             },
             filteredAttractions: null,
             cameraModalVisible: false,
@@ -157,15 +152,6 @@ class EditJournalEntry extends Component {
         }
     }
 
-    // set camera modal visible
-    setCameraModalVisible(visible) {
-        this.setState({
-            ...this.state,
-            cameraModalVisible: visible
-        });
-    }
-
-
     // set park modal visible
     setParkModalVisible(visible) {
         this.setState({
@@ -182,34 +168,24 @@ class EditJournalEntry extends Component {
         });
     }
 
-    toggleCameraType = () => {
+    // toggle camera modal
+    toggleCameraModal = () => {
         this.setState({
             ...this.state,
-            cameraConfig: {
-                type: (this.state.cameraConfig.type === RNCamera.Constants.Type.back) ? RNCamera.Constants.Type.front : RNCamera.Constants.Type.back
-            }
-        })
+            cameraModalVisible: !this.state.cameraModalVisible
+        });
     }
 
-    // handle photo change
-    handlePhotoChange = async function() {
-        if (this.camera) {
-            const options = { 
-                quality: .5,
-                base64: true 
-            };
-            this.camera.takePictureAsync(options).then((data) => {
-                this.setState({
-                    formValues: {
-                        ...this.state.formValues,
-                        photo: data.base64
-                    }
-                });
-            }).catch((error) => {
-                console.log('something failed saving photo');
-            })
-        }
-        this.setCameraModalVisible(false);
+    // save photo to state
+    savePhoto = (photo) => {
+        this.setState({
+            ...this.state,
+            formValues: {
+                ...this.state.formValues,
+                photo: photo
+            },
+            cameraModalVisible: false,
+        });
     }
 
     // row delete press event
@@ -619,10 +595,11 @@ class EditJournalEntry extends Component {
     renderCameraButton = () => {
         return (
             <TouchableOpacity
-                onPress={() => { this.setCameraModalVisible(true); }} >
-                    <View style={styles.photo}>
-                        <Icon style={{ fontSize: 80 }} name="ios-camera" /> 
-                    </View>
+                onPress={() => { this.toggleCameraModal(); }} 
+            >
+                <View style={styles.photo}>
+                    <Icon style={{ fontSize: 80 }} name="ios-camera" /> 
+                </View>
             </TouchableOpacity>
         );
     }
@@ -630,13 +607,14 @@ class EditJournalEntry extends Component {
     renderPhoto = (photo) => {
         return (
             <TouchableOpacity
-                onLongPress={() => { this.onPhotoDeletePress(); }} >
-                    <View style={styles.photo}>
-                        <Image 
-                                style={{ width: 300, height: 225 }}
-                                source={{uri: `data:image/png;base64,${photo}`}} 
-                            />
-                    </View>
+                onLongPress={() => { this.onPhotoDeletePress(); }} 
+            >
+                <View style={styles.photo}>
+                    <Image 
+                            style={{ width: 300, height: 225 }}
+                            source={{uri: `data:image/png;base64,${photo}`}} 
+                        />
+                </View>
             </TouchableOpacity>
         );
     }
@@ -681,9 +659,9 @@ class EditJournalEntry extends Component {
             )
         }
 
-        const photo = (this.state.formValues.photo === '') 
-                    ? this.renderCameraButton()
-                    : this.renderPhoto(this.state.formValues.photo)
+        const photo = (this.state.formValues.photo !== '') 
+                    ? this.renderPhoto(this.state.formValues.photo)
+                    : this.renderCameraButton()
 
         // Render form
         return (
@@ -701,13 +679,8 @@ class EditJournalEntry extends Component {
                     </TouchableOpacity>
                     {attractionPicker}
                 </View>
-                <View style={styles.photoSection}>
-                    <TouchableOpacity
-                        onPress={() => { this.setCameraModalVisible(true); }} >
-                            <View style={styles.photo}>
-                                {photo}
-                            </View>
-                    </TouchableOpacity>
+                <View style={styles.photoSection}>                   
+                    {photo}
                 </View>
                 <View style={styles.minutesWaitedDateJournaledSection}>
                     <TextInput
@@ -739,12 +712,15 @@ class EditJournalEntry extends Component {
                         style={styles.minuteswaited}
                         onChangeText={this.handleRatingChange}
                         placeholder='Rating'
-                        value={this.state.formValues.rating} />
-                    <CheckBox
-                        title='Fastpass'
-                        checked={this.state.formValues.usedFastPass}
-                        onPress={this.handleFastpassChange}
-                        containerStyle={styles.fastpass} />
+                        value={this.state.formValues.rating} 
+                    />
+                    <View style={styles.fastpass}>
+                        <Text style={{ marginRight: 5 }}>Fastpass</Text>
+                        <Switch
+                            onValueChange={this.handleFastpassChange}
+                            value={this.state.formValues.usedFastPass}
+                        />
+                    </View>
                 </View>
                 {pointsScored}
                 <View style={styles.commentsSection}>
@@ -758,70 +734,44 @@ class EditJournalEntry extends Component {
                         maxLength={400} />
                 </View>
 
-                <Modal
-                    animationType="slide"
-                    transparent={false}
-                    visible={this.state.cameraModalVisible}>
-                        <View style={styles.modalContainer}>
-                            <View style={styles.modalHeader}>
-                                <TouchableOpacity
-                                    style={styles.modalCloseButton}
-                                    onPress={() => { this.setCameraModalVisible(false); }} >
-                                        <Text style={styles.modalCloseButtonText}>Cancel</Text>
-                                </TouchableOpacity>
-                                <Text style={styles.modalTitle}>Take Photo</Text>
-                            </View>
-                            <View style={styles.cameraContainer}>
-                                <RNCamera
-                                    ref={ref => {
-                                        this.camera = ref;
-                                    }}
-                                    style = {styles.cameraPreview}
-                                    type={this.state.cameraConfig.type ? this.state.cameraConfig.type : RNCamera.Constants.Type.back}
-                                />
-                                <View style = {styles.cameraButtons}>
-                                    <TouchableOpacity
-                                        onPress={this.toggleCameraType.bind(this)}
-                                    >
-                                        <Icon style={{ fontSize: 60 }} name="ios-reverse-camera-outline" />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        onPress={this.handlePhotoChange.bind(this)}
-                                    >
-                                        <Icon style={{ fontSize: 60 }} name="ios-camera-outline" />
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        </View>
-                </Modal>
+                <CameraModal 
+                    type={RNCamera.Constants.Type.back}
+                    quality={'.5'}
+                    savePhoto={this.savePhoto}
+                    visible={this.state.cameraModalVisible}
+                    toggleCameraModal={this.toggleCameraModal}
+                />
 
                 <Modal
                     animationType="slide"
                     transparent={true}
-                    visible={this.state.parkModalVisible}>
-                        <View style={styles.modalContainer}>
-                            <View style={styles.modalHeader}>
-                                <TouchableOpacity
-                                    style={styles.modalCloseButton}
-                                    onPress={() => { this.setParkModalVisible(false); }} >
-                                        <Text style={styles.modalCloseButtonText}>Cancel</Text>
-                                </TouchableOpacity>
-                                <Text style={styles.modalTitle}>Select A Park</Text>
-                            </View>
-                            <View style={styles.modalBody}>
-                                <FlatList
-                                    data={this.state.parks}
-                                    renderItem={({ item }) =>     
-                                        <ListItem
-                                            id={item.id.toString()}
-                                            title={item.name}
-                                            onPress={this.handleParkChange}
-                                            viewStyle={styles.listView}
-                                            textStyle={styles.listText} />
-                                    }
-                                    keyExtractor={item => item.id.toString()} />
-                            </View>
+                    visible={this.state.parkModalVisible}
+                >
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalHeader}>
+                            <TouchableOpacity
+                                style={styles.modalCloseButton}
+                                onPress={() => { this.setParkModalVisible(false); }}
+                            >
+                                <Text style={styles.modalCloseButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.modalTitle}>Select A Park</Text>
                         </View>
+                        <View style={styles.modalBody}>
+                            <FlatList
+                                data={this.state.parks}
+                                renderItem={({ item }) =>     
+                                    <ListItem
+                                        id={item.id.toString()}
+                                        title={item.name}
+                                        onPress={this.handleParkChange}
+                                        viewStyle={styles.listView}
+                                        textStyle={styles.listText} />
+                                }
+                                keyExtractor={item => item.id.toString()}
+                            />
+                        </View>
+                    </View>
                 </Modal>
             </KeyboardAwareScrollView>
         )
@@ -931,23 +881,6 @@ var styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center'
     },
-    cameraContainer: {
-        flex: 1,
-        flexDirection: 'column'
-    },
-    cameraPreview: {
-        flex: 1,
-        justifyContent: 'flex-end',
-        alignItems: 'center'
-    },
-    cameraButtons: {
-        flex: 0,
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        backgroundColor: '#fff',
-        borderRadius: 5,
-        margin: 20
-    },
     minutesWaitedDateJournaledSection: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -981,8 +914,8 @@ var styles = StyleSheet.create({
         paddingLeft: 15
     },
     fastpass: {
-        backgroundColor: '#ffffff',
-        borderColor: 'transparent'
+        flexDirection: 'row',
+        alignItems: 'center'
     },
     pointsSection: {
         backgroundColor: 'white',
