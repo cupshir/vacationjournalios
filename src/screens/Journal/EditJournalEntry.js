@@ -18,7 +18,6 @@ import {
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import Icon from 'react-native-vector-icons/Ionicons';
 import DatePicker from 'react-native-datepicker';
-import { RNCamera } from 'react-native-camera';
 
 import {
     currentUser,
@@ -735,7 +734,6 @@ class EditJournalEntry extends Component {
                 </View>
 
                 <CameraModal 
-                    type={RNCamera.Constants.Type.back}
                     quality={'.5'}
                     savePhoto={this.savePhoto}
                     visible={this.state.cameraModalVisible}

@@ -71,11 +71,11 @@ class CameraModal extends Component {
                         <RNCamera
                             ref={ref => { this.camera = ref; }}
                             style={styles.cameraPreview}
-                            type={this.props.type ? this.props.type : this.state.cameraConfig.type}
+                            type={this.state.cameraConfig.type}
                         />
                         <View style = {styles.cameraButtons}>
                             <TouchableOpacity
-                                onPress={this.toggleCameraType}
+                                onPress={this.toggleCameraType.bind(this)}
                             >
                                 <Icon style={{ fontSize: 60 }} name="ios-reverse-camera-outline" />
                             </TouchableOpacity>
@@ -141,8 +141,7 @@ CameraModal.propTypes = {
     visible: PropTypes.bool.isRequired,
     savePhoto: PropTypes.func.isRequired,
     toggleCameraModal: PropTypes.func.isRequired,
-    quality: PropTypes.string,
-    type: PropTypes.any
+    quality: PropTypes.string
 };
 
 export default CameraModal;
