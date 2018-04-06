@@ -17,7 +17,7 @@ import { registerUser } from '../../realm/userService';
 
 import LoadingMickey from '../../components/LoadingMickey';
 
-class SignUp extends Component {
+class Register extends Component {
     static navigatorButtons = {
         rightButtons: [
             {
@@ -413,4 +413,4 @@ var styles = StyleSheet.create({
   });
 
 
-export default SignUp;
+export default Register;

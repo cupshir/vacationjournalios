@@ -1,18 +1,25 @@
 import React, { Component } from "react";
 import { 
-  View, 
-  Text,
-  TouchableOpacity, 
-  StyleSheet 
+    AlertIOS,
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity, 
+    View,  
 } from "react-native";
+import Icon from 'react-native-vector-icons/Ionicons';
+import moment from 'moment';
 
 import {
     currentUser,
     loadUserFromCache,
+    updateUserProfilePhoto,
     signOutUser
 } from '../../realm/userService';
 
 import LoadingMickey from '../../components/LoadingMickey';
+import CameraModal from "../../components/CameraModal";
+
 
 class Profile extends Component {
     constructor(props) {
@@ -20,6 +27,7 @@ class Profile extends Component {
         this.state = { 
             currentUser: null,
             authenticated: false,
+            cameraModalVisible: false,
             isLoading: true
         };
         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
@@ -60,6 +68,7 @@ class Profile extends Component {
                 ...this.state,
                 currentUser: user,
                 authenticated: true,
+                cameraModalVisible: false,
                 isLoading: false
             });
         } else {
@@ -67,10 +76,62 @@ class Profile extends Component {
                 ...this.state,
                 currentUser: null,
                 authenticated: false,
+                cameraModalVisible: false,
                 isLoading: false
             })
         }
     }
+
+    // toggle camera modal
+    toggleCameraModal = () => {
+        this.setState({
+            ...this.state,
+            cameraModalVisible: !this.state.cameraModalVisible
+        });
+    }
+
+    // save photo to state
+    savePhoto = (photo) => {
+        updateUserProfilePhoto(this.state.currentUser, photo).then((updatedUser) => {
+            this.updateCurrentUserInState(updatedUser);
+        }).catch((error) => {
+            console.log('save Photo failed: ', error);
+        });
+    }
+
+    // photo delete press event
+    onPhotoDeletePress = () => {
+        // display confirm prompt, user must type CONFIRM to delete photo
+        AlertIOS.prompt(
+            'Confirm Delete',
+            'Type CONFIRM (all caps) to proceed with deletion',
+            [
+                {
+                    text: 'Cancel',
+                    style: 'cancel'
+                },
+                {
+                    text: 'Delete',
+                    onPress: (enteredText) => this.handleDeletePhoto(enteredText)
+                }
+            ]
+        );
+    }
+
+    // handle photo delete
+    handleDeletePhoto = (enteredText) => {
+        if (enteredText === 'CONFIRM') {
+            // confirm text matched, remove photo from state
+            updateUserProfilePhoto(this.state.currentUser, null).then((updatedUser) => {
+                this.updateCurrentUserInState(updatedUser);
+            }).catch((error) => {
+                console.log('delete photo failed: ', error);
+            });
+        } else {
+            AlertIOS.alert('Incorrect CONFIRM text entered. Photo not deleted!')
+        }
+    }
+
 
     // Press Events
     handleItemPress = (item) => {
@@ -83,10 +144,10 @@ class Profile extends Component {
                 });
                 break;
             }
-            case 'signUp': {
+            case 'register': {
                 this.props.navigator.showModal({
-                    screen: 'vacationjournalios.SignUp',
-                    title: 'Sign Up',
+                    screen: 'vacationjournalios.Register',
+                    title: 'Register',
                     animated: true
                 });
                 break;
@@ -123,6 +184,36 @@ class Profile extends Component {
         });
     }
 
+    // render camera button for triggering camera modal
+    renderCameraButton = () => {
+        return (
+            <TouchableOpacity
+                onPress={() => { this.toggleCameraModal(); }} 
+            >
+                <View style={styles.photo}>
+                    <Icon style={{ fontSize: 80, color: 'white' }} name="ios-camera" /> 
+                </View>
+            </TouchableOpacity>
+        );
+    }
+
+    // render photo image
+    renderPhoto = (photo) => {
+        return (
+            <TouchableOpacity
+                onLongPress={() => { this.onPhotoDeletePress(); }} 
+            >
+                <View style={styles.photo}>
+                    <Image 
+                        style={{ width: 150, height: 150, borderRadius: 75 }}
+                        resizeMode={'cover'}
+                        source={{uri: `data:image/png;base64,${photo}`}} 
+                    />
+                </View>
+            </TouchableOpacity>
+        );
+    }
+
     // Render Profile Screen
     render() {
         // Loading Mickey Graphic
@@ -136,27 +227,65 @@ class Profile extends Component {
 
         // If user preset show profile
         if(this.state.authenticated) {
+            // Check if photo exists, otherwise render camera button
+            const photo = (this.state.currentUser.profilePhoto) 
+            ? this.renderPhoto(this.state.currentUser.profilePhoto) 
+            : this.renderCameraButton()
+
+            // Assigning content here to make render below more readable
+            const journalCount = (this.state.currentUser.journals.length > 0) ? this.state.currentUser.journals.length : 0;
+            const journalLabel = (journalCount === 1) ? 'journal' : 'journals';
+            const activeJournal = (this.state.currentUser.activeJournal) ? this.state.currentUser.activeJournal.name : null;
+            const journalEntriesCount = (this.state.currentUser.activeJournal && this.state.currentUser.activeJournal.journalEntries.length > 0) 
+                                            ? this.state.currentUser.activeJournal.journalEntries.length 
+                                            : 0
+            const journalEntriesLabel = (journalEntriesCount === 1) ? 'entry' : 'entries';
+
             return (
                 <View style={styles.container}>
-                    <View style={styles.upperContainer}>
-                        <Text style={styles.upperText}>Pic goes here</Text>
+                    <View style={styles.backgroundImage}>
+                        <Image 
+                                // style={{ flex: 1, width: '100%', height: '100%' }}
+                                source={require('../../assets/images/profile-default.png')}
+                                resizeMode='cover'
+                                blurRadius={15}
+                            />
                     </View>
-                    <View style={styles.middleContainer}>
-                        <Text >email: {this.state.currentUser.email}</Text>
-                        <Text>First Name: {this.state.currentUser.firstName}</Text>
-                        <Text>Last Name: {this.state.currentUser.lastName}</Text>
-                        <Text>User ID: {this.state.currentUser.id}</Text>
-                        <Text>Journal Count: {(this.state.currentUser.journals.length > 0) ? this.state.currentUser.journals.length : 0} </Text>
-                        <Text>Active Journal: {(this.state.currentUser.activeJournal) ? this.state.currentUser.activeJournal.name : null}</Text>
-                        <Text>Active Journal Entries: {(this.state.currentUser.activeJournal && this.state.currentUser.activeJournal.journalEntries.length > 0) ? this.state.currentUser.activeJournal.journalEntries.length : 0}</Text>
-                        <Text>Date User Created: {this.state.currentUser.dateCreated.toString()}</Text>
-                        <Text>Date User Modified: {this.state.currentUser.dateModified.toString()}</Text>
+                    <View style={styles.profileContainer}>
+                        <View style={styles.nameSection}>
+                            <Text style={{ fontSize: 24, color: 'white' }}>{this.state.currentUser.firstName} {this.state.currentUser.lastName}</Text>
+                            <Text style={{ fontSize: 20, color: 'white' }}>{this.state.currentUser.email}</Text>
+                        </View>
+                        <View style={styles.photoSection}>
+                            {photo}
+                        </View>
+                        <View style={styles.journalSection}>
+                            <Text style={styles.journalText}>You have {journalCount} {journalLabel}!</Text>
+                            <Text style={styles.journalText}>Your active journal is, {activeJournal}, and it has {journalEntriesCount} {journalEntriesLabel}.</Text>
+                            <View>
+                                <Text style={styles.journalText}>It was created on {moment(this.state.currentUser.dateCreated).format('M-D-YYYY h:mm a')}.</Text>
+                                <Text style={styles.journalText}>It was last updated on {moment(this.state.currentUser.dateModified).format('M-D-YYYY h:mm a')}.</Text>
+                            </View>
+                        </View>
+                        <View style={styles.lowerContainer}>
+                            <TouchableOpacity style={styles.button} onPress={() => this.handleItemPress('edit')}>
+                                <Text>Edit</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.button} onPress={() => this.handleItemPress('password')}>
+                                <Text style={{ textAlign: 'center' }}>Change Password</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.button} onPress={() => this.handleItemPress('signOut')}>
+                                <Text>Sign Out</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <CameraModal 
+                            quality={'.5'}
+                            savePhoto={this.savePhoto}
+                            visible={this.state.cameraModalVisible}
+                            toggleCameraModal={this.toggleCameraModal}
+                        />
                     </View>
-                    <View style={styles.lowerContainer}>
-                        <TouchableOpacity style={styles.button} onPress={() => this.handleItemPress('signOut')}>
-                            <Text>Sign Out</Text>
-                        </TouchableOpacity>
-                    </View>
+
                 </View>
             );
         }
@@ -164,15 +293,19 @@ class Profile extends Component {
         // Default render sign in and sign up buttons
         return (
             <View style={styles.signInContainer}>
-                <View style={styles.upperContainer}>
-                    <Text style={styles.upperText}>Profile Graphc</Text>
+                <View style={styles.backgroundImage}>
+                    <Image 
+                        style={{ flex: 1, width: '100%', height: '100%' }}
+                        source={require('../../assets/images/profile-default.png')}
+                        resizeMode='cover'
+                    />
                 </View>
-                <View style={styles.middleContainer}>
+                <View style={styles.signInButtons}>
                     <TouchableOpacity style={styles.button} onPress={() => this.handleItemPress('signIn')}>
                         <Text>Sign In</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.button} onPress={() => this.handleItemPress('signUp')}>
-                        <Text>Sign Up</Text>
+                    <TouchableOpacity style={styles.button} onPress={() => this.handleItemPress('register')}>
+                        <Text>Register</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -185,30 +318,63 @@ var styles = StyleSheet.create({
 		flex: 1,
 		justifyContent: 'space-around',
 		alignItems: 'center'
-	},
+    },
+    backgroundImage: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%'
+    },
+    signInButtons: {
+        flex: .1,
+        flexDirection: 'row',
+        backgroundColor: '#00000050',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 10,
+        borderRadius: 10
+    },
     container: {
         flex: 1,
         justifyContent: 'space-around',
         alignItems: 'center'
     },
-    upperContainer: {
-        flex: .5,
-        justifyContent: 'center',
-        borderStyle: 'solid',
-        borderWidth: 1,
-        width: 300,
+    profileContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#00000099',
+        justifyContent: 'space-around',
+        alignItems: 'center'
     },
-    upperText: {
-        textAlign: 'center'
+    nameSection: {
+        alignItems: 'center',
+        padding: 15,
+        paddingBottom: 0
     },
-    middleContainer: {
-        flex: .3
+    photoSection: {
+        padding: 15
+    },
+    journalSection: {
+        flex: .9,
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 15
     },
     lowerContainer: {
-        flex: .1,
-        justifyContent: 'flex-end'
+        flexDirection: 'row',
+        justifyContent: 'space-between'
+    },
+    journalText: {
+        fontSize: 18,
+        textAlign: 'center',
+        color: 'white'
     },
     button: {
+        backgroundColor: 'white',
         width: 100,
         height: 50,
         borderWidth: 1,

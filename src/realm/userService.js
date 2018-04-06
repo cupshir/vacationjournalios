@@ -83,6 +83,25 @@ export function registerUser(userObject) {
     });
 }
 
+// Update user photo
+export function updateUserProfilePhoto(user, photo) {
+    return new Promise((resolve, reject) => {
+        if (user) {
+            try {
+                userRealm.write(() => {
+                    user.profilePhoto = photo;
+                });
+
+                resolve(user);
+            } catch (e) {
+                reject('Write failed: ', e);
+            }
+        } else {
+            reject('Missing user.');
+        }
+    });
+}
+
 // Signin user by verifying email / password and then load realms
 export function signInUser(email, password) {
     return new Promise((resolve, reject) => {

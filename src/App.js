@@ -24,8 +24,7 @@ IconsLoaded.then(() => {
 				icon: IconsMap['home'],
 				selectedIcon: IconsMap['home-selected'],
 				navigatorStyle: {
-					largeTitle: true,
-					navBarBackgroundColor: '#F9F9F9'
+					largeTitle: true
 				}
 			},
 			{
@@ -35,8 +34,7 @@ IconsLoaded.then(() => {
 				icon: IconsMap['person'],
 				selectedIcon: IconsMap['person-selected'],
 				navigatorStyle: {
-					largeTitle: true,
-					navBarBackgroundColor: '#F9F9F9'
+					largeTitle: true
 				}
 			},
 			{
@@ -47,15 +45,14 @@ IconsLoaded.then(() => {
 				selectedIcon: IconsMap['journal-selected'],
 				navigatorStyle: {
 					largeTitle: true,
-					navBarNoBorder: true,
-					navBarBackgroundColor: '#F9F9F9'
+					navBarNoBorder: true
 				}
 			}
 		],
 		tabsStyle: {
-			tabBarButtonColor: 'black',
-			tabBarSelectedButtonColor: '#0080FF',
-			tabBarBackgroundColor: '#F9F9F9'
+			tabBarButtonColor: '#e9e9e9',
+			tabBarSelectedButtonColor: '#FFFFFF',
+			tabBarBackgroundColor: '#000000'
 		},
 		appStyle: {
 			orientation: 'portrait'
