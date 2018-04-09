@@ -340,52 +340,76 @@ class Register extends Component {
             <ScrollView style={styles.form}>
                 <View>
                     {signUpError}
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel
+                        labelStyle={styles.inputLabel}
+                    >Email</FormLabel>
                     <FormInput 
                         onChangeText={this.handleEmailChange}
                         placeholder='Enter email address'
                         autoCapitalize='none'
                         autoCorrect={false}
+                        containerStyle={styles.input}
+                        inputStyle={styles.inputText}
                     />
                     {emailError}
-                    <FormLabel>Confirm Email</FormLabel>
+                    <FormLabel
+                        labelStyle={styles.inputLabel}                                        
+                    >Confirm Email</FormLabel>
                     <FormInput 
                         onChangeText={this.handleConfirmEmailChange}
                         placeholder='Confirm email address'
                         autoCapitalize='none'
                         autoCorrect={false}
+                        containerStyle={styles.input}
+                        inputStyle={styles.inputText}
                     />
                     {confirmEmailError}
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel
+                        labelStyle={styles.inputLabel}                           
+                    >Password</FormLabel>
                     <FormInput 
                         onChangeText={this.handlePasswordChange}
                         placeholder='Enter password'
                         secureTextEntry={true}
                         autoCapitalize='none'
                         autoCorrect={false}
-                        spellCheck={false} 
+                        spellCheck={false}
+                        containerStyle={styles.input}
+                        inputStyle={styles.inputText} 
                     />
                     {passwordError}
-                    <FormLabel>Confirm Password</FormLabel>
+                    <FormLabel                  
+                        labelStyle={styles.inputLabel}                           
+                    >Confirm Password</FormLabel>
                     <FormInput 
                         onChangeText={this.handleConfirmPasswordChange}
                         placeholder='Confirm password'
                         secureTextEntry={true}
                         autoCapitalize='none'
                         autoCorrect={false}
-                        spellCheck={false} 
+                        spellCheck={false}
+                        containerStyle={styles.input}
+                        inputStyle={styles.inputText} 
                     />
                     {confirmPasswordError}
-                    <FormLabel>First Name</FormLabel>
+                    <FormLabel
+                        labelStyle={styles.inputLabel}                           
+                    >First Name</FormLabel>
                     <FormInput 
                         onChangeText={this.handleFirstNameChange}
                         placeholder='Enter first name'
+                        containerStyle={styles.input}
+                        inputStyle={styles.inputText}
                     />
                     {firstNameError}
-                    <FormLabel>Last Name</FormLabel>
+                    <FormLabel
+                        labelStyle={styles.inputLabel}                           
+                    >Last Name</FormLabel>
                     <FormInput 
                         onChangeText={this.handleLastNameChange}
                         placeholder='Enter last name'
+                        containerStyle={styles.input}
+                        inputStyle={styles.inputText}
                     />
                     {lastNameError}
                 </View>
@@ -409,6 +433,17 @@ var styles = StyleSheet.create({
         flex: .8,
         backgroundColor: '#C7D0FE',
         borderWidth: 1
+    },
+    input: {
+        backgroundColor: '#AAAAAA',
+        borderRadius: 5,
+        paddingLeft: 10
+    },
+    inputLabel: {
+        color: '#FFFFFF'
+    },
+    inputText: {
+        color: '#000000'
     }
   });
 

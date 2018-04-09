@@ -21,7 +21,7 @@ class SectionHeader extends PureComponent {
 
 var styles = StyleSheet.create({
     container: {
-        backgroundColor: '#DDDDDD',
+        backgroundColor: '#999999',
         paddingTop: 5,
         paddingBottom: 5,
         paddingLeft: 15,

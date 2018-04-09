@@ -6,6 +6,8 @@ import Dashboard from './screens/Dashboard';
 import Profile from './screens/User/Profile';
 import SignIn from './screens/User/SignIn';
 import Register from './screens/User/Register';
+import EditPerson from './screens/User/EditPerson';
+import ChangePassword from './screens/User/ChangePassword';
 
 import EditJournal from './screens/Journal/EditJournal';
 import Journal from './screens/Journal/Journal';
@@ -33,6 +35,8 @@ export function registerScreens() {
   
   Navigation.registerComponent('vacationjournalios.SignIn', () => SignIn);
   Navigation.registerComponent('vacationjournalios.Register', () => Register);
+  Navigation.registerComponent('vacationjournalios.EditPerson', () => EditPerson);
+  Navigation.registerComponent('vacationjournalios.ChangePassword', () => ChangePassword);
 
   Navigation.registerComponent('vacationjournalios.LoadingModal', () => LoadingModal);
 

@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React from 'react';
+
 import { Navigation } from 'react-native-navigation';
 
 // import icons
@@ -15,7 +16,9 @@ registerScreens();
 
 // After icon map has loaded, start app
 IconsLoaded.then(() => {
+
 	Navigation.startTabBasedApp({
+		
 		tabs: [
 			{
 				label: 'Home',
@@ -24,7 +27,12 @@ IconsLoaded.then(() => {
 				icon: IconsMap['home'],
 				selectedIcon: IconsMap['home-selected'],
 				navigatorStyle: {
-					largeTitle: true
+					largeTitle: true,
+					navBarBackgroundColor: '#252525',
+					navBarTextColor: '#FFFFFF',
+					navBarButtonColor: '#FFFFFF',
+					statusBarTextColorScheme: 'light',
+					screenBackgroundColor: '#151515'
 				}
 			},
 			{
@@ -34,7 +42,12 @@ IconsLoaded.then(() => {
 				icon: IconsMap['person'],
 				selectedIcon: IconsMap['person-selected'],
 				navigatorStyle: {
-					largeTitle: true
+					largeTitle: true,
+					navBarBackgroundColor: '#252525',
+					navBarTextColor: '#FFFFFF',
+					navBarButtonColor: '#FFFFFF',
+					statusBarTextColorScheme: 'light',
+					screenBackgroundColor: '#151515'
 				}
 			},
 			{
@@ -45,14 +58,19 @@ IconsLoaded.then(() => {
 				selectedIcon: IconsMap['journal-selected'],
 				navigatorStyle: {
 					largeTitle: true,
-					navBarNoBorder: true
+					navBarNoBorder: true,
+					navBarBackgroundColor: '#252525',
+					navBarTextColor: '#FFFFFF',
+					navBarButtonColor: '#FFFFFF',
+					statusBarTextColorScheme: 'light',
+					screenBackgroundColor: '#151515'
 				}
 			}
 		],
 		tabsStyle: {
-			tabBarButtonColor: '#e9e9e9',
+			tabBarButtonColor: '#999999',
 			tabBarSelectedButtonColor: '#FFFFFF',
-			tabBarBackgroundColor: '#000000'
+			tabBarBackgroundColor: '#050505',
 		},
 		appStyle: {
 			orientation: 'portrait'
