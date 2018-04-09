@@ -13,7 +13,7 @@ import moment from 'moment';
 import {
     currentUser,
     loadUserFromCache,
-    updateUserProfilePhoto,
+    saveUserPhoto,
     signOutUser
 } from '../../realm/userService';
 
@@ -92,10 +92,10 @@ class Profile extends Component {
 
     // save photo to state
     savePhoto = (photo) => {
-        updateUserProfilePhoto(this.state.currentUser, photo).then((updatedUser) => {
+        saveUserPhoto(photo).then((updatedUser) => {
             this.updateCurrentUserInState(updatedUser);
         }).catch((error) => {
-            console.log('save Photo failed: ', error);
+            console.log('Save Photo Failed: ', error);
         });
     }
 
@@ -104,7 +104,7 @@ class Profile extends Component {
         // display confirm prompt, user must type CONFIRM to delete photo
         AlertIOS.prompt(
             'Confirm Delete',
-            'Type CONFIRM (all caps) to proceed with deletion',
+            'Are you sure you want to delete the profile image?',
             [
                 {
                     text: 'Cancel',
@@ -112,24 +112,19 @@ class Profile extends Component {
                 },
                 {
                     text: 'Delete',
-                    onPress: (enteredText) => this.handleDeletePhoto(enteredText)
+                    onPress: () => this.handleDeletePhoto()
                 }
             ]
         );
     }
 
     // handle photo delete
-    handleDeletePhoto = (enteredText) => {
-        if (enteredText === 'CONFIRM') {
-            // confirm text matched, remove photo from state
-            updateUserProfilePhoto(this.state.currentUser, null).then((updatedUser) => {
-                this.updateCurrentUserInState(updatedUser);
-            }).catch((error) => {
-                console.log('delete photo failed: ', error);
-            });
-        } else {
-            AlertIOS.alert('Incorrect CONFIRM text entered. Photo not deleted!')
-        }
+    handleDeletePhoto = () => {
+        saveUserPhoto(null).then((updatedUser) => {
+            this.updateCurrentUserInState(updatedUser);
+        }).catch((error) => {
+            console.log('Delete Photo Failed: ', error);
+        });
     }
 
 
@@ -140,6 +135,14 @@ class Profile extends Component {
                 this.props.navigator.showModal({
                     screen: 'vacationjournalios.SignIn',
                     title: 'Sign In',
+                    navigatorStyle: {
+                        largeTitle: true,
+                        navBarBackgroundColor: '#252525',
+                        navBarTextColor: '#FFFFFF',
+                        navBarButtonColor: '#FFFFFF',
+                        statusBarTextColorScheme: 'light',
+                        screenBackgroundColor: '#151515'
+                    },
                     animated: true
                 });
                 break;
@@ -148,6 +151,52 @@ class Profile extends Component {
                 this.props.navigator.showModal({
                     screen: 'vacationjournalios.Register',
                     title: 'Register',
+                    navigatorStyle: {
+                        largeTitle: true,
+                        navBarBackgroundColor: '#252525',
+                        navBarTextColor: '#FFFFFF',
+                        navBarButtonColor: '#FFFFFF',
+                        statusBarTextColorScheme: 'light',
+                        screenBackgroundColor: '#151515'
+                    },
+                    animated: true
+                });
+                break;
+            }
+            case 'edit': {
+                this.props.navigator.showModal({
+                    screen: 'vacationjournalios.EditPerson',
+                    title: 'Edit',
+                    passProps: {
+                        currentUserId: this.state.currentUser.id
+                    },
+                    navigatorStyle: {
+                        largeTitle: true,
+                        navBarBackgroundColor: '#252525',
+                        navBarTextColor: '#FFFFFF',
+                        navBarButtonColor: '#FFFFFF',
+                        statusBarTextColorScheme: 'light',
+                        screenBackgroundColor: '#151515'
+                    },
+                    animated: true
+                });
+                break;
+            }
+            case 'password': {
+                this.props.navigator.showModal({
+                    screen: 'vacationjournalios.ChangePassword',
+                    title: 'Change Password',
+                    passProps: {
+                        currentUserId: this.state.currentUser.id
+                    },
+                    navigatorStyle: {
+                        largeTitle: true,
+                        navBarBackgroundColor: '#252525',
+                        navBarTextColor: '#FFFFFF',
+                        navBarButtonColor: '#FFFFFF',
+                        statusBarTextColorScheme: 'light',
+                        screenBackgroundColor: '#151515'
+                    },
                     animated: true
                 });
                 break;
@@ -243,14 +292,6 @@ class Profile extends Component {
 
             return (
                 <View style={styles.container}>
-                    <View style={styles.backgroundImage}>
-                        <Image 
-                                // style={{ flex: 1, width: '100%', height: '100%' }}
-                                source={require('../../assets/images/profile-default.png')}
-                                resizeMode='cover'
-                                blurRadius={15}
-                            />
-                    </View>
                     <View style={styles.profileContainer}>
                         <View style={styles.nameSection}>
                             <Text style={{ fontSize: 24, color: 'white' }}>{this.state.currentUser.firstName} {this.state.currentUser.lastName}</Text>
@@ -293,13 +334,6 @@ class Profile extends Component {
         // Default render sign in and sign up buttons
         return (
             <View style={styles.signInContainer}>
-                <View style={styles.backgroundImage}>
-                    <Image 
-                        style={{ flex: 1, width: '100%', height: '100%' }}
-                        source={require('../../assets/images/profile-default.png')}
-                        resizeMode='cover'
-                    />
-                </View>
                 <View style={styles.signInButtons}>
                     <TouchableOpacity style={styles.button} onPress={() => this.handleItemPress('signIn')}>
                         <Text>Sign In</Text>
@@ -319,17 +353,9 @@ var styles = StyleSheet.create({
 		justifyContent: 'space-around',
 		alignItems: 'center'
     },
-    backgroundImage: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%'
-    },
     signInButtons: {
         flex: .1,
         flexDirection: 'row',
-        backgroundColor: '#00000050',
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: 10,
@@ -346,7 +372,6 @@ var styles = StyleSheet.create({
         left: 0,
         width: '100%',
         height: '100%',
-        backgroundColor: '#00000099',
         justifyContent: 'space-around',
         alignItems: 'center'
     },

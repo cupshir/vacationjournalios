@@ -60,6 +60,7 @@ class EditJournalEntry extends Component {
                 parkId: '',
                 attractionId: '',
                 photo: '',
+                dateCreated: '',
                 dateJournaled: new Date(),
                 minutesWaited: '',
                 usedFastPass: false,
@@ -81,6 +82,7 @@ class EditJournalEntry extends Component {
             renderAttractions: false,
             submitErrorMessage: null,
             isEdit: false,
+            valuesLaoded: false,
             isLoading: true
         };
         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
@@ -89,20 +91,21 @@ class EditJournalEntry extends Component {
     onNavigatorEvent(event) { 
         if (event.id === 'willAppear') {
             if (this.props.journalEntryId) {
-                // get journal entry
-                getJournalEntryById(this.props.journalEntryId).then((journalEntry) => {
-                    // success - pass journal entry to edit screen
-                    this.loadEntryIntoState(journalEntry);
-                }).catch((error) => {
-                    // failed
-                    console.log('error: ', error);
-                })
-            } else {
-                this.setState({
-                    ...this.state,
-                    isLoading: false
-                })
+                if (!this.state.valuesLoaded) {
+                    // get journal entry
+                    getJournalEntryById(this.props.journalEntryId).then((journalEntry) => {
+                        // success - pass journal entry to edit screen
+                        this.loadEntryIntoState(journalEntry);
+                    }).catch((error) => {
+                        // failed
+                        console.log('error: ', error);
+                    })
+                }
             }
+            this.setState({
+                ...this.state,
+                isLoading: false
+            });            
         }
         if (event.type == 'NavBarButtonPress') {
             if (event.id == 'done') {
@@ -113,7 +116,7 @@ class EditJournalEntry extends Component {
 
     componentDidMount() {
         this.props.navigator.setStyle({
-            navBarNoBorder: false
+            navBarNoBorder: true
         });
     }
 
@@ -136,6 +139,7 @@ class EditJournalEntry extends Component {
                     parkId: journalEntry.park.id,
                     attractionId: journalEntry.attraction.id,
                     photo: journalEntry.photo ? journalEntry.photo : '',
+                    dateCreated: journalEntry.dateCreated,
                     dateJournaled: journalEntry.dateJournaled,
                     minutesWaited: journalEntry.minutesWaited.toString(),
                     usedFastPass: journalEntry.usedFastPass ? true : false,
@@ -145,6 +149,7 @@ class EditJournalEntry extends Component {
                 },
                 renderAttractions: true,
                 isEdit: true,
+                valuesLoaded: true,
                 isLoading: false
             });
 
@@ -190,9 +195,9 @@ class EditJournalEntry extends Component {
     // row delete press event
     onPhotoDeletePress = () => {
         // display confirm prompt, user must type CONFIRM to delete
-        AlertIOS.prompt(
+        AlertIOS.alert(
             'Confirm Delete',
-            'Type CONFIRM (all caps) to proceed with deletion',
+            'Are you sure you want to delete the photo?',
             [
                 {
                     text: 'Cancel',
@@ -200,24 +205,19 @@ class EditJournalEntry extends Component {
                 },
                 {
                     text: 'Delete',
-                    onPress: (enteredText) => this.handleDeletePhoto(enteredText)
+                    onPress: () => this.handleDeletePhoto()
                 }
             ]
         );
     }
 
-    handleDeletePhoto = (enteredText) => {
-        if (enteredText === 'CONFIRM') {
-            this.setState({
-                formValues: {
-                    ...this.state.formValues,
-                    photo: ''
-                }
-            });
-        } else {
-            AlertIOS.alert('Incorrect CONFIRM text entered. Photo not deleted!')
-        }
-
+    handleDeletePhoto = () => {
+        this.setState({
+            formValues: {
+                ...this.state.formValues,
+                photo: ''
+            }
+        });
     }
 
     // handle minutes waited change
@@ -297,11 +297,12 @@ class EditJournalEntry extends Component {
 
     // handle attraction change
     handleAttractionChange = (attraction) => {
+        console.log('attraction: ', attraction)
         this.setState({ 
             selectedAttraction: {
                 attractionId: attraction.id,
                 attractionName: attraction.name,
-                attractionHasScore: (attraction.hasscore == true)
+                attractionHasScore: (attraction.hasScore == true)
             },
             formValues: {
                 ...this.state.formValues,
@@ -405,6 +406,7 @@ class EditJournalEntry extends Component {
             pointsScored: '',
             rating: '',
             usedFastPass: '',
+            dateCreated: '',
             dateJournaled: '',
             comments: ''
         };
@@ -425,6 +427,7 @@ class EditJournalEntry extends Component {
         returnValues.photo = values.photo;
         returnValues.rating = parseInt(values.rating, 10);
         returnValues.usedFastPass = values.usedFastPass;
+        returnValues.dateCreated = (values.dateCreated !== '') ? values.dateCreated : '';
         returnValues.dateJournaled = new Date(values.dateJournaled);
         returnValues.comments = values.comments;
 
@@ -506,7 +509,6 @@ class EditJournalEntry extends Component {
         return (
             <SearchBar
                 platform='ios'
-                lightTheme
                 containerStyle={styles.searchContainer}
                 inputStyle={styles.searchInput}
                 onChangeText={this.handleSearch}
@@ -597,7 +599,7 @@ class EditJournalEntry extends Component {
                 onPress={() => { this.toggleCameraModal(); }} 
             >
                 <View style={styles.photo}>
-                    <Icon style={{ fontSize: 80 }} name="ios-camera" /> 
+                    <Icon style={{ fontSize: 80, color: '#FFFFFF' }} name="ios-camera" /> 
                 </View>
             </TouchableOpacity>
         );
@@ -610,7 +612,7 @@ class EditJournalEntry extends Component {
             >
                 <View style={styles.photo}>
                     <Image 
-                            style={{ width: 300, height: 225 }}
+                            style={{ width: 300, height: 225, borderRadius: 5 }}
                             source={{uri: `data:image/png;base64,${photo}`}} 
                         />
                 </View>
@@ -669,7 +671,7 @@ class EditJournalEntry extends Component {
                 <View style={styles.parkAttractionSection}>
                     <TouchableOpacity
                         onPress={() => { this.setParkModalVisible(true); }} >
-                            <View style={styles.parkAttractionTitle}>
+                            <View style={[styles.parkAttractionTitle, { borderBottomWidth: .5, borderBottomColor: '#444444' }]}>
                                 <Text style={styles.parkAttractionText}>
                                     { this.state.selectedPark.parkName !== '' ? this.state.selectedPark.parkName : 'Select a Park'}
                                 </Text>
@@ -686,9 +688,11 @@ class EditJournalEntry extends Component {
                         style={styles.minuteswaited}
                         onChangeText={this.handleMinutesWaitedChange}
                         placeholder='Minutes Waited'
+                        placeholderTextColor={'#444444'}
                         value={this.state.formValues.minutesWaited} />
+                        
                     <DatePicker
-                        style={styles.datepicker}
+                        style={styles.datePicker}
                         date={this.state.formValues.dateJournaled}
                         mode="datetime"
                         placeholder="Select Date"
@@ -703,6 +707,12 @@ class EditJournalEntry extends Component {
                             },
                             btnTextConfirm: {
                                 color: '#387EF7'
+                            },
+                            placeholderText: {
+                                color: '#444444'
+                            },
+                            dateText: {
+                                color: '#000000'
                             }
                         }} />
                 </View>
@@ -711,13 +721,16 @@ class EditJournalEntry extends Component {
                         style={styles.minuteswaited}
                         onChangeText={this.handleRatingChange}
                         placeholder='Rating'
+                        placeholderTextColor={'#444444'}
                         value={this.state.formValues.rating} 
                     />
                     <View style={styles.fastpass}>
-                        <Text style={{ marginRight: 5 }}>Fastpass</Text>
+                        <Text style={{ marginRight: 5, color: '#FFFFFF' }}>Fastpass</Text>
                         <Switch
                             onValueChange={this.handleFastpassChange}
                             value={this.state.formValues.usedFastPass}
+                            onTintColor={'#387EF7'}
+                            tintColor={'#e9e9e9'}
                         />
                     </View>
                 </View>
@@ -727,6 +740,7 @@ class EditJournalEntry extends Component {
                         style={styles.comments}
                         onChangeText={this.handleCommentsChange}
                         placeholder='Comments...'
+                        placeholderTextColor={'#444444'}
                         value={this.state.formValues.comments}
                         multiline={true}
                         numberOfLines={5}
@@ -780,16 +794,14 @@ var styles = StyleSheet.create({
     messageContainer: {
         flex: 1,
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
     },
     modalContainer: {
         flex: 1
     },
     modalHeader: {
-        backgroundColor: 'white',
+        backgroundColor: '#252525',
         borderStyle: 'solid',
-        borderBottomWidth: .5,
-        borderBottomColor: 'lightgrey',
         paddingTop: 50,
         paddingBottom: 5
     },
@@ -797,7 +809,8 @@ var styles = StyleSheet.create({
         paddingLeft: 15,
         paddingTop: 20,
         fontSize: 35,
-        fontWeight: 'bold'
+        fontWeight: 'bold',
+        color: '#FFFFFF'
     },
     modalCloseButton: {
         paddingLeft: 25,
@@ -805,18 +818,18 @@ var styles = StyleSheet.create({
     },
     modalCloseButtonText: {
         fontSize: 16,
-        color: 'blue'
+        color: '#FFFFFF'
     },
     searchContainer: {
-        backgroundColor: 'white',
+        backgroundColor: '#252525',
         alignSelf: 'stretch',
-        borderTopColor: 'white',
-        borderBottomColor: 'white',
+        borderBottomColor: '#252525',
+        borderTopColor: '#252525',
         marginTop: -5,
         marginBottom: -5
     },
     searchInput: {
-        backgroundColor: '#EEEEEE',
+        backgroundColor: '#AAAAAA',
         color: 'black',
         borderRadius: 5,
         marginLeft: 15,
@@ -824,28 +837,29 @@ var styles = StyleSheet.create({
     },
     modalBody: {
         flex: 1,
-        backgroundColor: 'white',
+        backgroundColor: '#151515',
         paddingBottom: 50
     },
     listView: {
         padding: 5,
         paddingRight: 10,
         paddingLeft: 10,
-        borderBottomColor: 'lightgrey',
-        borderBottomWidth: 1
+        borderBottomColor: '#444444',
+        borderBottomWidth: 1,
+        backgroundColor: '#151515',
     },
     listText: {
-        color: 'blue',
+        color: '#FFFFFF',
         textAlign: 'center',
         fontSize: 20
     },
     container: {
         flex: 1,
-        backgroundColor: '#DDDDDD'
+        backgroundColor: '#444444'
     },
     parkAttractionSection: {
         flexDirection: 'column',
-        backgroundColor: 'white',
+        backgroundColor: '#252525',
         marginTop: 30,
         marginBottom: 15
     },
@@ -853,15 +867,13 @@ var styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        borderBottomWidth: .5,
-        borderBottomColor: 'lightgrey',
         paddingTop: 5,
         paddingBottom: 5,
         paddingRight: 15,
         paddingLeft: 15
     },
     parkAttractionText: {
-        color: 'blue',
+        color: '#FFFFFF',
         fontSize: 20,
         paddingRight: 10
     },
@@ -869,8 +881,7 @@ var styles = StyleSheet.create({
         fontSize: 24
     },
     photoSection: {
-        backgroundColor: 'white',
-        padding: 15,
+        backgroundColor: '#444444',
         marginTop: 15,
         marginBottom: 15
     },
@@ -882,32 +893,32 @@ var styles = StyleSheet.create({
     minutesWaitedDateJournaledSection: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        backgroundColor: 'white',
-        borderBottomWidth: .5,
-        borderBottomColor: 'white',
+        backgroundColor: '#252525',
         marginTop: 15,
         paddingRight: 15,
         paddingLeft: 15,
         paddingTop: 10,
         paddingBottom: 10
     },
-    datepicker: {
+    datePicker: {
         width: 160,
-        borderRadius: 5
+        borderRadius: 5,
+        backgroundColor: '#AAAAAA'
     },
     minuteswaited: {
         width: 145,
         borderWidth: .5,
-        borderColor: '#aaa',
+        backgroundColor: '#AAAAAA',
         borderRadius: 5,
         height: 40,
         fontSize: 18,
-        textAlign: 'center'
+        textAlign: 'center',
+        color: '#000000'
     },
     ratingFastPassSection: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        backgroundColor: 'white',
+        backgroundColor: '#252525',
         paddingRight: 15,
         paddingLeft: 15
     },
@@ -916,19 +927,14 @@ var styles = StyleSheet.create({
         alignItems: 'center'
     },
     pointsSection: {
-        backgroundColor: 'white',
-        borderTopWidth: .5,
-        borderTopColor: 'white',
-        borderBottomWidth: .5,
-        borderBottomColor: 'white',
+        backgroundColor: '#252525',
         paddingRight: 15,
         paddingLeft: 15,
         paddingTop: 10,
-        paddingBottom: 10,
+        paddingBottom: 10
     },
     points: {
-        borderWidth: .5,
-        borderColor: '#aaa',
+        backgroundColor: '#AAAAAA',
         borderRadius: 5,
         height: 40,
         width: 145,
@@ -936,7 +942,7 @@ var styles = StyleSheet.create({
         textAlign: 'center'
     },
     commentsSection: {
-        backgroundColor: 'white',
+        backgroundColor: '#252525',
         paddingRight: 15,
         paddingLeft: 15,
         paddingTop: 10,
@@ -944,8 +950,7 @@ var styles = StyleSheet.create({
         marginBottom: 30
     },
     comments: {
-        borderWidth: .5,
-        borderColor: '#aaa',
+        backgroundColor: '#AAAAAA',
         borderRadius: 5,
         height: 150
     }

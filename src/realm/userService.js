@@ -67,7 +67,6 @@ export function registerUser(userObject) {
                 console.log('userRealmWriteError: ', e);
                 reject(e);
             }
-            console.log('registerUserSuccess: ', currentUser);
             resolve(currentUser);
         }).catch(error =>  {
             // Something went wrong with register
@@ -78,20 +77,82 @@ export function registerUser(userObject) {
 }
 
 // Update user photo
-export function updateUserProfilePhoto(user, photo) {
+export function saveUserPhoto(photo) {
     return new Promise((resolve, reject) => {
-        if (user) {
+        if (currentUser) {
             try {
                 userRealm.write(() => {
-                    user.profilePhoto = photo;
+                    currentUser.profilePhoto = photo;
+                    currentUser.dateModified = new Date();
                 });
 
-                resolve(user);
+                resolve(currentUser);
             } catch (e) {
-                reject('Write failed: ', e);
+                reject('Save Photo failed: ', e);
             }
         } else {
-            reject('Missing user.');
+            reject('User not logged in.');
+        }
+    });
+}
+
+// Update user info in realm (currently only supports firstname and lastname)
+export function saveUser(updatedUserInfo) {
+    return new Promise((resolve, reject) => {
+        if (currentUser) {
+            // Update Person object in the userRealm
+            try {
+                userRealm.write(() => {
+                    currentUser.firstName = updatedUserInfo.firstName;
+                    currentUser.lastName = updatedUserInfo.lastName;
+                    currentUser.dateModified = new Date();
+                });
+                resolve(currentUser);
+            } catch (e) {
+                // Something went wrong userRealm write
+                reject('Updating user in Realm failed: ', e);
+            }
+        } else {
+            reject('User not logged in');
+        }
+    });
+}
+
+// Change user password
+export function changeUserPassword(oldPassword, newPassword) {
+    return new Promise((resolve, reject) => {
+        // ensure passed user matches logged in user
+        if (oldPassword !== newPassword) {
+            if (currentUser) {
+                // verify old password is good
+                Realm.Sync.User.login(AUTH_URL, currentUser.email, oldPassword)
+                    .then(user => {
+                        fetch(`${AUTH_URL}/auth/password`, {
+                            method: 'PUT',
+                            headers: {
+                                Accept: 'application/json',
+                                'Content-Type': 'application/json',
+                                Authorization: Realm.Sync.User.current.token
+                            },
+                            body: JSON.stringify({
+                                'user_id': currentUser.id,
+                                'data': {
+                                    'new_password': newPassword
+                                }
+                            })
+                        }).then((response) => { 
+                            resolve('Success');
+                        }).catch((error) => {
+                            reject('something went wrong with password change: ', error);
+                        });
+                    }).catch(error => {
+                        reject(error.message);
+                    });
+            } else {
+                reject('User not logged in');
+            }    
+        } else {
+            reject('New password cant be the same as the old password');
         }
     });
 }
@@ -180,13 +241,12 @@ export function signOutUser() {
         Realm.Sync.User.current.logout();
         userRealm = null;
         parkRealm = null;      
-        console.log('signOutUserSuccess');
         resolve(currentUser);
         
         reject('Something went wrong with signout');
     });
 }
-
+ 
 
 // End User Functions
 
@@ -250,6 +310,7 @@ export function setActiveJournal(journalId) {
                 // write journal to user's active journal
                 userRealm.write(() => {
                     currentUser.activeJournal = journal;
+                    currentUser.dateModified = new Date();
                 });
             } catch (error) {
                 reject('Something went wrong with realm write')
@@ -288,7 +349,8 @@ export function saveJournal(journal, isEdit) {
                         person.journals.push(journalObject);
                         person.activeJournal = journalObject;
                     }
-    
+                    // Update dateModified
+                    person.dateModified = new Date();
                     // success return journal object
                     resolve(journalObject);
                 });
@@ -308,10 +370,13 @@ export function deleteJournal(journalId) {
         try {
             // get Journal object to delete
             const journal = userRealm.objectForPrimaryKey('Journal', journalId);
+            const person = userRealm.objectForPrimaryKey('Person', journal.owner);
 
             userRealm.write(() => {
                 // delete journal object
-                userRealm.delete(journal);    
+                userRealm.delete(journal);
+                // update dateModified
+                person.dateModified = new Date();
             })
             reslove();
         } catch (error) {
@@ -373,8 +438,8 @@ export function createJournalEntry(park, attraction, entryValues, isEdit) {
                             park: { id: selectedPark.id },
                             attraction: { id: selectedAttraction.id },
                             dateJournaled: entryValues.dateJournaled,
-                            dateCreated: Date(),
-                            dateModified: Date(),
+                            dateCreated: (entryValues.dateCreated !== '') ? entryValues.dateCreated : new Date(),
+                            dateModified: new Date(),
                             photo: entryValues.photo,
                             minutesWaited: entryValues.minutesWaited,
                             rating: entryValues.rating,
@@ -390,6 +455,8 @@ export function createJournalEntry(park, attraction, entryValues, isEdit) {
                             if (!isEdit) {
                                 currentUser.activeJournal.journalEntries.push(newJournalEntry);
                             }
+                            // update dateModified
+                            currentUser.dateModified = new Date();
                             resolve();
                         } else {
                             console.log('Create New Journal Entry Failed');
@@ -413,16 +480,22 @@ export function createJournalEntry(park, attraction, entryValues, isEdit) {
 }
 
 // Delete Journal Entry from local Realm
-export function deleteJournalEntry(journalEntryId) {
+export function deleteJournalEntry(journalEntryId, activeJournalId) {
     return new Promise((resolve, reject) => {
         try {
+            // get active journal object
+            const activeJournal = userRealm.objectForPrimaryKey('Person', activeJournalId);
             // get journal entry object to delete
             const journalEntry = userRealm.objectForPrimaryKey('JournalEntry', journalEntryId);
-            if (journalEntry) {
+
+            if (journalEntry && activeJournal) {
                 userRealm.write(() => {
                     // delete journal entry object
                     userRealm.delete(journalEntry);
-                    
+                    // update dateModified's
+                    activeJournal.dateModified = new Date();
+                    currentUser.dateModified = new Date();
+
                     resolve();
                 })
             } else {

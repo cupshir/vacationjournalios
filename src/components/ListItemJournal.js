@@ -9,6 +9,7 @@ import {
 import PropTypes from 'prop-types';
 import Swipeout from 'react-native-swipeout';
 import moment from 'moment';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 class ListItemJournal extends PureComponent {
     // Press event
@@ -38,25 +39,17 @@ class ListItemJournal extends PureComponent {
         const leftSwipeButtons = [
             {
                 text: 'Edit',
-                backgroundColor: 'blue',
+                backgroundColor: '#999999',
                 onPress: this.onEditPress
             }
         ]
 
-        let photo = (
-            <Text>Placeholder Image</Text>
-        );
-
-        if (this.props.item.photo !== null) {
-            if (this.props.item.photo !== '') {
-                photo = (
-                    <Image 
-                        style={{ width: 100, height: 75 }}
-                        source={{uri: `data:image/png;base64,${this.props.item.photo}`}} 
-                    />
-                );
-            }
-        }
+        const photo = (this.props.item.photo === '') 
+        ? <Icon style={{ fontSize: 75, color: 'white' }} name="photo" />  
+        : <Image 
+                style={{ width: 100, height: 75 }}
+                source={{uri: `data:image/png;base64,${this.props.item.photo}`}} 
+            />
 
         let dateRange = '';
 
@@ -70,14 +63,14 @@ class ListItemJournal extends PureComponent {
                     left={leftSwipeButtons} 
                     right={rightSwipeButtons} 
                     autoClose={true} 
-                    backgroundColor={'white'} >
+                    backgroundColor={'#222222'} >
                         <TouchableOpacity onPress={this.onPress}>
                             <View style={styles.row}>
                                 <View style={styles.image}>
                                     {photo}
                                 </View>
                                 <View style={styles.contentContainer}>
-                                    <Text style={styles.contentHeader}>
+                                    <Text style={styles.headerText}>
                                         {this.props.item.name}
                                     </Text>
                                     <Text style={styles.contentText}>
@@ -99,14 +92,15 @@ var styles = StyleSheet.create({
         alignItems: 'stretch'
     },
     row: {
-        borderBottomColor: 'lightgrey',
+        borderBottomColor: '#444444',
         borderBottomWidth: 1,
-        flexDirection: 'row'
+        flexDirection: 'row',
+        backgroundColor: '#222222'
     },
     image: {
-        borderColor: 'black',
-        borderWidth: 1,
-        borderStyle: 'solid',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#999999',
         width: 100,
         height: 75,
         marginLeft: 15,
@@ -115,14 +109,17 @@ var styles = StyleSheet.create({
         marginRight: 5
     },
     contentContainer: {
+        justifyContent: 'space-around',
         marginLeft: 5,
         marginRight: 15
     },
-    contentHeader: {
-        fontSize: 18
+    headerText: {
+        fontSize: 18,
+        color: '#FFFFFF'
     },
     contentText: {
-        fontSize: 14
+        fontSize: 14,
+        color: '#FFFFFF'
     }
 })
 

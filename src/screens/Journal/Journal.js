@@ -186,7 +186,7 @@ class Journal extends Component {
                 isLoading: true
             });
             // match, delete journal by id
-            deleteJournalEntry(id).then(() => {
+            deleteJournalEntry(id, this.state.currentUser.activeJournal.id).then(() => {
                 // success - stop animation
                 this.setState({
                     ...this.state,
@@ -250,7 +250,7 @@ class Journal extends Component {
         return (
             <SearchBar
                 platform='ios'
-                lightTheme
+                lightTheme={false}
                 containerStyle={styles.searchContainer}
                 inputStyle={styles.searchInput}
                 onChangeText={this.handleSearch}
@@ -392,16 +392,15 @@ var styles = StyleSheet.create({
     container: {
         flex: 1,
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
     },
     searchContainer: {
-        backgroundColor: 'white',
+        backgroundColor: '#252525',
         alignSelf: 'stretch',
-        borderTopColor: 'white',
         marginTop: -10
     },
     listContainer: {
-        marginBottom: 75
+        marginBottom: 75,
     },
     searchInput: {
         backgroundColor: '#EEEEEE',

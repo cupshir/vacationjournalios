@@ -8,17 +8,29 @@ import {
     StyleSheet 
 } from "react-native";
 import { RNCamera } from 'react-native-camera';
-import Icon from 'react-native-vector-icons/Ionicons';
+import IonIcon from 'react-native-vector-icons/Ionicons';
+import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
+import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 class CameraModal extends Component {
     constructor(props) {
         super(props);
         this.state = { 
             cameraConfig: {
-                type: RNCamera.Constants.Type.back
+                type: RNCamera.Constants.Type.back,
+                flashMode: RNCamera.Constants.FlashMode.off
             },
-            isVisible: false
-        }
+            isVisible: false,
+            displayCameraRoll: false
+        };
+    }
+
+    // toggle camera roll modal
+    toggleCameraRoll = () => {
+        this.setState({
+            ...this.state,
+            displayCameraRoll: !this.state.displayCameraRoll
+        });
     }
 
     // toggle front/back camera
@@ -26,9 +38,23 @@ class CameraModal extends Component {
         this.setState({
             ...this.state,
             cameraConfig: {
+                ...this.state.cameraConfig,
                 type: (this.state.cameraConfig.type === RNCamera.Constants.Type.back) ? RNCamera.Constants.Type.front : RNCamera.Constants.Type.back
             }
         });
+    }
+
+    // set flash mode
+    setFlashMode = (flashMode) => {
+            // set flash mode in state
+            this.setState({
+                ...this.state,
+                cameraConfig: {
+                    ...this.state.cameraConfig,
+                    flashMode: flashMode
+                }
+            });
+        //}
     }
 
     // save photo
@@ -49,74 +75,164 @@ class CameraModal extends Component {
         }
     }
 
+    renderCamera = () => {
+        return (
+            <View style={styles.container}>
+                <View style={styles.header}>
+                    <View style={styles.headerButtons}>
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={this.props.toggleCameraModal} 
+                        >
+                            <Text style={styles.closeButtonText}>Cancel</Text>
+                        </TouchableOpacity>
+                        <View style={styles.flashButtons}>
+                            <TouchableOpacity
+                                onPress={() => this.setFlashMode(RNCamera.Constants.FlashMode.torch)} 
+                            >
+                                <MaterialCommunityIcon 
+                                    name='flashlight'
+                                    style={[
+                                        (this.state.cameraConfig.flashMode === RNCamera.Constants.FlashMode.torch) ? styles.flashButtonSelected : styles.flashButton,
+                                        { marginRight: 25 }
+                                    ]} 
+                                />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => this.setFlashMode(RNCamera.Constants.FlashMode.auto)} 
+                            >
+                                <MaterialIcon 
+                                    name='flash-auto'
+                                    style={(this.state.cameraConfig.flashMode === RNCamera.Constants.FlashMode.auto) ? styles.flashButtonSelected : styles.flashButton}
+                                />
+                            </TouchableOpacity>    
+                            <TouchableOpacity
+                                onPress={() => this.setFlashMode(RNCamera.Constants.FlashMode.on)} 
+                            >
+                                <MaterialIcon 
+                                    name='flash-on'
+                                    style={(this.state.cameraConfig.flashMode === RNCamera.Constants.FlashMode.on) ? styles.flashButtonSelected : styles.flashButton}   
+                                />
+                            </TouchableOpacity>    
+                            <TouchableOpacity
+                                onPress={() => this.setFlashMode(RNCamera.Constants.FlashMode.off)} 
+                            >
+                                <MaterialIcon 
+                                    name='flash-off'
+                                    style={(this.state.cameraConfig.flashMode === RNCamera.Constants.FlashMode.off) ? styles.flashButtonSelected : styles.flashButton}
+                                />
+                            </TouchableOpacity>    
+                        </View>
+                    </View>
+                </View>
+                <View style={styles.cameraContainer}>
+                    <RNCamera
+                        ref={ref => { this.camera = ref; }}
+                        style={styles.cameraPreview}
+                        type={this.state.cameraConfig.type}
+                        flashMode={this.state.cameraConfig.flashMode}
+                    />
+                    <View style = {styles.cameraButtons}>
+                        <TouchableOpacity
+                            onPress={this.toggleCameraRoll}
+                        >
+                            <IonIcon style={styles.cameraRollButton} name="ios-photos-outline" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={this.savePhoto.bind(this)}
+                        >
+                            <MaterialCommunityIcon style={styles.saveButtonInnerCircle} name="circle" />
+                            <MaterialCommunityIcon style={styles.saveButtonOuterCirle} name="circle-outline" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={this.toggleCameraType}
+                        >
+                            <IonIcon style={styles.typeButton} name="ios-reverse-camera-outline" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </View>
+        );
+    }
+
+    renderCameraRoll = () => {
+        return (
+            <View style={styles.container}>
+                <View style={styles.header}>
+                    <View style={styles.headerButtons}>
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={this.toggleCameraRoll} 
+                        >
+                            <Text style={styles.closeButtonText}>Camera</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+                <Text>Camera Roll will display here</Text>
+            </View>
+        )
+    }
+
     // render the camera modal
     render() {
+        const displayCameraRoll = this.state.displayCameraRoll ? true : false;
+
+        let modalContent;
+        if (displayCameraRoll) {
+            modalContent = this.renderCameraRoll();
+        } else {
+            modalContent = this.renderCamera();
+        }
+
         return (
             <Modal
                 animationType="slide"
                 transparent={false}
                 visible={this.props.visible}
             >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalHeader}>
-                        <TouchableOpacity
-                            style={styles.modalCloseButton}
-                            onPress={this.props.toggleCameraModal} 
-                        >
-                            <Text style={styles.modalCloseButtonText}>Cancel</Text>
-                        </TouchableOpacity>
-                        <Text style={styles.modalTitle}>Attach Photo</Text>
-                    </View>
-                    <View style={styles.cameraContainer}>
-                        <RNCamera
-                            ref={ref => { this.camera = ref; }}
-                            style={styles.cameraPreview}
-                            type={this.state.cameraConfig.type}
-                        />
-                        <View style = {styles.cameraButtons}>
-                            <TouchableOpacity
-                                onPress={this.toggleCameraType.bind(this)}
-                            >
-                                <Icon style={{ fontSize: 60 }} name="ios-reverse-camera-outline" />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={this.savePhoto.bind(this)}
-                            >
-                                <Icon style={{ fontSize: 60 }} name="ios-camera-outline" />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
+                {modalContent}
             </Modal>
         );
     }
 }
 
 var styles = StyleSheet.create({
-    modalContainer: {
-        flex: 1
+    container: {
+        flex: 1,
+        backgroundColor: '#252525',
     },
-    modalHeader: {
-        backgroundColor: 'white',
-        borderStyle: 'solid',
-        borderBottomWidth: .5,
-        borderBottomColor: 'lightgrey',
+    header: {
         paddingTop: 50,
-        paddingBottom: 5
+        paddingBottom: 50
     },
-    modalTitle: {
-        paddingLeft: 15,
-        paddingTop: 20,
-        fontSize: 35,
-        fontWeight: 'bold'
+    headerButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-between'
     },
-    modalCloseButton: {
+    closeButton: {
         paddingLeft: 25,
         paddingTop: 5
     },
-    modalCloseButtonText: {
+    closeButtonText: {
         fontSize: 16,
-        color: 'blue'
+        color: '#FFFFFF'
+    },
+    flashButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginRight: 10
+    },
+    flashButton: {
+        fontSize: 30,
+        color: '#888888',
+        marginRight: 10,
+        marginLeft: 10
+    },
+    flashButtonSelected: {
+        fontSize: 30,
+        color: '#FFFFFF',
+        marginRight: 10,
+        marginLeft: 10
     },
     cameraContainer: {
         flex: 1,
@@ -130,11 +246,28 @@ var styles = StyleSheet.create({
     cameraButtons: {
         flex: 0,
         flexDirection: 'row',
-        justifyContent: 'space-around',
-        backgroundColor: '#fff',
-        borderRadius: 5,
-        margin: 20
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        margin: 30
     },
+    cameraRollButton: {
+        fontSize: 40,
+        color: '#FFFFFF'
+    },
+    saveButtonInnerCircle: {
+        fontSize: 60,
+        color: '#FFFFFF'
+    },
+    saveButtonOuterCirle: {
+        fontSize: 80,
+        color: '#FFFFFF',
+        marginTop: -75.5,
+        marginLeft: -10
+    },
+    typeButton: {
+        fontSize: 40,
+        color: '#FFFFFF'
+    }
 });
 
 CameraModal.propTypes = {

@@ -211,7 +211,7 @@ class EditJournal extends Component {
         // display confirm prompt, user must type CONFIRM to delete photo
         AlertIOS.prompt(
             'Confirm Delete',
-            'Type CONFIRM (all caps) to proceed with deletion',
+            'Are you sure you want to delete the journal image?',
             [
                 {
                     text: 'Cancel',
@@ -219,25 +219,20 @@ class EditJournal extends Component {
                 },
                 {
                     text: 'Delete',
-                    onPress: (enteredText) => this.handleDeletePhoto(enteredText)
+                    onPress: () => this.handleDeletePhoto()
                 }
             ]
         );
     }
 
     // handle photo delete
-    handleDeletePhoto = (enteredText) => {
-        if (enteredText === 'CONFIRM') {
-            // confirm text matched, remove photo from state
-            this.setState({
-                formValues: {
-                    ...this.state.formValues,
-                    photo: ''
-                }
-            });
-        } else {
-            AlertIOS.alert('Incorrect CONFIRM text entered. Photo not deleted!')
-        }
+    handleDeletePhoto = () => {
+        this.setState({
+            formValues: {
+                ...this.state.formValues,
+                photo: ''
+            }
+        });
     }
 
     // handle journal save event
@@ -504,8 +499,10 @@ class EditJournal extends Component {
                         });                  
                     }}
                     value={this.state.parks[index].checked}
+                    onTintColor={'#387EF7'}
+                    tintColor={'#e9e9e9'}
                 />
-                <Text style={{ marginLeft: 5 }}>{item.name}</Text>
+                <Text style={styles.checkBoxItemText}>{item.name}</Text>
             </View>
         )
     };
@@ -517,7 +514,7 @@ class EditJournal extends Component {
                 onPress={() => { this.toggleCameraModal(); }} 
             >
                 <View style={styles.photo}>
-                    <Icon style={{ fontSize: 80 }} name="ios-camera" /> 
+                    <Icon style={{ fontSize: 80, color: '#FFFFFF' }} name="ios-camera" /> 
                 </View>
             </TouchableOpacity>
         );
@@ -580,6 +577,7 @@ class EditJournal extends Component {
                         onChangeText={this.handleNameChange}
                         placeholder='Enter journal name'
                         value={this.state.formValues.name}
+                        placeholderTextColor={'#444444'}
                     />
                     <View style={styles.photoSection}>
                         {photo}
@@ -592,6 +590,7 @@ class EditJournal extends Component {
                         onChangeText={this.handleDescriptionChange}
                         placeholder='Enter journal description'
                         value={this.state.formValues.description}
+                        placeholderTextColor={'#444444'}
                     />
                     {dateError}
                     <View style={styles.datePickers}>
@@ -611,6 +610,12 @@ class EditJournal extends Component {
                                 },
                                 btnTextConfirm: {
                                     color: '#387EF7'
+                                },
+                                placeholderText: {
+                                    color: '#444444'
+                                },
+                                dateText: {
+                                    color: '#000000'
                                 }
                             }} 
                         />
@@ -630,6 +635,12 @@ class EditJournal extends Component {
                                 },
                                 btnTextConfirm: {
                                     color: '#387EF7'
+                                },
+                                placeholderText: {
+                                    color: '#444444'
+                                },
+                                dateText: {
+                                    color: '#000000'
                                 }
                             }} 
                         />
@@ -662,13 +673,11 @@ var styles = StyleSheet.create({
     },
     input: {
         padding: 10,
-        borderWidth: .5,
-        borderColor: '#aaa',
-        borderRadius: 5
+        borderRadius: 5,
+        backgroundColor: '#AAAAAA'
     },
     
     photoSection: {
-        backgroundColor: 'white',
         padding: 15
     },
     photo: {
@@ -677,9 +686,8 @@ var styles = StyleSheet.create({
         alignItems: 'center'
     },
     descriptionInput: {
+        backgroundColor: '#AAAAAA',
         padding: 5,
-        borderWidth: .5,
-        borderColor: '#aaa',
         borderRadius: 5,
         height: 75,
         marginBottom: 15
@@ -690,10 +698,20 @@ var styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 15
     },
+    datepickerStart: {
+        backgroundColor: '#AAAAAA'
+    },
+    datepickerEnd: {
+        backgroundColor: '#AAAAAA'
+    },
     checkboxItems: {
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 5
+    },
+    checkBoxItemText: {
+        color: '#AAAAAA',
+        marginLeft: 5
     }
 })
 

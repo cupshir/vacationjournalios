@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import {
     View,
+    StatusBar,
     StyleSheet
 } from 'react-native';
 
@@ -19,6 +20,9 @@ class Dashboard extends Component {
   render() {
     return (
       <View style={styles.container}>
+        <StatusBar
+          barStyle="light-content"
+        />
         <View style={styles.upper}>
           <StatBoxLarge style={styles.largeBox} title="Most Ridden Today" journalEntry="Journal Entry Object" />
           <StatBoxLarge style={styles.largeBox} title="Most Ridden Today" journalEntry="Journal Entry Object" />

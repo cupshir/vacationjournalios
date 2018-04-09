@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React from 'react';
+
 import { Navigation } from 'react-native-navigation';
 
 // import icons
@@ -15,7 +16,9 @@ registerScreens();
 
 // After icon map has loaded, start app
 IconsLoaded.then(() => {
+
 	Navigation.startTabBasedApp({
+		
 		tabs: [
 			{
 				label: 'Home',
@@ -25,7 +28,11 @@ IconsLoaded.then(() => {
 				selectedIcon: IconsMap['home-selected'],
 				navigatorStyle: {
 					largeTitle: true,
-					navBarBackgroundColor: '#F9F9F9'
+					navBarBackgroundColor: '#252525',
+					navBarTextColor: '#FFFFFF',
+					navBarButtonColor: '#FFFFFF',
+					statusBarTextColorScheme: 'light',
+					screenBackgroundColor: '#151515'
 				}
 			},
 			{
@@ -36,7 +43,11 @@ IconsLoaded.then(() => {
 				selectedIcon: IconsMap['person-selected'],
 				navigatorStyle: {
 					largeTitle: true,
-					navBarBackgroundColor: '#F9F9F9'
+					navBarBackgroundColor: '#252525',
+					navBarTextColor: '#FFFFFF',
+					navBarButtonColor: '#FFFFFF',
+					statusBarTextColorScheme: 'light',
+					screenBackgroundColor: '#151515'
 				}
 			},
 			{
@@ -48,14 +59,18 @@ IconsLoaded.then(() => {
 				navigatorStyle: {
 					largeTitle: true,
 					navBarNoBorder: true,
-					navBarBackgroundColor: '#F9F9F9'
+					navBarBackgroundColor: '#252525',
+					navBarTextColor: '#FFFFFF',
+					navBarButtonColor: '#FFFFFF',
+					statusBarTextColorScheme: 'light',
+					screenBackgroundColor: '#151515'
 				}
 			}
 		],
 		tabsStyle: {
-			tabBarButtonColor: 'black',
-			tabBarSelectedButtonColor: '#0080FF',
-			tabBarBackgroundColor: '#F9F9F9'
+			tabBarButtonColor: '#999999',
+			tabBarSelectedButtonColor: '#FFFFFF',
+			tabBarBackgroundColor: '#050505',
 		},
 		appStyle: {
 			orientation: 'portrait'

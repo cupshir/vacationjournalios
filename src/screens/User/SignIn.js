@@ -215,22 +215,33 @@ class SignIn extends Component {
                 <View style={styles.lower}>
                     {authenticationError}
                     <View>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel
+                            labelStyle={styles.inputLabel}
+                        >
+                            Email
+                        </FormLabel>
                         <FormInput 
                             onChangeText={this.handleEmailChange}
                             placeholder='Enter email address'
                             autoCapitalize='none'
                             autoCorrect={false}
+                            containerStyle={styles.input}
+                            inputStyle={styles.inputText}
+                            value={this.state.formValues.email}
                         />
                         {emailError}
-                        <FormLabel>Password</FormLabel>
+                        <FormLabel
+                            labelStyle={styles.inputLabel}
+                        >Password</FormLabel>
                         <FormInput 
                             onChangeText={this.handlePasswordChange}
                             placeholder='Enter password'
                             secureTextEntry={true}
                             autoCapitalize='none'
                             autoCorrect={false}
-                            spellCheck={false} 
+                            spellCheck={false}
+                            containerStyle={styles.input}
+                            inputStyle={styles.inputText}
                         />
                         {passwordError}
                     </View>
@@ -266,6 +277,17 @@ var styles = StyleSheet.create({
         borderColor: 'gray',
         borderWidth: 1,
         borderRadius: 5
+    },
+    input: {
+        backgroundColor: '#AAAAAA',
+        borderRadius: 5,
+        paddingLeft: 10
+    },
+    inputLabel: {
+        color: '#FFFFFF'
+    },
+    inputText: {
+        color: '#000000'
     }
 });
 
