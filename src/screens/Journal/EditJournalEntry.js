@@ -19,12 +19,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import Icon from 'react-native-vector-icons/Ionicons';
 import DatePicker from 'react-native-datepicker';
 
-import {
-    currentUser,
-    parkRealm,
-    createJournalEntry,
-    getJournalEntryById
-} from '../../realm/userService';
+import * as UserService from '../../realm/userService';
 
 import LoadingMickey from '../../components/LoadingMickey';
 import CameraModal from "../../components/CameraModal";
@@ -44,8 +39,8 @@ class EditJournalEntry extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            parks: currentUser.activeJournal.parks,
-            attractions: parkRealm.objects('Attraction'),
+            parks: UserService.currentUser.activeJournal.parks,
+            attractions: UserService.attractions,
             selectedPark: {
                 parkId: '',
                 parkName: '',
@@ -93,7 +88,7 @@ class EditJournalEntry extends Component {
             if (this.props.journalEntryId) {
                 if (!this.state.valuesLoaded) {
                     // get journal entry
-                    getJournalEntryById(this.props.journalEntryId).then((journalEntry) => {
+                    UserService.getJournalEntryById(this.props.journalEntryId).then((journalEntry) => {
                         // success - pass journal entry to edit screen
                         this.loadEntryIntoState(journalEntry);
                     }).catch((error) => {
@@ -152,7 +147,6 @@ class EditJournalEntry extends Component {
                 valuesLoaded: true,
                 isLoading: false
             });
-
         }
     }
 
@@ -297,7 +291,6 @@ class EditJournalEntry extends Component {
 
     // handle attraction change
     handleAttractionChange = (attraction) => {
-        console.log('attraction: ', attraction)
         this.setState({ 
             selectedAttraction: {
                 attractionId: attraction.id,
@@ -355,10 +348,10 @@ class EditJournalEntry extends Component {
             // scrub values (changes strings to numbers, etc)
             const submitValues = this.prepareValuesForDB(this.state.formValues);
             // Get Park
-            const park = parkRealm.objectForPrimaryKey('Park', submitValues.parkId);
+            const park = UserService.parks.filtered('id == $0', submitValues.parkId)[0];
             // Get Attraction
-            const attraction = parkRealm.objectForPrimaryKey('Attraction', submitValues.attractionId);
-
+            const attraction = UserService.attractions.filtered('id == $0', submitValues.attractionId)[0];
+            
             if (park && attraction) {
                 // start loading animation
                 this.setState({
@@ -366,7 +359,7 @@ class EditJournalEntry extends Component {
                     isLoading: true
                 });
                 // save journal entry to realm db
-                createJournalEntry(park, attraction, submitValues, this.state.isEdit).then(() => {
+                UserService.createJournalEntry(park, attraction, submitValues, this.state.isEdit).then(() => {
                     // success - stop loading animation and pop back to journal
                     this.setState({
                         ...this.state,
@@ -499,7 +492,8 @@ class EditJournalEntry extends Component {
                     style={styles.points}
                     onChangeText={this.handlePointsScoredChange}
                     placeholder='Points Scored'
-                    value={this.state.formValues.pointsScored} />
+                    value={this.state.formValues.pointsScored} 
+                />
             </View>
         )
     }
@@ -520,7 +514,8 @@ class EditJournalEntry extends Component {
                 clearIcon={{
                     name: 'close'
                 }}
-                placeholder='Search' />
+                placeholder='Search' 
+            />
         );
     }
 
@@ -569,7 +564,8 @@ class EditJournalEntry extends Component {
                             <View style={styles.modalHeader}>
                                 <TouchableOpacity
                                     style={styles.modalCloseButton}
-                                    onPress={() => { this.setAttractionModalVisible(false); }} >
+                                    onPress={() => { this.setAttractionModalVisible(false); }} 
+                                >
                                     <Text style={styles.modalCloseButtonText}>Cancel</Text>
                                 </TouchableOpacity>
                                 <Text style={styles.modalTitle}>Select Attraction</Text>
@@ -612,9 +608,9 @@ class EditJournalEntry extends Component {
             >
                 <View style={styles.photo}>
                     <Image 
-                            style={{ width: 300, height: 225, borderRadius: 5 }}
-                            source={{uri: `data:image/png;base64,${photo}`}} 
-                        />
+                        style={{ width: 300, height: 225, borderRadius: 5 }}
+                        source={{uri: `data:image/png;base64,${photo}`}} 
+                    />
                 </View>
             </TouchableOpacity>
         );
@@ -652,7 +648,7 @@ class EditJournalEntry extends Component {
         }
 
         // Check that parks and attractions exist in state
-        if (!this.state.parks.length > 0 || !this.state.attractions.length > 0) {
+        if (!this.state.parks || !this.state.attractions) {
             return (
                 <View style={styles.messageContainer}>
                     <Text>Parks and/or attractions data missing. Add better handling later...</Text>
@@ -689,8 +685,8 @@ class EditJournalEntry extends Component {
                         onChangeText={this.handleMinutesWaitedChange}
                         placeholder='Minutes Waited'
                         placeholderTextColor={'#444444'}
-                        value={this.state.formValues.minutesWaited} />
-                        
+                        value={this.state.formValues.minutesWaited} 
+                    />                        
                     <DatePicker
                         style={styles.datePicker}
                         date={this.state.formValues.dateJournaled}
@@ -714,7 +710,8 @@ class EditJournalEntry extends Component {
                             dateText: {
                                 color: '#000000'
                             }
-                        }} />
+                        }} 
+                    />
                 </View>
                 <View style={styles.ratingFastPassSection}>
                     <TextInput
@@ -744,7 +741,8 @@ class EditJournalEntry extends Component {
                         value={this.state.formValues.comments}
                         multiline={true}
                         numberOfLines={5}
-                        maxLength={400} />
+                        maxLength={400} 
+                    />
                 </View>
 
                 <CameraModal 
@@ -778,7 +776,8 @@ class EditJournalEntry extends Component {
                                         title={item.name}
                                         onPress={this.handleParkChange}
                                         viewStyle={styles.listView}
-                                        textStyle={styles.listText} />
+                                        textStyle={styles.listText} 
+                                    />
                                 }
                                 keyExtractor={item => item.id.toString()}
                             />

@@ -10,12 +10,7 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import moment from 'moment';
 
-import {
-    currentUser,
-    loadUserFromCache,
-    saveUserPhoto,
-    signOutUser
-} from '../../realm/userService';
+import * as UserService from '../../realm/userService';
 
 import LoadingMickey from '../../components/LoadingMickey';
 import CameraModal from "../../components/CameraModal";
@@ -35,13 +30,47 @@ class Profile extends Component {
 
     // on mount try to load user from cache
     componentDidMount() {
-        loadUserFromCache().then((user) => {
+        UserService.loadUserFromCache().then((user) => {
             // Success - update user in state
             this.setState({
                 ...this.state,
                 isLoading: true
             })
             this.updateCurrentUserInState(user);
+
+            // Date comparison not working, circle back to fix...
+            const currentTime = new Date();
+            currentTime.setDate(currentTime.getDate()-14);
+            if (user.attractionsLastSynced.getDate() === currentTime.getDate()) {
+                
+                // add network check before querying
+                
+                console.log('starting attraction seed');
+                let seedAttractions = UserService.parkRealm.objects('Attraction');
+
+                UserService.updateUserAttractions(seedAttractions).then(() => {
+                    console.log('seed attractions success');
+                }).catch((error) => {
+                    console.log('seed attractions failed');
+                });
+
+            }
+            // debugging
+            console.log('CT: ', currentTime.getDate())
+            console.log('lastSyncParks: ', user.parksLastSynced.getDate());
+            console.log('lastSyncAttractions: ', user.attractionsLastSynced.getDate())
+            if (user.parksLastSynced.getDate() === currentTime.getDate()) {
+
+                // add network check before querying
+
+                console.log('starting park seed');
+                let seedParks = UserService.parkRealm.objects('Park');
+                UserService.updateUserParks(seedParks).then(() => {
+                    console.log('seed  parks success');
+                }).catch((error) => {
+                    console.log('seed parks failed');
+                });
+            }
         }).catch((error) => {
             // Failed no cache user - clear user in state
             this.setState({
@@ -55,8 +84,8 @@ class Profile extends Component {
     // Navigator button event
     onNavigatorEvent(event) {
         if (event.id === 'willAppear') {
-            if (currentUser) {
-                this.updateCurrentUserInState(currentUser);
+            if (UserService.currentUser) {
+                this.updateCurrentUserInState(UserService.currentUser);
             }
         }
     }
@@ -92,7 +121,7 @@ class Profile extends Component {
 
     // save photo to state
     savePhoto = (photo) => {
-        saveUserPhoto(photo).then((updatedUser) => {
+        UserService.saveUserPhoto(photo).then((updatedUser) => {
             this.updateCurrentUserInState(updatedUser);
         }).catch((error) => {
             console.log('Save Photo Failed: ', error);
@@ -120,7 +149,7 @@ class Profile extends Component {
 
     // handle photo delete
     handleDeletePhoto = () => {
-        saveUserPhoto(null).then((updatedUser) => {
+        UserService.saveUserPhoto(null).then((updatedUser) => {
             this.updateCurrentUserInState(updatedUser);
         }).catch((error) => {
             console.log('Delete Photo Failed: ', error);
@@ -214,7 +243,7 @@ class Profile extends Component {
             ...this.state,
             isLoading: true
         });
-        signOutUser().then(() => {
+        UserService.signOutUser().then(() => {
             // Success - clear user from state
             this.setState({
                 ...this.state,

@@ -11,6 +11,8 @@ import Swipeout from 'react-native-swipeout';
 import moment from 'moment';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
+import * as AppConstants from '../realm/config';
+
 class ListItemJournalEntry extends PureComponent {
     // Press event
     onPress = () => {
@@ -25,6 +27,21 @@ class ListItemJournalEntry extends PureComponent {
     // Delete event
     onDeletePress = () => {
         this.props.onDeletePress(this.props.item.id);
+    }
+
+    // render fastpass image
+    renderFastpass = (plus) => {
+        // get the correct fast pass image
+        const imageSource = plus
+            ? require('../assets/FastPassPlus_90.png')
+            : require('../assets/FastPass_90.png')
+
+        return (
+            <Image 
+                style={styles.fastpassImage} 
+                source={imageSource}
+            />
+        );
     }
 
     render() {
@@ -44,12 +61,24 @@ class ListItemJournalEntry extends PureComponent {
             }
         ]
 
+        // render photo or placeholder
         const photo = (this.props.item.photo === '') 
         ? <Icon style={{ fontSize: 75, color: 'white' }} name="photo" />  
         : <Image 
-                style={{ width: 100, height: 75 }}
+                style={{ width: 100, height: 100 }}
                 source={{uri: `data:image/png;base64,${this.props.item.photo}`}} 
             />
+
+        // render fastpass image if used
+        let fastpass = null;
+        if (this.props.item.usedFastPass) {
+            const parkId = this.props.item.park.id;
+            if (parkId === AppConstants.DISNEYLAND || parkId === AppConstants.CALIFORNIA_ADVENTURE) {
+                fastpass = this.renderFastpass(false);
+            } else if (parkId === AppConstants.MAGIC_KINGDOM || parkId === AppConstants.EPCOT || parkId === AppConstants.HOLLYWOOD_STUDIOS || parkId === AppConstants.ANIMAL_KINGDOM) {
+                fastpass = this.renderFastpass(true);
+            }
+        }
 
         // Format date
         const dateJournaled = moment(this.props.item.dateJournaled).format('MM-DD-YYYY hh:mm a');
@@ -67,15 +96,22 @@ class ListItemJournalEntry extends PureComponent {
                                     {photo}
                                 </View>
                                 <View style={styles.contentContainer}>
-                                    <Text style={styles.headerText}>
+                                    <Text style={styles.attractionText}>
                                         {this.props.item.attraction.name}
                                     </Text>
-                                    <Text style={styles.contentText}>
-                                        {this.props.item.park.name}
-                                    </Text>
-                                    <Text style={styles.footerText}>
-                                        {dateJournaled}
-                                    </Text>
+                                    <View>
+                                        <Text style={styles.parkText}>
+                                            {this.props.item.park.name}
+                                        </Text>
+                                        <View style={styles.footer}>
+                                            <View style={styles.fastpass}>
+                                                {fastpass}
+                                            </View>
+                                            <Text style={styles.footerText}>
+                                                {dateJournaled}
+                                            </Text>
+                                        </View>
+                                    </View>
                                 </View>
                             </View>
                         </TouchableOpacity>
@@ -102,7 +138,7 @@ var styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: '#999999',
         width: 100,
-        height: 75,
+        height: 100,
         marginLeft: 15,
         marginTop: 5,
         marginBottom: 5,
@@ -113,20 +149,39 @@ var styles = StyleSheet.create({
         marginLeft: 5,
         marginRight: 15
     },
-    headerText: {
-        width: 275,
+    attractionText: {
+        width: 250,
         fontSize: 18,
         fontWeight: 'bold',
         color: '#FFFFFF'
     },
-    contentText: {
+    parkText: {
         fontSize: 14,
-        color: '#FFFFFF'
+        color: '#FFFFFF',
+        paddingTop: 5,
+        paddingBottom: 5
+    },
+    footer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        alignItems: 'flex-end',
+        marginTop: -5,
+        marginBottom: 5
     },
     footerText: {
         fontSize: 14,
-        color: '#FFFFFF',
-        alignSelf: 'flex-end'
+        color: '#FFFFFF'
+    },
+    fastpass: {
+        width: 35,
+        height: 35,
+        marginLeft: 5,
+        marginRight: 10,
+        paddingTop: 5
+    },
+    fastpassImage: {
+        width: 35,
+        height: 35,
     }
 })
 

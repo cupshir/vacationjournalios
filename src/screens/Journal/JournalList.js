@@ -12,11 +12,7 @@ import {
     IconsLoaded
 } from '../../AppIcons';
 
-import {
-    currentUser,
-    setActiveJournal,
-    deleteJournal
-} from '../../realm/userService';
+import * as UserService from '../../realm/userService';
 
 import ListItemJournal from "../../components/ListItemJournal";
 import LoadingMickey from '../../components/LoadingMickey';
@@ -34,7 +30,7 @@ class JournalList extends Component {
     // Navigator button event
     onNavigatorEvent(event) {
         if (event.id === 'willAppear') {
-            this.updateCurrentUserInState(currentUser);
+            this.updateCurrentUserInState(UserService.currentUser);
         }
         if (event.type == 'NavBarButtonPress') {
             if (event.id == 'addJournal') {
@@ -56,13 +52,13 @@ class JournalList extends Component {
 
         // Set nav buttons
         IconsLoaded.then(() => {
-            if (currentUser) {
+            if (UserService.currentUser) {
                 this.props.navigator.setButtons({
                     rightButtons: 
                     [
                         {
-                        id: 'addJournal',
-                        icon: IconsMap['add']
+                            id: 'addJournal',
+                            icon: IconsMap['add']
                         }
                     ]
                 });
@@ -101,7 +97,7 @@ class JournalList extends Component {
         });
         if (journalId) {
             // attempt to set active journal
-            setActiveJournal(journalId).then((journal) => {
+            UserService.setActiveJournal(journalId).then((journal) => {
                 //success - stop loading animation and close modal
                 this.setState({
                     ...this.state,
@@ -142,7 +138,7 @@ class JournalList extends Component {
         // display confirm prompt, user must type matching name to delete
         AlertIOS.prompt(
             'Confirm Delete',
-            'Type exact Journal Name to proceed with deletion',
+            'WARNING: This will delete all associated journal entries and cant be undone! Type the exact journal name to proceed.',
             [
                 {
                     text: 'Cancel',
@@ -166,7 +162,7 @@ class JournalList extends Component {
                 isLoading: true
             });
             // attempt to delete journal
-            deleteJournal(journalId).then(() => {
+            UserService.deleteJournal(journalId).then(() => {
                 // Success - stop loading animation
                 this.setState({
                     ...this.state,

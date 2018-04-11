@@ -13,10 +13,7 @@ import {
 } from 'react-native-elements';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
-import { 
-    userRealm,
-    saveUser
-} from '../../realm/userService';
+import * as UserService from '../../realm/userService';
 
 import LoadingMickey from '../../components/LoadingMickey';
 
@@ -56,7 +53,7 @@ class EditPerson extends Component {
 
     componentDidMount() {
         if(this.props.currentUserId) {
-            const currentUser = userRealm.objectForPrimaryKey('Person', this.props.currentUserId);
+            const currentUser = UserService.userRealm.objectForPrimaryKey('Person', this.props.currentUserId);
 
             if(currentUser) {
                 this.setState({
@@ -171,7 +168,7 @@ class EditPerson extends Component {
 
             if (this.state.currentUser) {
                 // Attempt registration
-                saveUser(updatedUserInfo).then((user) => {
+                UserService.saveUser(updatedUserInfo).then((user) => {
                     // success - stoping loading animation and close modal
                     this.setState({
                         ...this.state,
