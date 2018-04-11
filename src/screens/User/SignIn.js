@@ -13,9 +13,7 @@ import {
 } from 'react-native-elements';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
-import { 
-    signInUser,
-} from '../../realm/userService';
+import * as UserService from '../../realm/userService';
 
 import LoadingMickey from '../../components/LoadingMickey';
 
@@ -122,7 +120,7 @@ class SignIn extends Component {
             });
 
             // attempt sign in user
-            signInUser(this.state.formValues.email,this.state.formValues.password).then((user) => {
+            UserService.signInUser(this.state.formValues.email,this.state.formValues.password).then((user) => {
                 // success - stop loading animation - close modal
                 this.setState({
                     ...this.state,

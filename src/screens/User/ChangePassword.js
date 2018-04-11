@@ -13,10 +13,7 @@ import {
 } from 'react-native-elements';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
-import { 
-    userRealm,
-    changeUserPassword
-} from '../../realm/userService';
+import * as UserService from '../../realm/userService';
 
 import LoadingMickey from '../../components/LoadingMickey';
 
@@ -58,7 +55,7 @@ class ChangePassword extends Component {
 
     componentDidMount() {
         if(this.props.currentUserId) {
-            const currentUser = userRealm.objectForPrimaryKey('Person', this.props.currentUserId);
+            const currentUser = UserService.userRealm.objectForPrimaryKey('Person', this.props.currentUserId);
 
             if(currentUser) {
                 this.setState({
@@ -172,7 +169,7 @@ class ChangePassword extends Component {
                 isLoading: true
             });
             // Attempt registration
-            changeUserPassword(this.state.formValues.oldPassword, this.state.formValues.newPassword).then((user) => {
+            UserService.changeUserPassword(this.state.formValues.oldPassword, this.state.formValues.newPassword).then((user) => {
                     // success - stoping loading animation and close modal
                     this.setState({
                         ...this.state,

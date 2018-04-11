@@ -17,10 +17,7 @@ import {
 } from '../../AppIcons';
 import moment from 'moment';
 
-import {
-    currentUser,
-    deleteJournalEntry
-} from '../../realm/userService';
+import * as UserService from '../../realm/userService';
 
 import ListItemJournalEntry from "../../components/ListItemJournalEntry";
 import SectionHeader from "../../components/SectionHeader";
@@ -48,7 +45,7 @@ class Journal extends Component {
 
     onNavigatorEvent(event) {
         if (event.id === 'willAppear') {
-            this.updateCurrentUserInState(currentUser);
+            this.updateCurrentUserInState(UserService.currentUser);
         
             this.props.navigator.setTitle({
                 title: ((this.state.currentUser !== null && this.state.currentUser.activeJournal !== null) ? this.state.currentUser.activeJournal.name : 'Select A Journal')
@@ -142,7 +139,15 @@ class Journal extends Component {
 
     // row on press event : TODO
     onPress = (id) => {
-
+        this.props.navigator.push({
+            screen: 'vacationjournalios.JournalEntry',
+            title: 'Journal Entry',
+            passProps: {
+                journalEntryId: id
+            },
+            animated: true,
+            animationType: 'fade'
+        });
     }
 
     // row edit press event
@@ -161,9 +166,9 @@ class Journal extends Component {
     // row delete press event
     onDeletePress = (id) => {
         // display confirm prompt, user must type CONFIRM to delete
-        AlertIOS.prompt(
+        AlertIOS.alert(
             'Confirm Delete',
-            'Type CONFIRM (all caps) to proceed with deletion',
+            'Are you sure you want to delete the journal entry?',
             [
                 {
                     text: 'Cancel',
@@ -171,38 +176,33 @@ class Journal extends Component {
                 },
                 {
                     text: 'Delete',
-                    onPress: (enteredText) => this.handleDeleteJournalEntry(id, enteredText)
+                    onPress: () => this.handleDeleteJournalEntry(id)
                 }
             ]
         );
     }
 
     // handle delete journal entry
-    handleDeleteJournalEntry = (id, enteredText) => {
-        // verify typed text is CONFIRM
-        if(enteredText === 'CONFIRM' ) {
+    handleDeleteJournalEntry = (id) => {
+        this.setState({
+            ...this.state,
+            isLoading: true
+        });
+        // match, delete journal by id
+        UserService.deleteJournalEntry(id, this.state.currentUser.activeJournal.id).then(() => {
+            // success - stop animation
             this.setState({
                 ...this.state,
-                isLoading: true
+                isLoading: false
             });
-            // match, delete journal by id
-            deleteJournalEntry(id, this.state.currentUser.activeJournal.id).then(() => {
-                // success - stop animation
-                this.setState({
-                    ...this.state,
-                    isLoading: false
-                });
-            }).catch((error) => {
-                // failed - stop animiation
-                this.setState({
-                    ...this.state,
-                    isLoading: false
-                });
+        }).catch((error) => {
+            // failed - stop animiation
+            console.log('fail', error)
+            this.setState({
+                ...this.state,
+                isLoading: false
             });
-        } else {
-            // dont match, display alert and do nothing
-            AlertIOS.alert('Incorrect CONFIRM text entered. Journal entry not deleted!')
-        }
+        });
     }
 
     // handle search input
@@ -400,7 +400,7 @@ var styles = StyleSheet.create({
         marginTop: -10
     },
     listContainer: {
-        marginBottom: 75,
+        marginBottom: 115
     },
     searchInput: {
         backgroundColor: '#EEEEEE',

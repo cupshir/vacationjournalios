@@ -10,18 +10,14 @@ import {
     JournalEntry
 } from './model/user';
 
-import {
-    API_URL,
-    AUTH_URL,
-    REALM_URL,
-    REALM_PARKS_PATH,
-    REALM_USER_PATH,
-} from './config'
+import * as AppConstants from './config'
 
 // Class Properties?
 export let parkRealm;
 export let userRealm;
 export let currentUser;
+export let attractions;
+export let parks;
 
 
 //
@@ -35,13 +31,13 @@ export let currentUser;
 export function registerUser(userObject) {
     return new Promise((resolve, reject) => {
         // Send register request to create user
-        Realm.Sync.User.register(AUTH_URL, userObject.email, userObject.password).then(user => {
+        Realm.Sync.User.register(AppConstants.AUTH_URL, userObject.email, userObject.password).then(user => {
             // Open a new user Realm        
             userRealm = new Realm({
                 schema: [Person, Park, Attraction, Journal, JournalEntry],
                 sync: {
                     user,
-                    url: `${REALM_URL}/${REALM_USER_PATH}`
+                    url: `${AppConstants.REALM_URL}/${AppConstants.REALM_USER_PATH}`
                 }
             });
 
@@ -50,7 +46,7 @@ export function registerUser(userObject) {
                 schema: [Park, Attraction],
                 sync: {
                     user,
-                    url: `${REALM_URL}/${REALM_PARKS_PATH}`
+                    url: `${AppConstants.REALM_URL}/${AppConstants.REALM_PARKS_PATH}`
                 }
             });
 
@@ -68,12 +64,12 @@ export function registerUser(userObject) {
                         dateModified: new Date(),
                     });
                 });
+                resolve(currentUser);
             } catch (e) {
                 // Something went wrong userRealm write
                 console.log('userRealmWriteError: ', e);
                 reject(e);
             }
-            resolve(currentUser);
         }).catch(error =>  {
             // Something went wrong with register
             console.log('registerCatchError1: ', error);
@@ -131,9 +127,9 @@ export function changeUserPassword(oldPassword, newPassword) {
         if (oldPassword !== newPassword) {
             if (currentUser) {
                 // verify old password is good
-                Realm.Sync.User.login(AUTH_URL, currentUser.email, oldPassword)
+                Realm.Sync.User.login(AppConstants.AUTH_URL, currentUser.email, oldPassword)
                     .then(user => {
-                        fetch(`${AUTH_URL}/auth/password`, {
+                        fetch(`${AppConstants.AUTH_URL}/auth/password`, {
                             method: 'PUT',
                             headers: {
                                 Accept: 'application/json',
@@ -169,14 +165,14 @@ export function signInUser(email, password) {
         const userCheck = Realm.Sync.User.current;
         if (!userCheck) {
             // make authentication request
-            Realm.Sync.User.login(AUTH_URL, email, password)
+            Realm.Sync.User.login(AppConstants.AUTH_URL, email, password)
             .then(user => {
                 // Open the park/attraction seed realm
                 parkRealm = new Realm({
                     schema: [Park, Attraction],
                     sync: {
                         user,
-                        url: `${REALM_URL}/${REALM_PARKS_PATH}`
+                        url: `${AppConstants.REALM_URL}/${AppConstants.REALM_PARKS_PATH}`
                     }
                 });
 
@@ -185,7 +181,7 @@ export function signInUser(email, password) {
                     schema: [Person, Park, Attraction, Journal, JournalEntry],
                     sync: {
                         user,
-                        url: `${REALM_URL}/${REALM_USER_PATH}`
+                        url: `${AppConstants.REALM_URL}/${AppConstants.REALM_USER_PATH}`
                     }
                 }
                 Realm.open(userConfig).then(realm => {
@@ -219,20 +215,14 @@ export function loadUserFromCache() {
                 schema: [Person, Park, Attraction, Journal, JournalEntry],
                 sync: {
                     user,
-                    url: `${REALM_URL}/${REALM_USER_PATH}`,
-                }
-            });
-
-            // Open the park/attraction seed realm
-            parkRealm = new Realm({
-                schema: [Park, Attraction],
-                sync: {
-                    user,
-                    url: `${REALM_URL}/${REALM_PARKS_PATH}`
+                    url: `${AppConstants.REALM_URL}/${AppConstants.REALM_USER_PATH}`,
                 }
             });
 
             currentUser = userRealm.objectForPrimaryKey('Person', user.identity);
+            attractions = userRealm.objects('Attraction');
+            parks = userRealm.objects('Park');
+
             resolve(currentUser);
         } 
         // user doesnt exist
@@ -252,7 +242,61 @@ export function signOutUser() {
         reject('Something went wrong with signout');
     });
 }
- 
+
+
+export function updateUserParks(parks) {
+    return new Promise((resolve, reject) => {
+        try {
+            userRealm.write(() => {
+                parks.forEach((park) => {
+                    const newPark = userRealm.create('Park', {
+                        id: park.id,
+                        name: park.name,
+                        photo: park.photo,
+                        dateCreated: park.dateCreated,
+                        dateModified: park.dateModified,
+                        dateSynced: new Date()
+                    },
+                    true);
+                });
+                currentUser.parksLastSynced = new Date();
+            });
+            resolve('success');
+        } catch (e) {
+            // Something went wrong userRealm write
+            reject('Updating user in Realm failed: ', e);
+        }
+    });
+}
+
+export function updateUserAttractions(attractions) {
+    return new Promise((resolve, reject) => {
+        try {
+            userRealm.write(() => {
+                attractions.forEach((attraction) => {
+                    const newAttraction = userRealm.create('Attraction', {
+                        id: attraction.id,
+                        name: attraction.name,
+                        photo: attraction.photo,
+                        park: attraction.park,
+                        description: attraction.description,
+                        heightToRide: attraction.heightToRide,
+                        hasScore: attraction.hasScore,
+                        dateCreated: attraction.dateCreated,
+                        dateModified: attraction.dateModified,
+                        dateSynced: new Date()
+                    },
+                    true);
+                });
+                currentUser.attractionsLastSynced = new Date();
+            });
+            resolve('success');
+        } catch (e) {
+            // Something went wrong userRealm write
+            reject('Updating user in Realm failed: ', e);
+        }
+    });
+}
 
 // End User Functions
 
@@ -376,13 +420,33 @@ export function deleteJournal(journalId) {
         try {
             // get Journal object to delete
             const journal = userRealm.objectForPrimaryKey('Journal', journalId);
+            //const journalEntries = journal.journalEntries;
             const person = userRealm.objectForPrimaryKey('Person', journal.owner);
 
+            // build array of journal entries to delete
+            //   This is because the delete fails if we try to work in the live journal object
+            let entriesToDelete = [];
+            journal.journalEntries.forEach((journalEntry) => {
+                const deleteMe = userRealm.objectForPrimaryKey('JournalEntry', journalEntry.id);
+                entriesToDelete.push(deleteMe);
+            })
+
             userRealm.write(() => {
-                // delete journal object
-                userRealm.delete(journal);
-                // update dateModified
-                person.dateModified = new Date();
+                let itemsDeleted = 0;
+                // Hack cause length will change as items are deleted
+                const itemsLength = journal.journalEntries.length;
+                // delete all the journal entries in the array
+                entriesToDelete.forEach((entry) => {
+                    itemsDeleted++
+                    // delete entry
+                    userRealm.delete(entry);
+
+                    if (itemsDeleted === itemsLength) {
+                        // all items deleted, delete the journal and update person dateModified
+                        userRealm.delete(journal);
+                        person.dateModified = new Date();
+                    }
+                });
             })
             reslove();
         } catch (error) {
@@ -490,7 +554,7 @@ export function deleteJournalEntry(journalEntryId, activeJournalId) {
     return new Promise((resolve, reject) => {
         try {
             // get active journal object
-            const activeJournal = userRealm.objectForPrimaryKey('Person', activeJournalId);
+            const activeJournal = userRealm.objectForPrimaryKey('Journal', activeJournalId);
             // get journal entry object to delete
             const journalEntry = userRealm.objectForPrimaryKey('JournalEntry', journalEntryId);
 

@@ -18,12 +18,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import uuid from 'react-native-uuid';
 import DatePicker from 'react-native-datepicker';
 
-import {
-    currentUser,
-    parkRealm,
-    getJournalById,
-    saveJournal
-} from '../../realm/userService';
+import * as UserService from '../../realm/userService';
 
 import LoadingMickey from '../../components/LoadingMickey';
 import CameraModal from "../../components/CameraModal";
@@ -34,6 +29,10 @@ class EditJournal extends Component {
             {
                 title: 'Done',
                 id: 'done'
+            },
+            {
+                title: 'temp',
+                id: 'temp'
             }
         ]
     };
@@ -70,11 +69,11 @@ class EditJournal extends Component {
     // handle navigation events
     onNavigatorEvent(event) {
         if (event.id === 'willAppear') {
-            this.updateCurrentUserInState(currentUser);
+            this.updateCurrentUserInState(UserService.currentUser);
             // check if a journal id was passed, if so update state with journal data
             if (this.props.journalId && !this.state.journalLoaded) {
                 // get journal
-                getJournalById(this.props.journalId).then((journal) => {
+                UserService.getJournalById(this.props.journalId).then((journal) => {
                     // success - load journal data into state
                     this.loadJournalIntoState(journal);
                 }).catch((error) => {
@@ -93,6 +92,16 @@ class EditJournal extends Component {
         if (event.type == 'NavBarButtonPress') {
             if (event.id == 'done') {
                 this.handleDone();
+            }
+            if (event.id == 'temp') {
+                let parks = UserService.parkRealm.objects('Park');
+                let attractions = UserService.parkRealm.objects('Attraction');
+                
+                for (let p of parks) {
+                    console.log('parkTest: ', p);
+                }
+
+
             } 
         }
     }
@@ -102,7 +111,7 @@ class EditJournal extends Component {
         let parks = [];
 
         // Get parks from park realm
-        const realmParks = parkRealm.objects('Park');
+        const realmParks = UserService.parks;
 
         // If selected parks, create an array of their ID's
         const selectedParksArray = [];
@@ -254,7 +263,7 @@ class EditJournal extends Component {
             const submitValues = this.prepareValuesForDB(this.state.formValues);
 
             // save journal to realm
-            saveJournal(submitValues, this.state.isEdit).then((journal) => {
+            UserService.saveJournal(submitValues, this.state.isEdit).then((journal) => {
                 // Success - stop animation
                 this.setState({
                     ...this.state,

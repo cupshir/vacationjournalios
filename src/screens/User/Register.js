@@ -13,7 +13,7 @@ import {
 } from 'react-native-elements';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
-import { registerUser } from '../../realm/userService';
+import * as UserService from '../../realm/userService';
 
 import LoadingMickey from '../../components/LoadingMickey';
 
@@ -243,7 +243,7 @@ class Register extends Component {
             credentials.password = this.state.formValues.password;
 
             // Attempt registration
-            registerUser(credentials).then((user) => {
+            UserService.registerUser(credentials).then((user) => {
                 // success - stoping loading animation and close modal
                 this.setState({
                     ...this.state,

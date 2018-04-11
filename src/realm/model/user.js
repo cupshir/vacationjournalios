@@ -19,6 +19,8 @@ Person.schema = {
         journals: { type: 'list', objectType: 'Journal' },
         dateCreated: 'date',
         dateModified: 'date',
+        parksLastSynced: 'date',
+        attractionsLastSynced: 'date'
     }
 }
 
