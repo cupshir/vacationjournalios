@@ -12,6 +12,7 @@ import {
     View,
 } from 'react-native';
 import { 
+    FormValidationMessage,
     SearchBar,
     Text
 } from 'react-native-elements';
@@ -174,16 +175,32 @@ class EditJournalEntry extends Component {
         });
     }
 
-    // save photo to state
-    savePhoto = (photo) => {
-        this.setState({
-            ...this.state,
-            formValues: {
-                ...this.state.formValues,
-                photo: photo
-            },
-            cameraModalVisible: false,
-        });
+    // save photo to state and possibly camera roll
+    savePhoto = (photo, fromCameraRoll) => {
+        if (UserService.currentUser.savePhotosToCameraRoll && !fromCameraRoll) {
+            // save photo to camera roll
+            UserService.savePhotoToCameraRoll(photo).then((returnedPhoto) => {
+                this.setState({
+                    ...this.state,
+                    formValues: {
+                        ...this.state.formValues,
+                        photo: photo
+                    },
+                    cameraModalVisible: false,
+                });                
+            }).catch((error) => {
+                console.log('error saving to camera roll: ', error);
+            });
+        } else {
+            this.setState({
+                ...this.state,
+                formValues: {
+                    ...this.state.formValues,
+                    photo: photo
+                },
+                cameraModalVisible: false,
+            });
+        }
     }
 
     // row delete press event
@@ -216,20 +233,40 @@ class EditJournalEntry extends Component {
 
     // handle minutes waited change
     handleMinutesWaitedChange = (value) => {
+        let formError = '';
+
+        if (!value) {
+            formError = 'Minutes Waited'
+        }
+
         this.setState({
             formValues: {
                 ...this.state.formValues, 
                 minutesWaited: value.replace(/[^0-9]/g, '')
+            },
+            formErrors: {
+                ...this.state.formErrors,
+                minutesWaited: formError
             }
         });
     }
 
     // handle rating change
     handleRatingChange = (value) => {
+        let formError = '';
+
+        if (!value) {
+            formError = 'Rating'
+        }
+
         this.setState({
             formValues: {
                 ...this.state.formValues, 
                 rating: value.replace(/[^1-5]/g, '')
+            },
+            formErrors: {
+                ...this.state.formErrors,
+                rating: formError
             }
         });
     }
@@ -278,6 +315,10 @@ class EditJournalEntry extends Component {
                 parkId: parkId,
                 attractionId: ''
             },
+            formErrors: {
+                ...this.state.formErrors,
+                parkId: ''
+            },
             selectedAttraction: {
                 attractionId: '',
                 attractionName: '',
@@ -301,6 +342,10 @@ class EditJournalEntry extends Component {
                 ...this.state.formValues,
                 attractionId: attraction.id
             },
+            formErrors: {
+                ...this.state.formErrors,
+                attractionId: ''
+            },
             filteredAttractions: null,
             attractionModalVisible: false
         });
@@ -313,7 +358,7 @@ class EditJournalEntry extends Component {
                 ...this.state.formValues,
                 dateJournaled: date
             }
-        })
+        });
     }
 
     handleSearch = (searchInput) => {
@@ -342,7 +387,7 @@ class EditJournalEntry extends Component {
     // handle save press
     handleDonePress = () => {
         // Check if form is ready to submit
-        const ready = this.readyForSubmit(this.state.formValues)
+        const ready = this.readyForSubmit(this.state.formValues);
 
         if (ready) {
             // scrub values (changes strings to numbers, etc)
@@ -372,17 +417,16 @@ class EditJournalEntry extends Component {
                         ...this.state,
                         submitErrorMessage: error,
                         isLoading: false
-                    })
+                    });
                 });
 
             } else {
-                AlertIOS.alert('Failed to get park or attraction from realm')
-            }
-            
+                AlertIOS.alert(`Please correct form errors and try again.`);
+            }            
         
         } else {
             // TODO: better message
-            AlertIOS.alert('not ready to submit')
+            AlertIOS.alert(`Please correct form errors and try again.`);
         }
     }
 
@@ -429,24 +473,45 @@ class EditJournalEntry extends Component {
     
     // Check if form is ready for submit and return true/false
     readyForSubmit = (values) => {
+        let parkError = '';
+        let attractionError = '';
+        let ratingError = '';
+        let dateJournaledError = '';
+        let minutesWaitedError = '';
         let ready = true;
 
         // Check that required formValues have a value, if value missing return false
         if (values.parkId === '') {
-            return false;
+            parkError = 'Park';
+            ready = false;
         }
         if (values.attractionId === '') {
-            return false;
+            attractionError = 'Attraction';
+            ready = false;
         }
-        if (values.rating === 0) {
-            return false;
+        if (values.rating === '') {
+            ratingError = 'Rating';
+            ready = false;
         }
         if (values.dateJournaled === '') {
-            return false;
+            dateJournaledError = 'Date Journaled';
+            ready = false;
         }
         if (values.minutesWaited === '') {
-            return false;
+            minutesWaitedError = 'Minutes Waited';
+            ready = false;
         }
+
+        this.setState({
+            formErrors: {
+                ...this.state.formErrors,
+                parkId: parkError,
+                attractionId: attractionError,
+                rating: ratingError,
+                dateJournaled: dateJournaledError,
+                minutesWaited: minutesWaitedError
+            }
+        });
 
         // If all required values present, Check that there are no formError messages
         if(ready) {
@@ -495,7 +560,7 @@ class EditJournalEntry extends Component {
                     value={this.state.formValues.pointsScored} 
                 />
             </View>
-        )
+        );
     }
 
       // Render Search Input (placed here to keep view below easier to read)
@@ -531,8 +596,9 @@ class EditJournalEntry extends Component {
         }
 
         // Double Check for selected park and attractions data, return if one or other not found
-        if(!this.state.selectedPark.parkId || !this.state.attractions){ return; }
-
+        if(!this.state.selectedPark.parkId || !this.state.attractions){ 
+            return; 
+        }
 
         // Load filteredAttractions from state, if not there load new filtered by parkId list from Props (this is so attractions load the first time)
         const filteredAttractions = this.state.filteredAttractions !== null ? this.state.filteredAttractions :        
@@ -548,9 +614,12 @@ class EditJournalEntry extends Component {
             <View>
                 <TouchableOpacity
                     onPress={() => { this.setAttractionModalVisible(true); }} >
-                        <View style={styles.parkAttractionTitle}>
+                        <View style={[
+                            styles.parkAttractionTitle,
+                            (this.state.formErrors.attractionId !== '') ? styles.error : null
+                        ]}>
                             <Text style={styles.parkAttractionText}>
-                                { this.state.selectedAttraction.attractionName !== '' ? this.state.selectedAttraction.attractionName : 'Select an Attraction'}
+                                {this.state.selectedAttraction.attractionName !== '' ? this.state.selectedAttraction.attractionName : 'Select an Attraction'}
                             </Text>
                             <Icon style={styles.parkAttractionArrow} color='lightgrey' name="ios-arrow-forward" />
                         </View>
@@ -627,13 +696,14 @@ class EditJournalEntry extends Component {
             );
         }
 
-        // Check if errors exist in state.formErrors
-        // TODO: Update form with form errors, message or red colors or something
-        const parkIdError = (this.state.formErrors.parkId !== '') ? this.renderError(this.state.formErrors.parkId) : null;
-        const attractionIdError = (this.state.formErrors.attractionId !== '') ? this.renderError(this.state.formErrors.attractionId) : null;
-        const dateJournaledError = (this.state.formErrors.dateJournaled !== '') ? this.renderError(this.state.formErrors.dateJournaled) : null;
-        const ratingError = (this.state.formErrors.rating !== '') ? this.renderError(this.state.formErrors.rating) : null;
-        const minutesWaitedError = (this.state.formErrors.minutesWaited !== '') ? this.renderError(this.state.formErrors.minutesWaited) : null;
+        // Check that parks and attractions exist in state
+        if (!this.state.parks || !this.state.attractions) {
+            return (
+                <View style={styles.messageContainer}>
+                    <Text>Parks and/or attractions data missing. Add buttont to request park / attraction data from API</Text>
+                </View>
+            );
+        }
 
         // if selected park render attraction picker
         let attractionPicker = null;
@@ -647,15 +717,7 @@ class EditJournalEntry extends Component {
             pointsScored = this.renderPointsScored();
         }
 
-        // Check that parks and attractions exist in state
-        if (!this.state.parks || !this.state.attractions) {
-            return (
-                <View style={styles.messageContainer}>
-                    <Text>Parks and/or attractions data missing. Add better handling later...</Text>
-                </View>
-            )
-        }
-
+        // render photo or camera button
         const photo = (this.state.formValues.photo !== '') 
                     ? this.renderPhoto(this.state.formValues.photo)
                     : this.renderCameraButton()
@@ -667,7 +729,12 @@ class EditJournalEntry extends Component {
                 <View style={styles.parkAttractionSection}>
                     <TouchableOpacity
                         onPress={() => { this.setParkModalVisible(true); }} >
-                            <View style={[styles.parkAttractionTitle, { borderBottomWidth: .5, borderBottomColor: '#444444' }]}>
+                            <View
+                                style={[
+                                    styles.parkAttractionTitle, 
+                                    { borderBottomWidth: .5, borderBottomColor: '#444444' },
+                                    (this.state.formErrors.parkId !== '') ? styles.error : null
+                                    ]}>
                                 <Text style={styles.parkAttractionText}>
                                     { this.state.selectedPark.parkName !== '' ? this.state.selectedPark.parkName : 'Select a Park'}
                                 </Text>
@@ -681,14 +748,20 @@ class EditJournalEntry extends Component {
                 </View>
                 <View style={styles.minutesWaitedDateJournaledSection}>
                     <TextInput
-                        style={styles.minuteswaited}
+                        style={[
+                            styles.minuteswaited, 
+                            (this.state.formErrors.minutesWaited !== '') ? styles.error : null
+                        ]}
                         onChangeText={this.handleMinutesWaitedChange}
                         placeholder='Minutes Waited'
                         placeholderTextColor={'#444444'}
                         value={this.state.formValues.minutesWaited} 
                     />                        
                     <DatePicker
-                        style={styles.datePicker}
+                        style={[
+                            styles.datePicker,
+                            (this.state.formErrors.dateJournaled !== '') ? styles.error : null
+                        ]}
                         date={this.state.formValues.dateJournaled}
                         mode="datetime"
                         placeholder="Select Date"
@@ -715,7 +788,10 @@ class EditJournalEntry extends Component {
                 </View>
                 <View style={styles.ratingFastPassSection}>
                     <TextInput
-                        style={styles.minuteswaited}
+                        style={[
+                            styles.minuteswaited,
+                            (this.state.formErrors.rating !== '') ? styles.error : null
+                        ]}
                         onChangeText={this.handleRatingChange}
                         placeholder='Rating'
                         placeholderTextColor={'#444444'}
@@ -785,7 +861,7 @@ class EditJournalEntry extends Component {
                     </View>
                 </Modal>
             </KeyboardAwareScrollView>
-        )
+        );
     }
 }
 
@@ -952,6 +1028,12 @@ var styles = StyleSheet.create({
         backgroundColor: '#AAAAAA',
         borderRadius: 5,
         height: 150
+    },
+    error: {
+        borderWidth: 1,
+        borderColor: 'red',
+        borderBottomWidth: 1, 
+        borderBottomColor: 'red'
     }
 });
 

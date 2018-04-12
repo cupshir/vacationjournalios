@@ -67,7 +67,7 @@ class CameraModal extends Component {
             };
             this.camera.takePictureAsync(options).then((data) => {
                 // success - pass base64 of photo back
-                this.props.savePhoto(data.base64);
+                this.props.savePhoto(data.base64, false);
             }).catch((error) => {
                 // failed - TODO: Better error handling or remove..
                 console.log('something failed saving photo');
@@ -76,6 +76,7 @@ class CameraModal extends Component {
     }
 
     renderCamera = () => {
+        console.log('t: ', this.state.saveToCameraRoll);
         return (
             <View style={styles.container}>
                 <View style={styles.header}>

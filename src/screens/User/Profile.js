@@ -292,6 +292,25 @@ class Profile extends Component {
         );
     }
 
+    // render active journal entries info
+    renderActiveJournal = (journal) => {
+        const journalEntriesLabel = (journal.journalEntries.length === 1) ? 'entry' : 'entries';
+
+        return (
+            <Text style={styles.journalText}>Your active journal is, {journal.name}, and it has {journal.journalEntries.length} {journalEntriesLabel}.</Text>
+        );
+    }
+
+    // render active journal info
+    renderActiveJournalInfo = (journal) => {
+        return (
+            <View>
+                <Text style={styles.journalText}>It was created on {moment(journal.dateCreated).format('M-D-YYYY h:mm a')}.</Text>
+                <Text style={styles.journalText}>It was last updated on {moment(journal.dateModified).format('M-D-YYYY h:mm a')}.</Text>
+            </View>
+        );
+    }
+
     // Render Profile Screen
     render() {
         // Loading Mickey Graphic
@@ -314,10 +333,17 @@ class Profile extends Component {
             const journalCount = (this.state.currentUser.journals.length > 0) ? this.state.currentUser.journals.length : 0;
             const journalLabel = (journalCount === 1) ? 'journal' : 'journals';
             const activeJournal = (this.state.currentUser.activeJournal) ? this.state.currentUser.activeJournal.name : null;
-            const journalEntriesCount = (this.state.currentUser.activeJournal && this.state.currentUser.activeJournal.journalEntries.length > 0) 
-                                            ? this.state.currentUser.activeJournal.journalEntries.length 
-                                            : 0
-            const journalEntriesLabel = (journalEntriesCount === 1) ? 'entry' : 'entries';
+            const journalEntries = (this.state.currentUser.activeJournal)
+                ? this.renderActiveJournal(this.state.currentUser.activeJournal)
+                : null
+            const journalInfo = (this.state.currentUser.activeJournal)
+                ? this.renderActiveJournalInfo(this.state.currentUser.activeJournal)
+                : null
+            
+            // render user settings
+            const userPhotoSetting = (this.state.currentUser.savePhotosToCameraRoll)
+                ? 'Photos will be saved to camera roll.'
+                : 'Photos will not be saved to camera roll.'
 
             return (
                 <View style={styles.container}>
@@ -331,11 +357,11 @@ class Profile extends Component {
                         </View>
                         <View style={styles.journalSection}>
                             <Text style={styles.journalText}>You have {journalCount} {journalLabel}!</Text>
-                            <Text style={styles.journalText}>Your active journal is, {activeJournal}, and it has {journalEntriesCount} {journalEntriesLabel}.</Text>
-                            <View>
-                                <Text style={styles.journalText}>It was created on {moment(this.state.currentUser.dateCreated).format('M-D-YYYY h:mm a')}.</Text>
-                                <Text style={styles.journalText}>It was last updated on {moment(this.state.currentUser.dateModified).format('M-D-YYYY h:mm a')}.</Text>
-                            </View>
+                            {journalEntries}
+                            {journalInfo}
+                        </View>
+                        <View style={styles.userSetting}>
+                            <Text style={styles.userSettingText}>{userPhotoSetting}</Text>
                         </View>
                         <View style={styles.lowerContainer}>
                             <TouchableOpacity style={styles.button} onPress={() => this.handleItemPress('edit')}>
@@ -426,6 +452,10 @@ var styles = StyleSheet.create({
         fontSize: 18,
         textAlign: 'center',
         color: 'white'
+    },
+    userSettingText: {
+        color: '#FFFFFF',
+        fontSize: 16
     },
     button: {
         backgroundColor: 'white',

@@ -15,6 +15,7 @@ Person.schema = {
         firstName: 'string',
         lastName: 'string',
         profilePhoto: 'string?',
+        savePhotosToCameraRoll: {type:'bool', default: false},
         activeJournal: { type: 'Journal' },
         journals: { type: 'list', objectType: 'Journal' },
         dateCreated: 'date',

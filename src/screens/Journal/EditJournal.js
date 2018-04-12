@@ -29,10 +29,6 @@ class EditJournal extends Component {
             {
                 title: 'Done',
                 id: 'done'
-            },
-            {
-                title: 'temp',
-                id: 'temp'
             }
         ]
     };
@@ -55,7 +51,9 @@ class EditJournal extends Component {
             },
             formErrors: {
                 name: '',
-                date: '',
+                startDate: '',
+                endDate: '',
+                dateError: '',
                 parks: ''
             },
             journalLoaded: false,
@@ -86,23 +84,13 @@ class EditJournal extends Component {
                     ...this.state,
                     parks: this.addCheckedPropertyToParks(),
                     isLoading: false
-                })
+                });
             }
         }
         if (event.type == 'NavBarButtonPress') {
             if (event.id == 'done') {
                 this.handleDone();
             }
-            if (event.id == 'temp') {
-                let parks = UserService.parkRealm.objects('Park');
-                let attractions = UserService.parkRealm.objects('Attraction');
-                
-                for (let p of parks) {
-                    console.log('parkTest: ', p);
-                }
-
-
-            } 
         }
     }
 
@@ -167,7 +155,6 @@ class EditJournal extends Component {
                 isLoading: false,
                 isEdit: true
             });
-
         }
     }
 
@@ -218,7 +205,7 @@ class EditJournal extends Component {
     // photo delete press event
     onPhotoDeletePress = () => {
         // display confirm prompt, user must type CONFIRM to delete photo
-        AlertIOS.prompt(
+        AlertIOS.alert(
             'Confirm Delete',
             'Are you sure you want to delete the journal image?',
             [
@@ -284,7 +271,7 @@ class EditJournal extends Component {
                 });
             });
         } else {
-            AlertIOS.alert('Not ready to submit. Check form for errors.');
+            AlertIOS.alert('Please correct form errors and try again.');
         }        
     }
 
@@ -350,22 +337,24 @@ class EditJournal extends Component {
     readyForSubmit = (values) => {
         let ready = true;
         let nameError = (this.state.formErrors.name !== '') ? this.state.formErrors.name : '';
-        let dateError = (this.state.formErrors.date !== '') ? this.state.formErrors.date : '';
+        let startDateError = (this.state.formErrors.startDate !== '') ? this.state.formErrors.startDate : '';
+        let endDateError = (this.state.formErrors.endDate !== '') ? this.state.formErrors.endDate : '';
+        let dateError = (this.state.formErrors.dateError !== '') ? this.state.formErrors.dateError : '';
         let parksError = (this.state.formErrors.parks !== '') ? this.state.formErrors.parks : '';
 
         // Check that required formValues have a value, if value missing update error message and return false
         if (values.name === '') {
-            nameError = 'Please enter a journal name.';
+            nameError = 'Name';
             ready = false;
         }
 
         if (values.startDate === '') {
-            dateError = 'Please enter a start and end date for journal.';
+            startDateError = 'Start Date';
             ready = false;
         }
 
         if (values.endDate === '') {
-            dateError = 'Please enter a start and end date for journal.';
+            endDateError = 'End Date';
             ready = false;
         }
 
@@ -375,7 +364,7 @@ class EditJournal extends Component {
         }
 
         // check for an error messages and return false if found
-        if (nameError !== '' || dateError !== '' || parksError !== '') {
+        if (nameError !== '' || startDateError !== '' || endDateError !== '' || dateError !== '' || parksError !== '') {
             ready = false;
         }
 
@@ -384,10 +373,12 @@ class EditJournal extends Component {
             formErrors: {
                 ...this.state.formErrors,
                 name: nameError,
-                date: dateError,
+                startDate: startDateError,
+                endDate: endDateError,
+                dateError: dateError,
                 parks: parksError
             }
-        })
+        });
 
         return ready;
     }
@@ -407,7 +398,7 @@ class EditJournal extends Component {
 
         // Check input for errors, if found set error message
         if (!value) {
-            nameError = 'Please enter a journal name.';
+            nameError = 'Name';
         }
 
         // Set state and error messages
@@ -435,11 +426,12 @@ class EditJournal extends Component {
     
     // handle start date change
     handleStartDateChange = (date) => {
+        let startDateError = '';
         let dateError = '';
 
         // Check input for errors, if found set error message
         if (!date) {
-            dateError = 'Please enter a start and end date.';
+            startDateError = 'Start Date';
         }
 
         // Ensure start date is not after end date
@@ -457,18 +449,20 @@ class EditJournal extends Component {
             },
             formErrors: {
                 ...this.state.formErrors,
-                date: dateError
+                startDate: startDateError,
+                dateError: dateError
             }
-        })
+        });
     }
 
     // handle date change
     handleEndDateChange = (date) => {
+        let endDateError = '';
         let dateError = '';
 
         // Check input for errors, if found set error message
         if (!date) {
-            dateError = 'Please enter a start and end date.';
+            endDateError = 'End Date';
         }
 
         // Ensure end date is not before start date
@@ -486,9 +480,10 @@ class EditJournal extends Component {
             },
             formErrors: {
                 ...this.state.formErrors,
-                date: dateError
+                endDate: endDateError,
+                dateError: dateError
             }
-        })
+        });
     }
 
     // render switch row item
@@ -501,10 +496,22 @@ class EditJournal extends Component {
                         let newParks = [ ...this.state.parks ];
                         // flip checked for selected park
                         newParks[index] = { ...newParks[index], checked: !this.state.parks[index].checked };
+                        // Check if no parks and display error
+                        let parksError = 'Please select at least one park for journal.';
+                        newParks.forEach((park) => {
+                            if (park.checked) {
+                                parksError = '';
+                            }                            
+                        });
+                        
                         // update parks object in state
                         this.setState({
                             ...this.state,
-                            parks: newParks
+                            parks: newParks,
+                            formErrors: {
+                                ...this.state.formErrors,
+                                parks: parksError
+                            }
                         });                  
                     }}
                     value={this.state.parks[index].checked}
@@ -513,8 +520,8 @@ class EditJournal extends Component {
                 />
                 <Text style={styles.checkBoxItemText}>{item.name}</Text>
             </View>
-        )
-    };
+        );
+    }
 
     // render camera button for triggering camera modal
     renderCameraButton = () => {
@@ -567,12 +574,11 @@ class EditJournal extends Component {
             );
         }
 
-        // Check if errors exist in state.formErrors
-        const nameError = (this.state.formErrors.name !== '') ? this.renderError(this.state.formErrors.name) : null;
-        const dateError = (this.state.formErrors.date !== '') ? this.renderError(this.state.formErrors.date) : null;
+        // Check if parks error in state
         const parksError = (this.state.formErrors.parks !== '') ? this.renderError(this.state.formErrors.parks) : null;
+        const dateError = (this.state.formErrors.dateError !== '') ? this.renderError(this.state.formErrors.dateError) : null;
     
-        // Check if photo exists, otherwise render camera button
+        // render photo or camera button
         const photo = (this.state.formValues.photo !== '') 
         ? this.renderPhoto(this.state.formValues.photo) 
         : this.renderCameraButton()
@@ -580,9 +586,11 @@ class EditJournal extends Component {
         return (
             <KeyboardAwareScrollView style={styles.container}>
                 <View style={styles.form}>
-                    {nameError}
                     <TextInput 
-                        style={styles.input}
+                        style={[
+                            styles.input,
+                            (this.state.formErrors.name !== '') ? styles.error : null
+                        ]}
                         onChangeText={this.handleNameChange}
                         placeholder='Enter journal name'
                         value={this.state.formValues.name}
@@ -604,7 +612,10 @@ class EditJournal extends Component {
                     {dateError}
                     <View style={styles.datePickers}>
                         <DatePicker
-                            style={styles.datepickerStart}
+                            style={[
+                                styles.datepickerStart,
+                                (this.state.formErrors.startDate !== '' || this.state.formErrors.dateError !== '') ? styles.error : null
+                            ]}
                             date={this.state.formValues.startDate}
                             mode="date"
                             placeholder="Select Start Date"
@@ -629,7 +640,10 @@ class EditJournal extends Component {
                             }} 
                         />
                         <DatePicker
-                            style={styles.datepickerEnd}
+                            style={[
+                                styles.datepickerEnd,
+                                (this.state.formErrors.endDate !== '' || this.state.formErrors.dateError !== '') ? styles.error : null
+                            ]}
                             date={this.state.formValues.endDate}
                             mode="date"
                             placeholder="Select End Date"
@@ -721,6 +735,10 @@ var styles = StyleSheet.create({
     checkBoxItemText: {
         color: '#AAAAAA',
         marginLeft: 5
+    },
+    error: {
+        borderWidth: 1,
+        borderColor: 'red'
     }
 })
 

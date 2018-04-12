@@ -1,5 +1,5 @@
 import uuid from 'react-native-uuid';
-//import { AsyncStorage } from 'react-native';
+import { CameraRoll } from 'react-native';
 import { Navigation } from 'react-native-navigation';
 import Realm from 'realm';
 import {
@@ -24,51 +24,52 @@ export let parks;
 // Register user and build realms
 export function registerUser(userObject) {
     return new Promise((resolve, reject) => {
-        // Send register request to create user
-        Realm.Sync.User.register(AppConstants.AUTH_URL, userObject.email, userObject.password).then(user => {
-            // Open a new user Realm        
-            userRealm = new Realm({
-                schema: [Person, Park, Attraction, Journal, JournalEntry],
-                sync: {
-                    user,
-                    url: `${AppConstants.REALM_URL}/${AppConstants.REALM_USER_PATH}`
-                }
-            });
-
-            // Open the park/attraction seed realm
-            parkRealm = new Realm({
-                schema: [Park, Attraction],
-                sync: {
-                    user,
-                    url: `${AppConstants.REALM_URL}/${AppConstants.REALM_PARKS_PATH}`
-                }
-            });
-
-            // Create a new Person object in the userRealm
-            try {
-                userRealm.write(() => {
-                    currentUser = userRealm.create('Person', {
-                        id: user.identity,
-                        email: userObject.email,
-                        firstName: userObject.firstName,
-                        lastName: userObject.lastName,
-                        activeJournal: null,
-                        journals: [],
-                        dateCreated: new Date(),
-                        dateModified: new Date(),
-                    });
+        const userCheck = Realm.Sync.User.current;
+        if (!userCheck) {
+            // Send register request to create user
+            Realm.Sync.User.register(AppConstants.AUTH_URL, userObject.email, userObject.password).then(user => {
+                // Open a new user Realm        
+                userRealm = new Realm({
+                    schema: [Person, Park, Attraction, Journal, JournalEntry],
+                    sync: {
+                        user,
+                        url: `${AppConstants.REALM_URL}/${AppConstants.REALM_USER_PATH}`
+                    }
                 });
-                resolve(currentUser);
-            } catch (e) {
-                // Something went wrong userRealm write
-                console.log('userRealmWriteError: ', e);
-                reject(e);
-            }
-        }).catch(error =>  {
-            // Something went wrong with register
-            console.log('registerCatchError1: ', error);
-            reject(error);
-        });
+
+                // Create a new Person object in the userRealm
+                try {
+                    userRealm.write(() => {
+                        currentUser = userRealm.create('Person', {
+                            id: user.identity,
+                            email: userObject.email,
+                            firstName: userObject.firstName,
+                            lastName: '',
+                            profilePhoto: '',
+                            savePhotosToCameraRoll: false,
+                            activeJournal: null,
+                            journals: [],
+                            dateCreated: new Date(),
+                            dateModified: new Date(),
+                            parksLastSynced: new Date(1900,0,1),
+                            attractionsLastSynced: new Date(1900,0,1)
+                        });
+                    });
+                    resolve(currentUser);
+                } catch (e) {
+                    // Something went wrong userRealm write
+                    console.log('userRealmWriteError: ', e);
+                    reject(e);
+                }
+            }).catch(error =>  {
+                // Something went wrong with register
+                console.log('registerCatchError1: ', error);
+                reject(error);
+            });
+        } else {
+            signOutUser();
+            reject('Error: Current user logged out, please try again.');
+        }
     });
 }
 
@@ -101,6 +102,7 @@ export function saveUser(updatedUserInfo) {
                 userRealm.write(() => {
                     currentUser.firstName = updatedUserInfo.firstName;
                     currentUser.lastName = updatedUserInfo.lastName;
+                    currentUser.savePhotosToCameraRoll = updatedUserInfo.savePhotosToCameraRoll;
                     currentUser.dateModified = new Date();
                 });
                 resolve(currentUser);
@@ -227,13 +229,41 @@ export function loadUserFromCache() {
 // Signout User and close out realms
 export function signOutUser() {
     return new Promise((resolve, reject) => {
+        // hack to help prevent multiple logins by forcing all accounts to logout
+        let users = Realm.Sync.User.all;
+        for(const key in users) {
+            const user = users[key];
+            user.logout();
+        }                
+
         currentUser = null;
-        Realm.Sync.User.current.logout();
         userRealm = null;
         parkRealm = null;      
         resolve(currentUser);
         
         reject('Something went wrong with signout');
+    });
+}
+
+// save photo to camera roll
+export function savePhotoToCameraRoll(photo) {
+    return new Promise((resolve, reject) => {
+        // save photo to camera roll if user setting is true
+        if (currentUser.savePhotosToCameraRoll) {
+            console.log('1test')
+            if (photo) {
+                console.log('test')
+                CameraRoll.saveToCameraRoll(photo).then(() => {
+                    resolve('success');
+                }).catch((error) => {
+                    reject('Save to camera roll failed: ', error);
+                });
+            } else {
+                reject('No photo to save');
+            }
+        } else {
+            reject('User is set to not save to camera roll');
+        }
     });
 }
 
@@ -408,7 +438,7 @@ export function saveJournal(journal, isEdit) {
     });
 }
 
-// Delete Journal from local Realm
+// Delete Journal and associated journal entries from local Realm
 export function deleteJournal(journalId) {
     return new Promise((resolve, reject) => {
         try {
@@ -417,31 +447,39 @@ export function deleteJournal(journalId) {
             //const journalEntries = journal.journalEntries;
             const person = userRealm.objectForPrimaryKey('Person', journal.owner);
 
-            // build array of journal entries to delete
+            // if journal etries, build array of them to delete
             //   This is because the delete fails if we try to work in the live journal object
             let entriesToDelete = [];
-            journal.journalEntries.forEach((journalEntry) => {
-                const deleteMe = userRealm.objectForPrimaryKey('JournalEntry', journalEntry.id);
-                entriesToDelete.push(deleteMe);
-            })
+            if (journal.journalEntries.length > 0) {
+                journal.journalEntries.forEach((journalEntry) => {
+                    const deleteMe = userRealm.objectForPrimaryKey('JournalEntry', journalEntry.id);
+                    entriesToDelete.push(deleteMe);
+                });    
+            }
 
             userRealm.write(() => {
-                let itemsDeleted = 0;
-                // Hack cause length will change as items are deleted
+                // save length cause it will change as items are deleted
                 const itemsLength = journal.journalEntries.length;
                 // delete all the journal entries in the array
-                entriesToDelete.forEach((entry) => {
-                    itemsDeleted++
-                    // delete entry
-                    userRealm.delete(entry);
-
-                    if (itemsDeleted === itemsLength) {
-                        // all items deleted, delete the journal and update person dateModified
-                        userRealm.delete(journal);
-                        person.dateModified = new Date();
-                    }
-                });
-            })
+                if (itemsLength > 0 && entriesToDelete.length > 0) {
+                    let itemsDeleted = 0;
+                    entriesToDelete.forEach((entry) => {
+                        itemsDeleted++
+                        // delete entry
+                        userRealm.delete(entry);
+    
+                        if (itemsDeleted === itemsLength) {
+                            // all items deleted, delete the journal and update person dateModified
+                            userRealm.delete(journal);
+                            person.dateModified = new Date();
+                        }
+                    });                
+                } else {
+                    // no journal entries to delete, delete the journal and update person dateModified
+                    userRealm.delete(journal);
+                    person.dateModified = new Date();
+                }
+            });
             reslove();
         } catch (error) {
             reject('Failed to delete journal');
