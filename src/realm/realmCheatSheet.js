@@ -333,3 +333,17 @@ const _removeItem = async (key) => {
     throw error;
   }
 };
+
+
+
+
+
+
+
+//  scratch pad for requesting parks form API
+let parks = UserService.parkRealm.objects('Park');
+let attractions = UserService.parkRealm.objects('Attraction');
+
+for (let p of parks) {
+    console.log('parkTest: ', p);
+}

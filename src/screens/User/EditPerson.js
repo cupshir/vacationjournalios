@@ -3,6 +3,7 @@ import {
     View,
     ScrollView,
     StyleSheet,
+    Switch,
     AlertIOS
 } from 'react-native';
 import { 
@@ -39,11 +40,11 @@ class EditPerson extends Component {
             currentUser: null,
             formValues: {
                 firstName: '',
-                lastName: ''                                                               
+                lastName: '',
+                savePhotosToCameraRoll: false                                                               
             },
             formErrors: {
-                firstName: '',
-                lastName: ''
+                firstName: ''
             },
             editError: '',
             isLoading: true
@@ -61,7 +62,8 @@ class EditPerson extends Component {
                     currentUser: currentUser,
                     formValues: {
                         firstName: currentUser.firstName,
-                        lastName: currentUser.lastName
+                        lastName: currentUser.lastName,
+                        savePhotosToCameraRoll: currentUser.savePhotosToCameraRoll
                     },
                     isLoading: false
                 });
@@ -70,7 +72,6 @@ class EditPerson extends Component {
         } 
         // Something went wrong loading user info, dismiss modal
         this.props.navigator.dismissModal();
-        
     }
 
     // handle navigation event
@@ -133,22 +134,20 @@ class EditPerson extends Component {
 
     // Handle Last Name Change
     handleLastNameChange = (value) => {
-        let lastNameError = '';
-
-        // Check input for errors, if found set error message
-        if (!value) {
-            lastNameError = 'Please enter your last name.';
-        }
-
-        // Set state and error messages
         this.setState({ 
             formValues: {
                 ...this.state.formValues, 
                 lastName: value
-            },
-            formErrors: {
-                ...this.state.formErrors,
-                lastName: lastNameError
+            }
+        });
+    }
+
+    // savePhotosToCameraRoll setting change
+    handleSavePhotosToCameraRollChange = () => {
+        this.setState({
+            formValues: {
+                ...this.state.formValues,
+                savePhotosToCameraRoll: !this.state.formValues.savePhotosToCameraRoll
             }
         });
     }
@@ -165,6 +164,7 @@ class EditPerson extends Component {
             let updatedUserInfo = [];
             updatedUserInfo.firstName = this.state.formValues.firstName;
             updatedUserInfo.lastName = this.state.formValues.lastName;
+            updatedUserInfo.savePhotosToCameraRoll = this.state.formValues.savePhotosToCameraRoll;
 
             if (this.state.currentUser) {
                 // Attempt registration
@@ -201,14 +201,12 @@ class EditPerson extends Component {
     readyForSubmit = (values) => {
         let ready = true;
 
-        // Check for value in Form Values
-        Object.entries(values).forEach(([key, val]) => {
-            if(val === '') {
-                ready = false;
-            }
-        });
+        // Check for required Form Values
+        if (this.state.formValues.firstName === '') {
+            ready = false
+        }
 
-        // If all values preset, check for error messages
+        // If all values present, check for error messages
         if(ready) {
             ready = !this.checkForErrorMessages();
         }
@@ -245,7 +243,6 @@ class EditPerson extends Component {
     render() {
         // Check for form errors in state
         const firstNameError = (this.state.formErrors.firstName !== '') ? this.renderError(this.state.formErrors.firstName) : null;
-        const lastNameError = (this.state.formErrors.lastName !== '') ? this.renderError(this.state.formErrors.lastName) : null;
         
         // Check if sign in errors in state
         const editError = (this.state.editError !== '') ? this.renderError(this.state.editError) : null;
@@ -288,7 +285,15 @@ class EditPerson extends Component {
                         inputStyle={styles.inputText}
                         value={this.state.formValues.lastName}
                     />
-                    {lastNameError}
+                    <View style={styles.cameraRollSetting}>
+                        <Text style={styles.cameraRollSettingText}>Save photos to camera roll?</Text>
+                        <Switch
+                            onValueChange={this.handleSavePhotosToCameraRollChange}
+                            value={this.state.formValues.savePhotosToCameraRoll}
+                            onTintColor={'#387EF7'}
+                            tintColor={'#e9e9e9'}
+                        />
+                    </View>
                 </View>
             </ScrollView>
         </KeyboardAwareScrollView>
@@ -321,6 +326,18 @@ var styles = StyleSheet.create({
     },
     inputText: {
         color: '#000000'
+    },
+    cameraRollSetting: {
+        marginTop: 20,
+        marginRight: 25,
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        alignItems: 'center'
+    },
+    cameraRollSettingText: {
+        marginRight: 10, 
+        color: '#FFFFFF',
+        fontSize: 16
     }
   });
 

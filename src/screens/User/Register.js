@@ -42,7 +42,6 @@ class Register extends Component {
                 password: '',
                 confirmPassword: '',
                 firstName: '',
-                lastName: ''                                                               
             },
             formErrors: {
                 email: '',
@@ -50,7 +49,6 @@ class Register extends Component {
                 password: '',
                 confirmPassword: '',
                 firstName: '',
-                lastName: ''
             },
             signUpError: '',
             isLoading: false
@@ -205,28 +203,6 @@ class Register extends Component {
         });
     }
 
-    // Handle Last Name Change
-    handleLastNameChange = (value) => {
-        let lastNameError;
-
-        // Check input for errors, if found set error message
-        if (!value) {
-            lastNameError = 'Please enter your last name.';
-        }
-
-        // Set state and error messages
-        this.setState({ 
-            formValues: {
-                ...this.state.formValues, 
-                lastName: value
-            },
-            formErrors: {
-                ...this.state.formErrors,
-                lastName: lastNameError
-            }
-        });
-    }
-
     // Handle Submit Click
     handleSignUp = () => {
         if(this.readyForSubmit(this.state.formValues)){
@@ -318,7 +294,6 @@ class Register extends Component {
         const passwordError = (this.state.formErrors.password !== '') ? this.renderError(this.state.formErrors.password) : null;
         const confirmPasswordError = (this.state.formErrors.confirmPassword !== '') ? this.renderError(this.state.formErrors.confirmPassword) : null;
         const firstNameError = (this.state.formErrors.firstName !== '') ? this.renderError(this.state.formErrors.firstName) : null;
-        const lastNameError = (this.state.formErrors.lastName !== '') ? this.renderError(this.state.formErrors.lastName) : null;
         
         // Check if sign in errors in state
         const signUpError = (this.state.signUpError !== '') ? this.renderError(this.state.signUpError) : null;
@@ -402,16 +377,6 @@ class Register extends Component {
                         inputStyle={styles.inputText}
                     />
                     {firstNameError}
-                    <FormLabel
-                        labelStyle={styles.inputLabel}                           
-                    >Last Name</FormLabel>
-                    <FormInput 
-                        onChangeText={this.handleLastNameChange}
-                        placeholder='Enter last name'
-                        containerStyle={styles.input}
-                        inputStyle={styles.inputText}
-                    />
-                    {lastNameError}
                 </View>
             </ScrollView>
         </KeyboardAwareScrollView>
