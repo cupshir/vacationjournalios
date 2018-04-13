@@ -176,15 +176,15 @@ class EditJournalEntry extends Component {
     }
 
     // save photo to state and possibly camera roll
-    savePhoto = (photo, fromCameraRoll) => {
+    savePhoto = (photoData, fromCameraRoll) => {
         if (UserService.currentUser.savePhotosToCameraRoll && !fromCameraRoll) {
             // save photo to camera roll
-            UserService.savePhotoToCameraRoll(photo).then((returnedPhoto) => {
+            UserService.savePhotoToCameraRoll(photoData.uri).then((returnedPhoto) => {
                 this.setState({
                     ...this.state,
                     formValues: {
                         ...this.state.formValues,
-                        photo: photo
+                        photo: photoData.base64
                     },
                     cameraModalVisible: false,
                 });                

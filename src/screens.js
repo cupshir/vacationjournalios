@@ -21,8 +21,8 @@ import LoadingModal from './screens/LoadingModal';
 // register all screens of the app (including internal ones)
 export function registerScreens() {
 
-  Navigation.registerComponent('vacationjournalios.Dashboard', () => Dashboard);
   Navigation.registerComponent('vacationjournalios.Profile', () => Profile);
+  Navigation.registerComponent('vacationjournalios.Dashboard', () => Dashboard);
 
   Navigation.registerComponent('vacationjournalios.Journal', () => Journal);
   Navigation.registerComponent('vacationjournalios.JournalList', () => JournalList);

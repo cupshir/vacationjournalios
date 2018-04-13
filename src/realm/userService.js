@@ -1,4 +1,5 @@
 import uuid from 'react-native-uuid';
+import moment from 'moment';
 import { CameraRoll } from 'react-native';
 import { Navigation } from 'react-native-navigation';
 import Realm from 'realm';
@@ -10,7 +11,7 @@ import {
     JournalEntry
 } from './model/user';
 
-import * as AppConstants from './config'
+import * as AppConstants from './config';
 
 // Class Properties?
 export let parkRealm;
@@ -19,7 +20,7 @@ export let currentUser;
 export let attractions;
 export let parks;
 
-// User Functions
+//// User Functions
 
 // Register user and build realms
 export function registerUser(userObject) {
@@ -55,6 +56,8 @@ export function registerUser(userObject) {
                             attractionsLastSynced: new Date(1900,0,1)
                         });
                     });
+                    // horrible hack? wait 2s then try the initial seed user realm
+                    setTimeout(initialSeedFromParkRealm(), 2000);
                     resolve(currentUser);
                 } catch (e) {
                     // Something went wrong userRealm write
@@ -162,36 +165,30 @@ export function signInUser(email, password) {
         if (!userCheck) {
             // make authentication request
             Realm.Sync.User.login(AppConstants.AUTH_URL, email, password)
-            .then(user => {
-                // Open the park/attraction seed realm
-                parkRealm = new Realm({
-                    schema: [Park, Attraction],
-                    sync: {
-                        user,
-                        url: `${AppConstants.REALM_URL}/${AppConstants.REALM_PARKS_PATH}`
+                .then(user => {
+                    // Had problems with opening as new realm, using this method...not sure if correct...but for now its working
+                    // setup realm config
+                    const userConfig = {
+                        schema: [Person, Park, Attraction, Journal, JournalEntry],
+                        sync: {
+                            user,
+                            url: `${AppConstants.REALM_URL}/${AppConstants.REALM_USER_PATH}`
+                        }
                     }
-                });
+                    // open the realm
+                    Realm.open(userConfig).then(realm => {
+                        userRealm = realm;
 
-                // Had problems with opening as new realm, using this method...not sure if correct...but for now its working
-                const userConfig = {
-                    schema: [Person, Park, Attraction, Journal, JournalEntry],
-                    sync: {
-                        user,
-                        url: `${AppConstants.REALM_URL}/${AppConstants.REALM_USER_PATH}`
-                    }
-                }
-                Realm.open(userConfig).then(realm => {
-                    userRealm = realm;
-
-                    currentUser = userRealm.objectForPrimaryKey('Person', user.identity);
-                    
-                    resolve(currentUser);
-                }).catch((error) => {
+                        // update currentUser object
+                        currentUser = userRealm.objectForPrimaryKey('Person', user.identity);
+                        
+                        resolve(currentUser);
+                    }).catch((error) => {
+                        reject(error);
+                    });
+                }).catch(error => {
                     reject(error);
                 });
-            }).catch(error => {
-                reject(error);
-            });
         } else {
             const error = { message: 'User already signed in' };
             reject(error);
@@ -256,6 +253,7 @@ export function savePhotoToCameraRoll(photo) {
                 CameraRoll.saveToCameraRoll(photo).then(() => {
                     resolve('success');
                 }).catch((error) => {
+                    console.log(error);
                     reject('Save to camera roll failed: ', error);
                 });
             } else {
@@ -267,64 +265,155 @@ export function savePhotoToCameraRoll(photo) {
     });
 }
 
-
-export function updateUserParks(parks) {
+// update userRealm parks from seed realm
+export function updateUserParks() {
     return new Promise((resolve, reject) => {
-        try {
-            userRealm.write(() => {
-                parks.forEach((park) => {
-                    const newPark = userRealm.create('Park', {
-                        id: park.id,
-                        name: park.name,
-                        photo: park.photo,
-                        dateCreated: park.dateCreated,
-                        dateModified: park.dateModified,
-                        dateSynced: new Date()
-                    },
-                    true);
-                });
-                currentUser.parksLastSynced = new Date();
-            });
-            resolve('success');
-        } catch (e) {
-            // Something went wrong userRealm write
-            reject('Updating user in Realm failed: ', e);
+        // check for seed realm
+        if (parkRealm) {
+            // get parks from seed realm
+            const seedParks = parkRealm.objects('Park');
+            // horrible hack, delay to give time for parks object to load
+            setTimeout(function(){
+                    if (seedParks.length > 0) {
+                        try {
+                            // add/update parks in userRealm
+                            userRealm.write(() => {
+                                seedParks.forEach((park) => {
+                                    const newPark = userRealm.create('Park', {
+                                        id: park.id,
+                                        name: park.name,
+                                        photo: park.photo,
+                                        dateCreated: park.dateCreated,
+                                        dateModified: park.dateModified,
+                                        dateSynced: new Date()
+                                    },
+                                    true);
+                                });
+                                // update lastSynced time
+                                currentUser.parksLastSynced = new Date();
+                            });
+                            // update parks object with updated parks list
+                            parks = userRealm.objects('Park');
+
+                            resolve('success');
+                        } catch (error) {
+                            console.log(error);
+                            reject('Updating parks in userRealm failed');
+                        }
+                    } else {
+                        reject('Failed to load parks from park realm');
+                    }
+                },1000
+            );
+        } else {
+            reject('Missing Seed Park Realm');
+        }   
+    });
+}
+
+// update userRealm attractions from seed realm
+export function updateUserAttractions() {
+    return new Promise((resolve, reject) => {
+        // check for seed realm
+        if (parkRealm) {
+            // get attractions from seed realm
+            const seedAttractions = parkRealm.objects('Attraction');
+            // horrible hack, delay so attractions object has time to load
+            setTimeout(function(){
+                    if (seedAttractions.length > 0) {
+                        try {
+                            // add/update attractions in userRealm
+                            userRealm.write(() => {
+                                seedAttractions.forEach((attraction) => {
+                                    const newAttraction = userRealm.create('Attraction', {
+                                        id: attraction.id,
+                                        name: attraction.name,
+                                        photo: attraction.photo,
+                                        park: attraction.park,
+                                        description: attraction.description,
+                                        heightToRide: attraction.heightToRide,
+                                        hasScore: attraction.hasScore,
+                                        dateCreated: attraction.dateCreated,
+                                        dateModified: attraction.dateModified,
+                                        dateSynced: new Date()
+                                    },
+                                    true);
+                                });
+                                // update lastSynced time
+                                currentUser.attractionsLastSynced = new Date();
+                            });
+                            // update attractions object with updated attractions list
+                            attractions = userRealm.objects('Attraction');
+                            
+                            resolve('success');
+                        } catch (error) {
+                            console.log(error);
+                            reject('Updating attractions in userRealm failed');
+                        }
+                    } else {
+                        reject('Failed to load attractions from park realm');
+                    }
+                },1000
+            );
+        } else {
+            reject('Missing Seed Park Realm');
         }
     });
 }
 
-export function updateUserAttractions(attractions) {
+// initialize park realm
+export function initializeParkRealm() {
     return new Promise((resolve, reject) => {
         try {
-            userRealm.write(() => {
-                attractions.forEach((attraction) => {
-                    const newAttraction = userRealm.create('Attraction', {
-                        id: attraction.id,
-                        name: attraction.name,
-                        photo: attraction.photo,
-                        park: attraction.park,
-                        description: attraction.description,
-                        heightToRide: attraction.heightToRide,
-                        hasScore: attraction.hasScore,
-                        dateCreated: attraction.dateCreated,
-                        dateModified: attraction.dateModified,
-                        dateSynced: new Date()
-                    },
-                    true);
+            // get current user
+            const user = Realm.Sync.User.current;
+
+            if (user) {
+                // open seed realm
+                parkRealm = new Realm({
+                    schema: [Park, Attraction],
+                    sync: {
+                        user,
+                        url: `${AppConstants.REALM_URL}/${AppConstants.REALM_PARKS_PATH}`
+                    }
                 });
-                currentUser.attractionsLastSynced = new Date();
-            });
-            resolve('success');
-        } catch (e) {
-            // Something went wrong userRealm write
-            reject('Updating user in Realm failed: ', e);
+                resolve('success');    
+            } else {
+                reject('User not logged in')
+            }
+        } catch (error) {
+            console.log(error);
+            reject('Failed to open park Realm');
         }
     });
 }
 
-// End User Functions
+function initialSeedFromParkRealm() {
+    return function() {
+        // seed parks and attractions into new users realm
+        initializeParkRealm().then(() => {
+            updateUserParks().then(() => {
+                console.log('first time park sync success');
+            }).catch((error) => {
+                console.log(error);
+                console.log('error seeding parks');
+            });
+            updateUserAttractions().then(() => {
+                console.log('first time attraction sync success');
+            }).catch((error) => {
+                console.log(error);
+                console.log('error seeding attractions');
+            });
+        }).catch((error) => {
+            console.log(error);
+            console.log('error loading seed realm');
+        });
+    }
+}
 
-// Journal Functions
+//// End User Functions
+
+//// Journal Functions
 
 // Get Journals by userId
 export function getJournals(userId) {
@@ -610,3 +699,72 @@ export function deleteJournalEntry(journalEntryId, activeJournalId) {
     })
 }
 
+//// End Journal Functions
+
+
+
+////   Stats Functions
+
+// total minutes waited - today
+export function totalMinutesWaitedToday() {
+    let totalMinutes = 0;
+    // get current date
+    const currentDate = moment(new Date());
+    
+    if (currentUser) {
+        // loop through journals
+        currentUser.journals.forEach((journal) => {
+            // loop through journal entries
+            journal.journalEntries.forEach((journalEntry) => {
+                // check if entry is from today - format for comparison (so we dont have to worry about time)
+                if (moment(journalEntry.dateJournaled).format('MM-DD-YYYY') === currentDate.format('MM-DD-YYYY')) {
+                    // add to total minutes return string
+                    totalMinutes = totalMinutes + journalEntry.minutesWaited;
+                }
+            });
+        })
+        return totalMinutes + '';
+    } 
+    return '0';
+}
+
+// total minutes waited - week
+export function totalMinutesWaitedWeek() {
+    let totalMinutes = 0;
+    // get current date - 7 aka 1 week ago'
+    const startWeekDate = moment(new Date()).subtract(7, 'days');
+    
+    if (currentUser) {
+        // loop through journals
+        currentUser.journals.forEach((journal) => {
+            // loop through journal entries
+            journal.journalEntries.forEach((journalEntry) => {
+                // check if entry is from after 1 week ago - format for comparison (so we dont have to worry about time)
+                if (moment(journalEntry.dateJournaled).format('MM-DD-YYYY') > startWeekDate.format('MM-DD-YYYY')) {
+                    // add to total minutes return string
+                    totalMinutes = totalMinutes + journalEntry.minutesWaited;
+                }
+            });
+        })
+        return totalMinutes + '';
+    } 
+    return '0';
+}
+
+// total minutes waited - all time
+export function totalMinutesWaitedLife() {
+    let totalMinutes = 0;
+    
+    if (currentUser) {
+        // loop through journals
+        currentUser.journals.forEach((journal) => {
+            // loop through journal entries
+            journal.journalEntries.forEach((journalEntry) => {
+                // add to total minutes return string
+                totalMinutes = totalMinutes + journalEntry.minutesWaited;
+            });
+        })
+        return totalMinutes + '';
+    } 
+    return '0';
+}

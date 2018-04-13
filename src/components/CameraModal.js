@@ -60,14 +60,14 @@ class CameraModal extends Component {
     // save photo
     savePhoto = async function() {
         if (this.camera) {
-            // photo options - TODO: research better quality storage size and if its worth it
             const options = { 
-                quality: this.props.quality ? this.props.quality : .5,
+                quality: 1,
+                forceUpOrientation: true,
                 base64: true 
             };
             this.camera.takePictureAsync(options).then((data) => {
                 // success - pass base64 of photo back
-                this.props.savePhoto(data.base64, false);
+                this.props.savePhoto(data, false);
             }).catch((error) => {
                 // failed - TODO: Better error handling or remove..
                 console.log('something failed saving photo');
@@ -76,7 +76,6 @@ class CameraModal extends Component {
     }
 
     renderCamera = () => {
-        console.log('t: ', this.state.saveToCameraRoll);
         return (
             <View style={styles.container}>
                 <View style={styles.header}>
@@ -169,7 +168,7 @@ class CameraModal extends Component {
                         </TouchableOpacity>
                     </View>
                 </View>
-                <Text>Camera Roll will display here</Text>
+                <Text>Camera Roll will display here eventually...not high priority...sorry...lol...</Text>
             </View>
         )
     }

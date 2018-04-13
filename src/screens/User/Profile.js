@@ -38,37 +38,50 @@ class Profile extends Component {
             })
             this.updateCurrentUserInState(user);
 
-            // Date comparison not working, circle back to fix...
+            // Park and Attraction Sync
+            // Dont think this belongs here...so Ill move later once I figure out where it does belong
+            // TODO: add network check before querying
+
+            // get current time and set time to 14 days back (we want to force park sync every 2 weeks)
             const currentTime = new Date();
             currentTime.setDate(currentTime.getDate()-14);
-            if (user.attractionsLastSynced.getDate() === currentTime.getDate()) {
-                
-                // add network check before querying
-                
-                console.log('starting attraction seed');
-                let seedAttractions = UserService.parkRealm.objects('Attraction');
-
-                UserService.updateUserAttractions(seedAttractions).then(() => {
-                    console.log('seed attractions success');
+            // if sync difference is less than 14, triggere sync
+            if ((user.attractionsLastSynced - currentTime) < 14) {
+                // initiliaze seed realm
+                UserService.initializeParkRealm().then((response) => {
+                    UserService.updateUserAttractions().then(() => {
+                        // success
+                        console.log('seed attractions success');
+                    }).catch((error) => {
+                        console.log(error);
+                        console.log('seed attractions failed');
+                    });
                 }).catch((error) => {
-                    console.log('seed attractions failed');
+                    console.log(error);
+                    console.log('Park Realm Init Failed');
                 });
-
             }
             // debugging
-            console.log('CT: ', currentTime.getDate())
-            console.log('lastSyncParks: ', user.parksLastSynced.getDate());
-            console.log('lastSyncAttractions: ', user.attractionsLastSynced.getDate())
-            if (user.parksLastSynced.getDate() === currentTime.getDate()) {
+            console.log('CT: ', currentTime)
+            console.log('lastSyncParks: ', user.parksLastSynced);
+            console.log('lastSyncAttractions: ', user.attractionsLastSynced)
+            console.log('Diff: ', user.attractionsLastSynced - currentTime);
 
-                // add network check before querying
-
-                console.log('starting park seed');
-                let seedParks = UserService.parkRealm.objects('Park');
-                UserService.updateUserParks(seedParks).then(() => {
-                    console.log('seed  parks success');
+            // if sync difference is less than 14, triggere sync
+            if ((user.parksLastSynced - currentTime) < 14) {
+                // initiliaze seed realm
+                UserService.initializeParkRealm().then((response) => {
+                        // update User parks
+                        UserService.updateUserParks().then(() => {
+                            // success
+                            console.log('seed parks success');
+                        }).catch((error) => {
+                            console.log(error);
+                            console.log('seed parks failed');
+                        });
                 }).catch((error) => {
-                    console.log('seed parks failed');
+                    console.log(error)
+                    console.log('Park Realm Init Failed');
                 });
             }
         }).catch((error) => {
@@ -107,7 +120,7 @@ class Profile extends Component {
                 authenticated: false,
                 cameraModalVisible: false,
                 isLoading: false
-            })
+            });
         }
     }
 
@@ -128,10 +141,35 @@ class Profile extends Component {
         });
     }
 
+    // save photo to state and possibly camera roll
+    savePhoto = (photoData, fromCameraRoll) => {
+        if (UserService.currentUser.savePhotosToCameraRoll && !fromCameraRoll) {
+            // save photo to camera roll
+            UserService.savePhotoToCameraRoll(photoData.uri).then((returnedPhoto) => {
+                UserService.saveUserPhoto(photoData.base64).then((updatedUser) => {
+                    this.updateCurrentUserInState(updatedUser);
+                }).catch((error) => {
+                    console.log('Save Photo Failed: ', error);
+                });                
+            }).catch((error) => {
+                console.log('error saving to camera roll: ', error);
+            });
+        } else {
+            this.setState({
+                ...this.state,
+                formValues: {
+                    ...this.state.formValues,
+                    photo: photo
+                },
+                cameraModalVisible: false,
+            });
+        }
+    }
+
     // photo delete press event
     onPhotoDeletePress = () => {
         // display confirm prompt, user must type CONFIRM to delete photo
-        AlertIOS.prompt(
+        AlertIOS.alert(
             'Confirm Delete',
             'Are you sure you want to delete the profile image?',
             [
@@ -375,7 +413,7 @@ class Profile extends Component {
                             </TouchableOpacity>
                         </View>
                         <CameraModal 
-                            quality={'.5'}
+                            quality={'1'}
                             savePhoto={this.savePhoto}
                             visible={this.state.cameraModalVisible}
                             toggleCameraModal={this.toggleCameraModal}

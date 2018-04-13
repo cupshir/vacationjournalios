@@ -190,16 +190,32 @@ class EditJournal extends Component {
         });
     }
 
-    // save photo to state
-    savePhoto = (photo) => {
-        this.setState({
-            ...this.state,
-            formValues: {
-                ...this.state.formValues,
-                photo: photo
-            },
-            cameraModalVisible: false,
-        });
+    // save photo to state and possibly camera roll
+    savePhoto = (photoData, fromCameraRoll) => {
+        if (UserService.currentUser.savePhotosToCameraRoll && !fromCameraRoll) {
+            // save photo to camera roll
+            UserService.savePhotoToCameraRoll(photoData.uri).then((returnedPhoto) => {
+                this.setState({
+                    ...this.state,
+                    formValues: {
+                        ...this.state.formValues,
+                        photo: photoData.base64
+                    },
+                    cameraModalVisible: false,
+                });                
+            }).catch((error) => {
+                console.log('error saving to camera roll: ', error);
+            });
+        } else {
+            this.setState({
+                ...this.state,
+                formValues: {
+                    ...this.state.formValues,
+                    photo: photo
+                },
+                cameraModalVisible: false,
+            });
+        }
     }
 
     // photo delete press event

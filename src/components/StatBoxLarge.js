@@ -17,12 +17,12 @@ class StatBoxLarge extends Component {
         </View>
         <View style={styles.content}>
           <View style={styles.title}>
-            <Text>
+            <Text style={styles.titleText}>
               {this.props.title}
             </Text>
           </View>
           <View>
-            <Text>
+            <Text style={styles.text}>
               {this.props.journalEntry}
             </Text>
           </View>
@@ -33,23 +33,28 @@ class StatBoxLarge extends Component {
 }
 
 var styles = StyleSheet.create({
-  container: {
-    height: 100,
-    flexDirection: 'row',
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginTop: 5,
-    marginBottom: 5,
-    marginLeft: 10,
-    marginRight: 10 
-  },
-  image: {
-    flex: .4,
-    backgroundColor: '#C7D0FE'
-  },
-  content: {
-    flex: .6
-  }
+    container: {
+        height: 100,
+        flexDirection: 'row',
+        marginTop: 5,
+        marginBottom: 5,
+        marginLeft: 10,
+        marginRight: 10 
+    },
+    image: {
+        flex: .4,
+        backgroundColor: '#C7D0FE'
+    },
+    content: {
+        flex: .6,
+        backgroundColor: '#252525'
+    },
+    titleText: {
+        color: '#FFFFFF'
+    },
+    text: {
+        color: '#FFFFFF'
+    }
 })
 
 StatBoxLarge.propTypes = {  
