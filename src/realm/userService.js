@@ -413,6 +413,7 @@ function initialSeedFromParkRealm() {
 
 //// End User Functions
 
+
 //// Journal Functions
 
 // Get Journals by userId
@@ -636,7 +637,8 @@ export function createJournalEntry(park, attraction, entryValues, isEdit) {
                             rating: entryValues.rating,
                             pointsScored: entryValues.pointsScored,
                             usedFastPass: entryValues.usedFastPass,
-                            comments: entryValues.comments  
+                            comments: entryValues.comments,
+                            owner: currentUser.id  
                             },
                             true
                         );
@@ -712,59 +714,305 @@ export function totalMinutesWaitedToday() {
     const currentDate = moment(new Date());
     
     if (currentUser) {
-        // loop through journals
-        currentUser.journals.forEach((journal) => {
+        // check for active journal
+        if (currentUser.activeJournal) {
             // loop through journal entries
-            journal.journalEntries.forEach((journalEntry) => {
+            currentUser.activeJournal.journalEntries.forEach((journalEntry) => {
                 // check if entry is from today - format for comparison (so we dont have to worry about time)
                 if (moment(journalEntry.dateJournaled).format('MM-DD-YYYY') === currentDate.format('MM-DD-YYYY')) {
                     // add to total minutes return string
                     totalMinutes = totalMinutes + journalEntry.minutesWaited;
                 }
             });
-        })
+        }
         return totalMinutes + '';
     } 
     return '0';
 }
 
-// total minutes waited - week
-export function totalMinutesWaitedWeek() {
+// total minutes waited - vacation
+export function totalMinutesWaitedVacation() {
     let totalMinutes = 0;
-    // get current date - 7 aka 1 week ago'
-    const startWeekDate = moment(new Date()).subtract(7, 'days');
     
+    // check for current User
     if (currentUser) {
-        // loop through journals
-        currentUser.journals.forEach((journal) => {
+        // check for active journal
+        if (currentUser.activeJournal) {
             // loop through journal entries
-            journal.journalEntries.forEach((journalEntry) => {
-                // check if entry is from after 1 week ago - format for comparison (so we dont have to worry about time)
-                if (moment(journalEntry.dateJournaled).format('MM-DD-YYYY') > startWeekDate.format('MM-DD-YYYY')) {
-                    // add to total minutes return string
-                    totalMinutes = totalMinutes + journalEntry.minutesWaited;
-                }
-            });
-        })
+            currentUser.activeJournal.journalEntries.forEach((journalEntry) => {
+                // add to total minutes return string
+                totalMinutes = totalMinutes + journalEntry.minutesWaited;
+            });            
+        }
         return totalMinutes + '';
     } 
     return '0';
 }
 
-// total minutes waited - all time
+// total minutes waited - life time
 export function totalMinutesWaitedLife() {
     let totalMinutes = 0;
     
     if (currentUser) {
-        // loop through journals
+        // loop through all journals
         currentUser.journals.forEach((journal) => {
             // loop through journal entries
             journal.journalEntries.forEach((journalEntry) => {
                 // add to total minutes return string
                 totalMinutes = totalMinutes + journalEntry.minutesWaited;
             });
-        })
+        });
         return totalMinutes + '';
     } 
     return '0';
+}
+
+//
+// Total Fastpasses
+//
+
+// total fastpasses used - today
+export function totalFastpassesUsedToday() {
+    let totalFastpasses = 0;
+    // get current date
+    const currentDate = moment(new Date());
+
+    if (currentUser) {
+        // check for active journal
+        if (currentUser.activeJournal) {
+            // loop through journal entries
+            currentUser.activeJournal.journalEntries.forEach((journalEntry) => {
+                // check if entry is from today - format for comparison (so we dont have to worry about time)
+                if (moment(journalEntry.dateJournaled).format('MM-DD-YYYY') === currentDate.format('MM-DD-YYYY')) {
+                    // check if fastpass used
+                    if (journalEntry.usedFastPass) {
+                        // tally ride
+                        totalFastpasses = totalFastpasses + 1;
+                    } 
+                }
+            });
+        }
+        return totalFastpasses + '';
+    }
+    return '0';
+}
+
+// total fastpasses used - vacation
+export function totalFastpassesUsedVacation() {
+    let totalFastpasses = 0;
+
+    if (currentUser) {
+        // check for active journal
+        if (currentUser.activeJournal) {
+            // loop through journal entries
+            currentUser.activeJournal.journalEntries.forEach((journalEntry) => {
+                // check if fastpass used
+                if (journalEntry.usedFastPass) {
+                    // tally ride
+                    totalFastpasses = totalFastpasses + 1;
+                } 
+            });            
+        }
+        return totalFastpasses + '';
+    }
+    return '0';
+}
+
+// total fastpasses used - life time
+export function totalFastpassesUsedLife() {
+    let totalFastpasses = 0;
+
+    if (currentUser) {
+        // loop through all journals
+        currentUser.journals.forEach((journal) => {
+            // loop through journal entries
+            journal.journalEntries.forEach((journalEntry) => {
+                // check if fastpass used
+                if (journalEntry.usedFastPass) {
+                    // tally ride
+                    totalFastpasses = totalFastpasses + 1;
+                } 
+            });
+        });
+        return totalFastpasses + '';
+    }
+    return '0';
+}
+
+//
+// Total Rides
+//
+
+// total rides - today
+export function totalRidesToday() {
+    let totalRides = 0;
+    // get current date
+    const currentDate = moment(new Date());
+
+    if (currentUser) {
+        // check for active journal
+        if (currentUser.activeJournal) {
+            // loop through journal entries
+            currentUser.activeJournal.journalEntries.forEach((journalEntry) => {
+                // check if entry is from today - format for comparison (so we dont have to worry about time)
+                if (moment(journalEntry.dateJournaled).format('MM-DD-YYYY') === currentDate.format('MM-DD-YYYY')) {
+                    // tally ride
+                    totalRides = totalRides + 1;
+                }
+            });
+        }
+        return totalRides + '';
+    }
+    return '0';
+}
+
+// total rides - vacation
+export function totalRidesVacation() {
+    let totalRides = 0;
+
+    if (currentUser) {
+        // check for active journal
+        if (currentUser.activeJournal) {
+            // loop through journal entries
+            currentUser.activeJournal.journalEntries.forEach((journalEntry) => {
+                // tally ride
+                totalRides = totalRides + 1;
+            });            
+        }
+        return totalRides + '';
+    }
+    return '0';
+}
+
+// total rides - life time
+export function totalRidesLife() {
+    let totalRides = 0;
+
+    if (currentUser) {
+        // loop through all journals
+        currentUser.journals.forEach((journal) => {
+            // loop through journal entries
+            journal.journalEntries.forEach((journalEntry) => {
+                // tally ride
+                totalRides = totalRides + 1;
+            });
+        });
+        return totalRides + '';
+    }
+    return '0';
+}
+
+// most ridden - today
+export function mostRiddenToday() {
+    if (currentUser) {
+        if (currentUser.activeJournal) {
+            // set current start date
+            let currentDateStart = new Date();
+            currentDateStart.setHours(0,0,0,0);
+            // set current end date
+            let currentDateEnd = new Date();
+            currentDateEnd.setHours(23,59,59,59);
+
+            // first build unique list of attractions from active journal journal entries
+            let attractionIds = [];
+            currentUser.activeJournal.journalEntries.forEach((journalEntry) => {
+                if (!attractionIds.includes(journalEntry.attraction.id)) {
+                    attractionIds.push(journalEntry.attraction.id);
+                }
+            });
+
+            // loop through each unique attraction and check if its count is greater than current highest count
+            let highestCount = 0;
+            let highestAttractionId = '';
+            attractionIds.forEach((attraction) => {
+                // get number of entries that match attraction id and were journaled today
+                let currentCount = currentUser.activeJournal.journalEntries.filtered('attraction.id == $0 AND dateJournaled > $1 AND dateJournaled < $2', attraction, currentDateStart, currentDateEnd).length;
+
+                // check if current count is higher than highest count
+                if (currentCount > highestCount) {
+                    // greater count of attractions, update objects with new attraction
+                    highestCount = currentCount;
+                    highestAttractionId = attraction;
+                }
+            });
+
+            // return first found highest count attraction
+            return userRealm.objectForPrimaryKey('Attraction', highestAttractionId);
+        }
+    }
+    // missing user or active journal, return empty string
+    return '';
+}
+
+// most ridden - vacation
+export function mostRiddenVacation() {
+    if (currentUser) {
+        if (currentUser.activeJournal) {
+            // first build unique list of attractions from active journal journal entries
+            let attractionIds = [];
+            currentUser.activeJournal.journalEntries.forEach((journalEntry) => {
+                if (!attractionIds.includes(journalEntry.attraction.id)) {
+                    attractionIds.push(journalEntry.attraction.id);
+                }
+            });
+
+            // loop through each unique attraction
+            let highestCount = 0;
+            let highestAttractionId = '';
+            attractionIds.forEach((attraction) => {
+                // get number of entries that match attraction id
+                let currentCount = currentUser.activeJournal.journalEntries.filtered('attraction.id == $0', attraction).length;
+
+                // check if current count is higher than highest count
+                if (currentCount > highestCount) {
+                    // greater count of attractions, update objects with new attraction
+                    highestCount = currentCount;
+                    highestAttractionId = attraction;
+                }
+            });
+
+            // return first found highest count attraction
+            return userRealm.objectForPrimaryKey('Attraction', highestAttractionId);
+        }
+    }
+    // missing user or active journal, return empty string
+    return '';
+}
+
+// most ridden - life time
+export function mostRiddenLife() {
+    if (currentUser) {
+        // first build unique list of attractions id's from all journal entries
+        let attractionIds = [];
+        currentUser.journals.forEach((journal) => {
+            journal.journalEntries.forEach((journalEntry) => {
+                if (!attractionIds.includes(journalEntry.attraction.id)) {
+                    attractionIds.push(journalEntry.attraction.id);
+                }
+            });
+        });
+
+        // get all journal entries
+        const allJournalEntries = userRealm.objects('JournalEntry');
+
+        // loop through each unique attraction
+        let highestCount = 0;
+        let highestAttractionId = '';
+        attractionIds.forEach((attraction) => {
+            // get number of entries that match attraction id and current user
+            let currentCount = allJournalEntries.filtered('attraction.id == $0 AND owner == $1', attraction, currentUser.id).length;
+
+            // check if current count is higher than highest count
+            if (currentCount > highestCount) {
+                // greater count of attractions, update objects with new attraction
+                highestCount = currentCount;
+                highestAttractionId = attraction;
+            }
+        });
+
+        // return first found highest count attraction
+        return userRealm.objectForPrimaryKey('Attraction', highestAttractionId);
+    }
+    // missing user
+    return '';
 }

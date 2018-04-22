@@ -269,7 +269,6 @@ class Journal extends Component {
         journalEntries.forEach(entry => {
             const date = moment(entry.dateJournaled).format("MM/DD/YYYY");
             if (!returnList.includes(date)) {
-                const dateObject = [ date, entry.dateJournaled ];
                 returnList.push(date);
             }
         });

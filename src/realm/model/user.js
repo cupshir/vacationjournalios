@@ -95,6 +95,7 @@ JournalEntry.schema = {
         rating: 'int',
         pointsScored: 'int?',
         usedFastPass: 'bool',
-        comments: 'string?'
+        comments: 'string?',
+        owner: 'string'
     }
 }
