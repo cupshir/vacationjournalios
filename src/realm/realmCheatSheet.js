@@ -99,6 +99,12 @@ const condition = { userId: '*' };
 
 user.applyPermissions(condition, fullRealmURL, 'read');
 
+// 
+const user = Realm.Sync.User.current;
+
+const condition = { userId: '*' };
+
+user.applyPermissions(condition, `${AppConstants.REALM_URL}/${AppConstants.REALM_PARKS_PATH}`, 'write');
 
 
 
@@ -346,4 +352,222 @@ let attractions = UserService.parkRealm.objects('Attraction');
 
 for (let p of parks) {
     console.log('parkTest: ', p);
+}
+
+
+
+
+
+
+
+// New Seed realm Creation
+// First step, create new realm and seed parks into Realm
+export function createNewSeedRealm() {
+    
+    const user = Realm.Sync.User.current;
+  
+    // Open a new user Realm        
+    let newSeedRealm = new Realm({
+        schema: [Park, Attraction],
+        sync: {
+            user,
+            url: `${AppConstants.REALM_URL}/dataParksAttractions`
+        }
+    });
+
+    if (newSeedRealm) {
+        // check for seed realm
+        if (parkRealm) {
+            // get parks from seed realm
+            const seedParks = parkRealm.objects('Park');
+            // horrible hack, delay to give time for parks object to load
+            setTimeout(function(){
+                    if (seedParks.length > 0) {
+                        try {
+                            // add/update parks in userRealm
+                            newSeedRealm.write(() => {
+                                seedParks.forEach((park) => {
+                                    const newPark = newSeedRealm.create('Park', {
+                                        id: park.id,
+                                        name: park.name,
+                                        photo: park.photo,
+                                        dateCreated: park.dateCreated,
+                                        dateModified: park.dateModified,
+                                        dateSynced: new Date()
+                                    },
+                                    true);
+                                });
+                            });
+                        } catch (error) {
+                            console.log(error);
+                        }
+                    } else {
+                    }
+                },1000
+            );
+        } else {
+            console.log('missing park realm')
+        }
+    } else {
+        console.log('missing teamSeedrealm');
+    }
+}
+
+// Second step, seed attractions into realm
+export function createNewSeedRealm() {
+  const user = Realm.Sync.User.current;
+  
+  // Open a new user Realm        
+  newSeedRealm = new Realm({
+      schema: [Park, Attraction],
+      sync: {
+          user,
+          url: `${AppConstants.REALM_URL}/dataParksAttractions`
+      }
+  });
+
+  if (newSeedRealm) {
+      // check for seed realm
+      if (parkRealm) {
+          // get parks from seed realm
+          const seedAttractions = parkRealm.objects('Attraction');
+          console.log('seedAttractions: ', seedAttractions.length);
+          // horrible hack, delay to give time for parks object to load
+          setTimeout(function(){
+                  if (seedAttractions.length > 0) {
+                      try {
+                          // add/update parks in userRealm
+                          newSeedRealm.write(() => {
+                              seedAttractions.forEach((attraction) => {
+                                  console.log(attraction.name);
+                                  const newAttraction = newSeedRealm.create('Attraction', {
+                                      id: attraction.id,
+                                      name: attraction.name,
+                                      photo: attraction.photo,
+                                      park: attraction.park,
+                                      description: attraction.description,
+                                      heightToRide: attraction.heightToRide,
+                                      hasScore: attraction.hasScore,
+                                      dateCreated: attraction.dateCreated,
+                                      dateModified: attraction.dateModified,
+                                      dateSynced: new Date()
+                                  },
+                                  true);
+                              });
+                          });
+                      } catch (error) {
+                          console.log(error);
+                      }
+                  } else {
+                  }
+              },1000
+          );
+      } else {
+          console.log('missing park realm')
+      }
+  } else {
+      console.log('missing teamSeedrealm');
+  }
+}
+
+
+// seed base64 of image file into temp seed realm
+export function tempDevFunction() {
+  const user = Realm.Sync.User.current;
+  
+  // Open a new user Realm        
+  tempSeedRealm = new Realm({
+      schema: [Park, Attraction],
+      sync: {
+          user,
+          url: `${AppConstants.REALM_URL}/~/tempSeedRealm`
+      }
+  });
+
+  if (tempSeedRealm) {
+      // check for seed realm
+      console.log('ready')
+
+      const attractions = tempSeedRealm.objects('Attraction').filtered(`park.id == '52d9a73b-cf1f-478e-8b0f-12b86d7274bd'`);
+      console.log(attractions.length)
+
+      let attractionObjectArray = [];
+
+      // add/update parks in userRealm
+      attractions.forEach((attraction) => {
+          let attractionObject = [];
+
+          // convert image file to base64
+          let image;
+          RNFS.readFile(`${RNFS.MainBundlePath}/temp/MagicKingdom/${attraction.id}.png`, 'base64').then((img) => {
+              image = img;
+              console.log(attraction.name);
+              console.log(attraction.id);
+              console.log(img.substring(0,5));
+              console.log(img.substring(img.length-5, img.length));
+              console.log('..121..');
+              console.log(image.substring(0,5));
+              console.log(image.substring(image.length-5,image.length));
+  
+              // build attraction object for array
+              attractionObject.push(attraction.id);
+              attractionObject.push(attraction.name);
+              attractionObject.push(img);
+              attractionObject.push(attraction.park);
+              attractionObject.push(attraction.description);
+              attractionObject.push(attraction.heightToRide);
+              attractionObject.push(attraction.hasScore);
+              attractionObject.push(attraction.dateCreated);
+              attractionObject.push(attraction.dateModified);
+              attractionObject.push(new Date());
+  
+              // add object to array
+              attractionObjectArray.push(attractionObject);
+          });
+
+
+
+      });
+
+
+      console.log('1: ', attractionObjectArray);
+
+      setTimeout(function(){
+
+          try {
+              tempSeedRealm.write(() => {
+                  attractionObjectArray.forEach((attraction) => {
+                      const newAttraction = tempSeedRealm.create('Attraction', {
+                          id: attraction[0],
+                          name: attraction[1],
+                          photo: attraction[2],
+                          park: attraction[3],
+                          description: attraction[4],
+                          heightToRide: attraction[5],
+                          hasScore: attraction[6],
+                          dateCreated: attraction[7],
+                          dateModified: attraction[8],
+                          dateSynced: attraction[9]
+                      },
+                      true);
+                  });
+              
+              });
+              
+          } catch (error) {
+              console.log(error);
+          }
+          
+
+
+      },5000);
+
+
+
+
+
+      
+  } else {
+      console.log('missing teamSeedrealm');
+  }
 }

@@ -121,10 +121,12 @@ class JournalList extends Component {
     }
 
     // row edit press event
-    onEditPress = (id) => {
+    onEditPress = (id, name) => {
+        // set name
+        const newName = 'Edit ' + name;
         this.props.navigator.push({
             screen: 'vacationjournalios.EditJournal',
-            title: 'Edit Journal',
+            title: newName,
             passProps: {
                 journalId: id
             },
@@ -138,7 +140,7 @@ class JournalList extends Component {
         // display confirm prompt, user must type matching name to delete
         AlertIOS.prompt(
             'Confirm Delete',
-            'WARNING: This will delete all associated journal entries and cant be undone! Type the exact journal name to proceed.',
+            'WARNING: This will delete all associated journal entries and cant be undone! Type the exact journal name to proceed. Again, this cant be undone...you have been warned!!!',
             [
                 {
                     text: 'Cancel',

@@ -36,6 +36,22 @@ IconsLoaded.then(() => {
 				}
 			},
 			{
+				label: 'Journal',
+				screen: 'vacationjournalios.Journal',
+				title: 'Select A Journal',
+				icon: IconsMap['journal'],
+				selectedIcon: IconsMap['journal-selected'],
+				navigatorStyle: {
+					largeTitle: true,
+					navBarNoBorder: true,
+					navBarBackgroundColor: '#252525',
+					navBarTextColor: '#FFFFFF',
+					navBarButtonColor: '#FFFFFF',
+					statusBarTextColorScheme: 'light',
+					screenBackgroundColor: '#151515'
+				}
+			},
+			{
 				label: 'Profile',
 				screen: 'vacationjournalios.Profile',
 				title: 'Profile',
@@ -51,11 +67,11 @@ IconsLoaded.then(() => {
 				}
 			},
 			{
-				label: 'Journal',
-				screen: 'vacationjournalios.Journal',
-				title: 'Select A Journal',
-				icon: IconsMap['journal'],
-				selectedIcon: IconsMap['journal-selected'],
+				label: 'Parks',
+				screen: 'vacationjournalios.ParkList',
+				title: 'Parks',
+				icon: IconsMap['parks'],
+				selectedIcon: IconsMap['parks-selected'],
 				navigatorStyle: {
 					largeTitle: true,
 					navBarNoBorder: true,

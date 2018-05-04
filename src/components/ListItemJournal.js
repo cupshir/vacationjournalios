@@ -14,12 +14,12 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 class ListItemJournal extends PureComponent {
     // Press event
     onPress = () => {
-        this.props.onPress(this.props.item.id);
+        this.props.onPress(this.props.item.id, this.props.item.name);
     };
 
     // Edit event
     onEditPress = () => {
-        this.props.onEditPress(this.props.item.id);
+        this.props.onEditPress(this.props.item.id, this.props.item.name);
     }
 
     // Delete event

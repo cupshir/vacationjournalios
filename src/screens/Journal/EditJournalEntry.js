@@ -728,18 +728,20 @@ class EditJournalEntry extends Component {
             
                 <View style={styles.parkAttractionSection}>
                     <TouchableOpacity
-                        onPress={() => { this.setParkModalVisible(true); }} >
-                            <View
-                                style={[
-                                    styles.parkAttractionTitle, 
-                                    { borderBottomWidth: .5, borderBottomColor: '#444444' },
-                                    (this.state.formErrors.parkId !== '') ? styles.error : null
-                                    ]}>
-                                <Text style={styles.parkAttractionText}>
-                                    { this.state.selectedPark.parkName !== '' ? this.state.selectedPark.parkName : 'Select a Park'}
-                                </Text>
-                                <Icon style={styles.parkAttractionArrow} color='lightgrey' name="ios-arrow-forward" />
-                            </View>
+                        onPress={() => { this.setParkModalVisible(true); }} 
+                    >
+                        <View
+                            style={[
+                                styles.parkAttractionTitle, 
+                                { borderBottomWidth: .5, borderBottomColor: '#444444' },
+                                (this.state.formErrors.parkId !== '') ? styles.error : null
+                                ]}
+                        >
+                            <Text style={styles.parkAttractionText}>
+                                { this.state.selectedPark.parkName !== '' ? this.state.selectedPark.parkName : 'Select a Park'}
+                            </Text>
+                            <Icon style={styles.parkAttractionArrow} color='lightgrey' name="ios-arrow-forward" />
+                        </View>
                     </TouchableOpacity>
                     {attractionPicker}
                 </View>

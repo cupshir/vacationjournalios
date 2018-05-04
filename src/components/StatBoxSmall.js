@@ -10,7 +10,8 @@ class StatBoxSmall extends Component {
     render(props) {
         return (
             <View style={styles.container}>
-                <Text style={styles.stat}>{this.props.stat}</Text>
+                <Text style={styles.title}>{this.props.label}</Text>
+                <Text style={styles.stat}>{this.props.value}</Text>
                 <Text style={styles.title}>{this.props.title}</Text>
             </View>
         );
@@ -28,6 +29,7 @@ var styles = StyleSheet.create({
         marginBottom: 5,
         marginLeft: 5,
         marginRight: 5,
+        padding: 5,
         backgroundColor: '#C7D0FE'
     },
     stat: {
@@ -41,7 +43,8 @@ var styles = StyleSheet.create({
 
 StatBoxSmall.propTypes = {  
   title: PropTypes.string.isRequired,
-  stat: PropTypes.string.isRequired
+  label: PropTypes.string.isRequired,
+  value: PropTypes.string.isRequired
 };
 
 export default StatBoxSmall;

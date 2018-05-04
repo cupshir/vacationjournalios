@@ -36,7 +36,8 @@ Park.schema = {
         photo: 'string?',
         dateCreated: 'date',
         dateModified: 'date',
-        dateSynced: 'date'
+        dateSynced: 'date',
+        description: 'string?'
     }
 }
 
@@ -95,6 +96,7 @@ JournalEntry.schema = {
         rating: 'int',
         pointsScored: 'int?',
         usedFastPass: 'bool',
-        comments: 'string?'
+        comments: 'string?',
+        owner: 'string'
     }
 }

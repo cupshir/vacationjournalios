@@ -15,9 +15,13 @@ class ListItem extends PureComponent {
         this.props.onPress(this.props.id, this.props.title);
     };
 
+    onLongPress = () => {
+        this.props.onLongPress(this.props.id, this.props.title);
+    }
+
     // Edit event
     onEditPress = () => {
-        this.props.onEditPress(this.props.id);
+        this.props.onEditPress(this.props.id, this.props.title);
     }
 
     // Delete event
@@ -51,7 +55,7 @@ class ListItem extends PureComponent {
                 right={this.props.onDeletePress ? rightSwipeButtons : null} 
                 autoClose={true} 
                 backgroundColor={'white'} >
-                <TouchableOpacity onPress={this.onPress}>
+                <TouchableOpacity onPress={this.onPress} onLongPress={this.props.onLongPress ? this.onLongPress : null} >
                     <View style={this.props.viewStyle ? this.props.viewStyle : null}>
                         <Text style={this.props.textStyle ? this.props.textStyle : null}>
                             {this.props.title}
@@ -68,6 +72,7 @@ ListItem.propTypes = {
     title: PropTypes.string.isRequired,
     item: PropTypes.object,
     onPress: PropTypes.func,
+    onLongPress: PropTypes.func,
     onEditPress: PropTypes.func,
     onDeletePress: PropTypes.func,
     viewStyle: PropTypes.any,

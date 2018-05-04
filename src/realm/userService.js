@@ -13,12 +13,19 @@ import {
 
 import * as AppConstants from './config';
 
+// temp dev
+import RNFS from 'react-native-fs';
+//import * as tempImages from '../assets/temp/Magic Kingdom/images';
+
+
 // Class Properties?
 export let parkRealm;
 export let userRealm;
 export let currentUser;
 export let attractions;
 export let parks;
+export let isAdmin = false;
+export let isDevAdmin = false;
 
 //// User Functions
 
@@ -175,6 +182,15 @@ export function signInUser(email, password) {
                             url: `${AppConstants.REALM_URL}/${AppConstants.REALM_USER_PATH}`
                         }
                     }
+
+                    // set isAddmin
+                    isAdmin = user.isAdmin ? true : false;
+                    // set dev admin user
+                    isDevAdmin = user.identity === '461129407087609086f11bb9cb1dbb8e' ? true : false;
+                    console.log(isDevAdmin);
+
+                    console.log('user.id');
+
                     // open the realm
                     Realm.open(userConfig).then(realm => {
                         userRealm = realm;
@@ -203,6 +219,11 @@ export function loadUserFromCache() {
         const user = Realm.Sync.User.current;
 
         if (user) {
+            // set admin user
+            isAdmin = user.isAdmin ? true : false;
+            // set dev admin user
+            isDevAdmin = user.identity === '461129407087609086f11bb9cb1dbb8e' ? true : false;
+            console.log(isDevAdmin);
             // Open userRealm
             userRealm = new Realm({
                 schema: [Person, Park, Attraction, Journal, JournalEntry],
@@ -235,7 +256,9 @@ export function signOutUser() {
 
         currentUser = null;
         userRealm = null;
-        parkRealm = null;      
+        parkRealm = null;
+        isAdmin = false;
+        isDevAdmin = false;
         resolve(currentUser);
         
         reject('Something went wrong with signout');
@@ -285,7 +308,8 @@ export function updateUserParks() {
                                         photo: park.photo,
                                         dateCreated: park.dateCreated,
                                         dateModified: park.dateModified,
-                                        dateSynced: new Date()
+                                        dateSynced: new Date(),
+                                        description: park.description
                                     },
                                     true);
                                 });
@@ -318,6 +342,7 @@ export function updateUserAttractions() {
         if (parkRealm) {
             // get attractions from seed realm
             const seedAttractions = parkRealm.objects('Attraction');
+            console.log('a', seedAttractions.length)
             // horrible hack, delay so attractions object has time to load
             setTimeout(function(){
                     if (seedAttractions.length > 0) {
@@ -361,6 +386,10 @@ export function updateUserAttractions() {
     });
 }
 
+//// End User Functions
+
+//// Admin Park / Attraction Functions
+
 // initialize park realm
 export function initializeParkRealm() {
     return new Promise((resolve, reject) => {
@@ -373,10 +402,11 @@ export function initializeParkRealm() {
                 parkRealm = new Realm({
                     schema: [Park, Attraction],
                     sync: {
-                        user,
+                        user: user,
                         url: `${AppConstants.REALM_URL}/${AppConstants.REALM_PARKS_PATH}`
                     }
                 });
+                console.log('testParkRealm: ', parkRealm);
                 resolve('success');    
             } else {
                 reject('User not logged in')
@@ -388,6 +418,7 @@ export function initializeParkRealm() {
     });
 }
 
+// initial seed copy from park realm to user realm
 function initialSeedFromParkRealm() {
     return function() {
         // seed parks and attractions into new users realm
@@ -411,7 +442,78 @@ function initialSeedFromParkRealm() {
     }
 }
 
-//// End User Functions
+// Save a new park or edited park
+export function adminSavePark(park) {
+    return new Promise((resolve, reject) => {
+        const user = Realm.Sync.User.current;
+
+        if (user.isAdmin === true) {
+            console.log('attempting to save park');
+            try {
+                parkRealm.write(() => {
+                    // save park
+                    const newPark = parkRealm.create('Park', {
+                        id: park.id,
+                        name: park.name,
+                        photo: park.photo,
+                        dateCreated: park.dateCreated,
+                        dateModified: new Date(),
+                        dateSynced: park.dateSynced,
+                        description: park.description
+                    },
+                    true);
+                    // success return park
+                    resolve(newPark)
+                });
+            } catch (error) {
+                console.log('saveParkFailed: ', error);
+                reject('Save Park Failed')
+            }
+        } else {
+            reject('Current User is not Authorized to Edit this.');
+        }
+    });
+}
+
+// Save a new attraction or edited attraction
+export function adminSaveAttraction(attraction) {
+    return new Promise((resolve, reject) => {
+        const user = Realm.Sync.User.current;
+
+        if ( user.isAdmin === true) {
+            console.log('attempting to save attraction')
+            try {
+                parkRealm.write(() => {
+                    // save attraction
+                    const newAttraction = parkRealm.create('Attraction', {
+                        id: attraction.id,
+                        name: attraction.name,
+                        photo: attraction.photo,
+                        park: { id: attraction.parkId },
+                        description: attraction.description,
+                        heightToRide: attraction.heightToRide,
+                        hasScore: attraction.hasScore,
+                        dateCreated: attraction.dateCreated,
+                        dateModified: new Date(),
+                        dateSynced: attraction.dateSynced
+                    },
+                    true);
+                    // success return attraction
+                    resolve(newAttraction);
+                });
+            } catch (error) {
+                console.log('saveAttractionFailed: ', error);
+                reject('Save Attraction Failed');
+            }        
+        } else {
+            reject('Current User is not Authorized to Edit this.');
+        }
+    });
+}
+
+//// End Admin Park / Attraction Functions
+
+
 
 //// Journal Functions
 
@@ -636,7 +738,8 @@ export function createJournalEntry(park, attraction, entryValues, isEdit) {
                             rating: entryValues.rating,
                             pointsScored: entryValues.pointsScored,
                             usedFastPass: entryValues.usedFastPass,
-                            comments: entryValues.comments  
+                            comments: entryValues.comments,
+                            owner: currentUser.id  
                             },
                             true
                         );
@@ -712,59 +815,477 @@ export function totalMinutesWaitedToday() {
     const currentDate = moment(new Date());
     
     if (currentUser) {
-        // loop through journals
-        currentUser.journals.forEach((journal) => {
+        // check for active journal
+        if (currentUser.activeJournal) {
             // loop through journal entries
-            journal.journalEntries.forEach((journalEntry) => {
+            currentUser.activeJournal.journalEntries.forEach((journalEntry) => {
                 // check if entry is from today - format for comparison (so we dont have to worry about time)
                 if (moment(journalEntry.dateJournaled).format('MM-DD-YYYY') === currentDate.format('MM-DD-YYYY')) {
                     // add to total minutes return string
                     totalMinutes = totalMinutes + journalEntry.minutesWaited;
                 }
             });
-        })
+        }
         return totalMinutes + '';
     } 
     return '0';
 }
 
-// total minutes waited - week
-export function totalMinutesWaitedWeek() {
+// total minutes waited - vacation
+export function totalMinutesWaitedVacation() {
     let totalMinutes = 0;
-    // get current date - 7 aka 1 week ago'
-    const startWeekDate = moment(new Date()).subtract(7, 'days');
     
+    // check for current User
     if (currentUser) {
-        // loop through journals
-        currentUser.journals.forEach((journal) => {
+        // check for active journal
+        if (currentUser.activeJournal) {
             // loop through journal entries
-            journal.journalEntries.forEach((journalEntry) => {
-                // check if entry is from after 1 week ago - format for comparison (so we dont have to worry about time)
-                if (moment(journalEntry.dateJournaled).format('MM-DD-YYYY') > startWeekDate.format('MM-DD-YYYY')) {
-                    // add to total minutes return string
-                    totalMinutes = totalMinutes + journalEntry.minutesWaited;
-                }
-            });
-        })
+            currentUser.activeJournal.journalEntries.forEach((journalEntry) => {
+                // add to total minutes return string
+                totalMinutes = totalMinutes + journalEntry.minutesWaited;
+            });            
+        }
         return totalMinutes + '';
     } 
     return '0';
 }
 
-// total minutes waited - all time
+// total minutes waited - life time
 export function totalMinutesWaitedLife() {
     let totalMinutes = 0;
     
     if (currentUser) {
-        // loop through journals
+        // loop through all journals
         currentUser.journals.forEach((journal) => {
             // loop through journal entries
             journal.journalEntries.forEach((journalEntry) => {
                 // add to total minutes return string
                 totalMinutes = totalMinutes + journalEntry.minutesWaited;
             });
-        })
+        });
         return totalMinutes + '';
     } 
     return '0';
+}
+
+//
+// Total Fastpasses
+//
+
+// total fastpasses used - today
+export function totalFastpassesUsedToday() {
+    let totalFastpasses = 0;
+    // get current date
+    const currentDate = moment(new Date());
+
+    if (currentUser) {
+        // check for active journal
+        if (currentUser.activeJournal) {
+            // loop through journal entries
+            currentUser.activeJournal.journalEntries.forEach((journalEntry) => {
+                // check if entry is from today - format for comparison (so we dont have to worry about time)
+                if (moment(journalEntry.dateJournaled).format('MM-DD-YYYY') === currentDate.format('MM-DD-YYYY')) {
+                    // check if fastpass used
+                    if (journalEntry.usedFastPass) {
+                        // tally ride
+                        totalFastpasses = totalFastpasses + 1;
+                    } 
+                }
+            });
+        }
+        return totalFastpasses + '';
+    }
+    return '0';
+}
+
+// total fastpasses used - vacation
+export function totalFastpassesUsedVacation() {
+    let totalFastpasses = 0;
+
+    if (currentUser) {
+        // check for active journal
+        if (currentUser.activeJournal) {
+            // loop through journal entries
+            currentUser.activeJournal.journalEntries.forEach((journalEntry) => {
+                // check if fastpass used
+                if (journalEntry.usedFastPass) {
+                    // tally ride
+                    totalFastpasses = totalFastpasses + 1;
+                } 
+            });            
+        }
+        return totalFastpasses + '';
+    }
+    return '0';
+}
+
+// total fastpasses used - life time
+export function totalFastpassesUsedLife() {
+    let totalFastpasses = 0;
+
+    if (currentUser) {
+        // loop through all journals
+        currentUser.journals.forEach((journal) => {
+            // loop through journal entries
+            journal.journalEntries.forEach((journalEntry) => {
+                // check if fastpass used
+                if (journalEntry.usedFastPass) {
+                    // tally ride
+                    totalFastpasses = totalFastpasses + 1;
+                } 
+            });
+        });
+        return totalFastpasses + '';
+    }
+    return '0';
+}
+
+//
+// Total Rides
+//
+
+// total rides - today
+export function totalRidesToday() {
+    let totalRides = 0;
+    // get current date
+    const currentDate = moment(new Date());
+
+    if (currentUser) {
+        // check for active journal
+        if (currentUser.activeJournal) {
+            // loop through journal entries
+            currentUser.activeJournal.journalEntries.forEach((journalEntry) => {
+                // check if entry is from today - format for comparison (so we dont have to worry about time)
+                if (moment(journalEntry.dateJournaled).format('MM-DD-YYYY') === currentDate.format('MM-DD-YYYY')) {
+                    // tally ride
+                    totalRides = totalRides + 1;
+                }
+            });
+        }
+        return totalRides + '';
+    }
+    return '0';
+}
+
+// total rides - vacation
+export function totalRidesVacation() {
+    let totalRides = 0;
+
+    if (currentUser) {
+        // check for active journal
+        if (currentUser.activeJournal) {
+            // loop through journal entries
+            currentUser.activeJournal.journalEntries.forEach((journalEntry) => {
+                // tally ride
+                totalRides = totalRides + 1;
+            });            
+        }
+        return totalRides + '';
+    }
+    return '0';
+}
+
+// total rides - life time
+export function totalRidesLife() {
+    let totalRides = 0;
+
+    if (currentUser) {
+        // loop through all journals
+        currentUser.journals.forEach((journal) => {
+            // loop through journal entries
+            journal.journalEntries.forEach((journalEntry) => {
+                // tally ride
+                totalRides = totalRides + 1;
+            });
+        });
+        return totalRides + '';
+    }
+    return '0';
+}
+
+// most ridden - today
+export function mostRiddenToday() {
+    if (currentUser) {
+        if (currentUser.activeJournal) {
+            // set current start date
+            let currentDateStart = new Date();
+            currentDateStart.setHours(0,0,0,0);
+            // set current end date
+            let currentDateEnd = new Date();
+            currentDateEnd.setHours(23,59,59,59);
+
+            // first build unique list of attractions from active journal journal entries
+            let attractionIds = [];
+            currentUser.activeJournal.journalEntries.forEach((journalEntry) => {
+                if (!attractionIds.includes(journalEntry.attraction.id)) {
+                    attractionIds.push(journalEntry.attraction.id);
+                }
+            });
+
+            // loop through each unique attraction and check if its count is greater than current highest count
+            let highestCount = 0;
+            let highestAttractionId = '';
+            attractionIds.forEach((attraction) => {
+                // get number of entries that match attraction id and were journaled today
+                let currentCount = currentUser.activeJournal.journalEntries.filtered('attraction.id == $0 AND dateJournaled > $1 AND dateJournaled < $2', attraction, currentDateStart, currentDateEnd).length;
+
+                // check if current count is higher than highest count
+                if (currentCount > highestCount) {
+                    // greater count of attractions, update objects with new attraction
+                    highestCount = currentCount;
+                    highestAttractionId = attraction;
+                }
+            });
+
+            // return first found highest count attraction
+            return userRealm.objectForPrimaryKey('Attraction', highestAttractionId);
+        }
+    }
+    // missing user or active journal, return empty string
+    return '';
+}
+
+// most ridden - vacation
+export function mostRiddenVacation() {
+    if (currentUser) {
+        if (currentUser.activeJournal) {
+            // first build unique list of attractions from active journal journal entries
+            let attractionIds = [];
+            currentUser.activeJournal.journalEntries.forEach((journalEntry) => {
+                if (!attractionIds.includes(journalEntry.attraction.id)) {
+                    attractionIds.push(journalEntry.attraction.id);
+                }
+            });
+
+            // loop through each unique attraction
+            let highestCount = 0;
+            let highestAttractionId = '';
+            attractionIds.forEach((attraction) => {
+                // get number of entries that match attraction id
+                let currentCount = currentUser.activeJournal.journalEntries.filtered('attraction.id == $0', attraction).length;
+
+                // check if current count is higher than highest count
+                if (currentCount > highestCount) {
+                    // greater count of attractions, update objects with new attraction
+                    highestCount = currentCount;
+                    highestAttractionId = attraction;
+                }
+            });
+
+            // return first found highest count attraction
+            return userRealm.objectForPrimaryKey('Attraction', highestAttractionId);
+        }
+    }
+    // missing user or active journal, return empty string
+    return '';
+}
+
+// most ridden - life time
+export function mostRiddenLife() {
+    if (currentUser) {
+        // first build unique list of attractions id's from all journal entries
+        let attractionIds = [];
+        currentUser.journals.forEach((journal) => {
+            journal.journalEntries.forEach((journalEntry) => {
+                if (!attractionIds.includes(journalEntry.attraction.id)) {
+                    attractionIds.push(journalEntry.attraction.id);
+                }
+            });
+        });
+
+        // get all journal entries
+        const allJournalEntries = userRealm.objects('JournalEntry');
+
+        // loop through each unique attraction
+        let highestCount = 0;
+        let highestAttractionId = '';
+        attractionIds.forEach((attraction) => {
+            // get number of entries that match attraction id and current user
+            let currentCount = allJournalEntries.filtered('attraction.id == $0 AND owner == $1', attraction, currentUser.id).length;
+
+            // check if current count is higher than highest count
+            if (currentCount > highestCount) {
+                // greater count of attractions, update objects with new attraction
+                highestCount = currentCount;
+                highestAttractionId = attraction;
+            }
+        });
+
+        // return first found highest count attraction
+        return userRealm.objectForPrimaryKey('Attraction', highestAttractionId);
+    }
+    // missing user
+    return '';
+}
+
+
+
+
+
+
+
+
+
+/////    TEMP FOR DEV
+export function tempDev1Function() {
+
+
+
+}
+
+export function tempDev2Function() {
+
+    //copyAttractionImagesByParkIdFromFilesToRealm('temp');
+    copyParkImagesFromFilesToRealm();
+}
+
+function copyAttractionImagesByParkIdFromFilesToRealm(parkId) {
+    const user = Realm.Sync.User.current;
+
+    if (parkRealm) {
+        // check for seed realm
+        console.log('ready');
+
+        // TODO: Update to use supplied parkID instead of hardcoded
+        const attractions = parkRealm.objects('Attraction').filtered(`park.id == '52d9a73b-cf1f-478e-8b0f-12b86d7274bd'`);
+        console.log(attractions.length);
+
+        let attractionObjectArray = [];
+
+        // add/update parks in userRealm
+        attractions.forEach((attraction) => {
+            let attractionObject = [];
+
+            // convert image file to base64   MainBundlePath
+            let image;
+            RNFS.readFile(`${RNFS.DocumentDirectoryPath}/SeedImages/MagicKingdom/${attraction.id}.png`, 'base64').then((img) => {
+                image = img;
+                console.log(attraction.name);
+                console.log(attraction.id);
+                console.log(img.substring(0,5));
+                console.log(img.substring(img.length-5, img.length));
+                console.log('..121..');
+                console.log(image.substring(0,5));
+                console.log(image.substring(image.length-5,image.length));
+    
+                // build attraction object for array
+                attractionObject.push(attraction.id);
+                attractionObject.push(attraction.name);
+                attractionObject.push(img);
+                attractionObject.push(attraction.park);
+                attractionObject.push(attraction.description);
+                attractionObject.push(attraction.heightToRide);
+                attractionObject.push(attraction.hasScore);
+                attractionObject.push(attraction.dateCreated);
+                attractionObject.push(attraction.dateModified);
+                attractionObject.push(new Date());
+    
+                // add object to array
+                attractionObjectArray.push(attractionObject);
+            });
+        });
+
+
+        console.log('1: ', attractionObjectArray);
+
+        setTimeout(function(){
+
+            try {
+                parkRealm.write(() => {
+                    attractionObjectArray.forEach((attraction) => {
+                        const newAttraction = parkRealm.create('Attraction', {
+                            id: attraction[0],
+                            name: attraction[1],
+                            photo: attraction[2],
+                            park: attraction[3],
+                            description: attraction[4],
+                            heightToRide: attraction[5],
+                            hasScore: attraction[6],
+                            dateCreated: attraction[7],
+                            dateModified: attraction[8],
+                            dateSynced: attraction[9]
+                        },
+                        true);
+                    });
+                });   
+            } catch (error) {
+                console.log(error);
+            }            
+        },5000);        
+    } else {
+        console.log('missing parkSeedrealm');
+    }
+}
+
+
+function copyParkImagesFromFilesToRealm() {
+    const user = Realm.Sync.User.current;
+
+    if (parkRealm) {
+        // check for seed realm
+        console.log('ready');
+
+        // TODO: Update to use supplied parkID instead of hardcoded
+        const parks = parkRealm.objects('Park');
+        console.log(parks.length);
+
+        let parkObjectArray = [];
+
+        // add/update parks in userRealm
+        parks.forEach((park) => {
+            let parkObject = [];
+
+            // convert image file to base64   MainBundlePath
+            let image;
+            RNFS.readFile(`${RNFS.DocumentDirectoryPath}/Parks/${park.id}.png`, 'base64').then((img) => {
+                image = img;
+                console.log(park.name);
+                console.log(park.id);
+                console.log(img.substring(0,5));
+                console.log(img.substring(img.length-5, img.length));
+                console.log('..121..');
+                console.log(image.substring(0,5));
+                console.log(image.substring(image.length-5,image.length));
+    
+                // build attraction object for array
+                parkObject.push(park.id);
+                parkObject.push(park.name);
+                parkObject.push(img);
+                parkObject.push(park.description);
+                parkObject.push(park.dateCreated);
+                parkObject.push(park.dateModified);
+                parkObject.push(new Date());
+    
+                // add object to array
+                parkObjectArray.push(parkObject);
+            });
+        });
+
+
+        console.log('1: ', parkObjectArray);
+
+        setTimeout(function(){
+
+            try {
+                parkRealm.write(() => {
+                    parkObjectArray.forEach((park) => {
+                        const newPark = parkRealm.create('Park', {
+                            id: park[0],
+                            name: park[1],
+                            photo: park[2],
+                            description: park[3],
+                            dateCreated: park[4],
+                            dateModified: park[5],
+                            dateSynced: park[6]
+                        },
+                        true);
+                    });
+                });   
+            } catch (error) {
+                console.log(error);
+            }            
+        },5000);        
+    } else {
+        console.log('missing parkSeedrealm');
+    }
 }

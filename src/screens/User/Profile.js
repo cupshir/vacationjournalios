@@ -8,6 +8,10 @@ import {
     View,  
 } from "react-native";
 import Icon from 'react-native-vector-icons/Ionicons';
+import { 
+    IconsMap,
+    IconsLoaded
+} from '../../AppIcons';
 import moment from 'moment';
 
 import * as UserService from '../../realm/userService';
@@ -31,59 +35,13 @@ class Profile extends Component {
     // on mount try to load user from cache
     componentDidMount() {
         UserService.loadUserFromCache().then((user) => {
+            UserService.initializeParkRealm();
             // Success - update user in state
             this.setState({
                 ...this.state,
                 isLoading: true
             })
             this.updateCurrentUserInState(user);
-
-            // Park and Attraction Sync
-            // Dont think this belongs here...so Ill move later once I figure out where it does belong
-            // TODO: add network check before querying
-
-            // get current time and set time to 14 days back (we want to force park sync every 2 weeks)
-            const currentTime = new Date();
-            currentTime.setDate(currentTime.getDate()-14);
-            // if sync difference is less than 14, triggere sync
-            if ((user.attractionsLastSynced - currentTime) < 14) {
-                // initiliaze seed realm
-                UserService.initializeParkRealm().then((response) => {
-                    UserService.updateUserAttractions().then(() => {
-                        // success
-                        console.log('seed attractions success');
-                    }).catch((error) => {
-                        console.log(error);
-                        console.log('seed attractions failed');
-                    });
-                }).catch((error) => {
-                    console.log(error);
-                    console.log('Park Realm Init Failed');
-                });
-            }
-            // debugging
-            console.log('CT: ', currentTime)
-            console.log('lastSyncParks: ', user.parksLastSynced);
-            console.log('lastSyncAttractions: ', user.attractionsLastSynced)
-            console.log('Diff: ', user.attractionsLastSynced - currentTime);
-
-            // if sync difference is less than 14, triggere sync
-            if ((user.parksLastSynced - currentTime) < 14) {
-                // initiliaze seed realm
-                UserService.initializeParkRealm().then((response) => {
-                        // update User parks
-                        UserService.updateUserParks().then(() => {
-                            // success
-                            console.log('seed parks success');
-                        }).catch((error) => {
-                            console.log(error);
-                            console.log('seed parks failed');
-                        });
-                }).catch((error) => {
-                    console.log(error)
-                    console.log('Park Realm Init Failed');
-                });
-            }
         }).catch((error) => {
             // Failed no cache user - clear user in state
             this.setState({
@@ -98,8 +56,88 @@ class Profile extends Component {
     onNavigatorEvent(event) {
         if (event.id === 'willAppear') {
             if (UserService.currentUser) {
+                // add sync button for parks and attractions
+                this.renderSyncParksAndAttractionsButton();
+
+                // TODO: add network check before querying
+                // TODO: Check when last sync happened and visually change the sync icon to indicate its time to sync
+
+                // get current time and set time to 14 days back
+                const currentTime = new Date();
+                currentTime.setDate(currentTime.getDate()-14);
+
+                // debugging
+                console.log('CT: ', currentTime)
+                console.log('lastSyncParks: ', UserService.currentUser.parksLastSynced);
+                console.log('lastSyncAttractions: ', UserService.currentUser.attractionsLastSynced)
+                console.log('Diff: ', UserService.currentUser.attractionsLastSynced - currentTime);
+
+                // if sync difference is less than 14, triggere sync
+                if ((UserService.currentUser.attractionsLastSynced - currentTime) < 14 || (UserService.currentUser.parksLastSynced - currentTime) < 14) {
+                    // do something here if data out of sync
+
+                }
                 this.updateCurrentUserInState(UserService.currentUser);
             }
+        }
+        if (event.type == 'NavBarButtonPress') {
+            if (event.id === 'syncParksAndAttractions') {
+                this.syncParksAndAttractions();
+            }
+            if (event.id === 'dev1') {
+                this.dev1Function();
+            }
+            if (event.id === 'dev2') {
+                this.dev2Function();
+            }
+        }
+    }
+
+    // dev functions for Admins
+    dev1Function = () => {
+        console.log('run dev 1 function');
+        UserService.tempDev1Function();
+    }
+
+    dev2Function = () => {
+        console.log('run dev 2 function');
+        UserService.tempDev2Function();
+    }
+
+    // Render Add journal Entry Button in nav bar
+    renderSyncParksAndAttractionsButton = () => {
+        if (UserService.isDevAdmin === true) {
+            IconsLoaded.then(() => {
+                this.props.navigator.setButtons({
+                    rightButtons: [
+                        {
+                            id: 'syncParksAndAttractions',
+                            icon: IconsMap['sync']
+                        },
+                        {
+                            id: 'dev1',
+                            title: '1',
+                            buttonFontSize: 32
+                        },
+                        {
+                            id: 'dev2',
+                            title: '2',
+                            buttonFontSize: 32
+                        }
+                    ]
+                });
+            });
+        } else {
+            IconsLoaded.then(() => {
+                this.props.navigator.setButtons({
+                    rightButtons: [
+                        {
+                            id: 'syncParksAndAttractions',
+                            icon: IconsMap['sync']
+                        }
+                    ]
+                });
+            });
         }
     }
 
@@ -122,6 +160,39 @@ class Profile extends Component {
                 isLoading: false
             });
         }
+    }
+
+    syncParksAndAttractions = () => {
+        console.log('starting sync....')
+        // initiliaze seed realm
+        UserService.initializeParkRealm().then((response) => {
+            UserService.updateUserAttractions().then(() => {
+                // success
+                console.log('seed attractions success');
+            }).catch((error) => {
+                console.log(error);
+                console.log('seed attractions failed');
+            });
+        }).catch((error) => {
+            console.log(error);
+            console.log('Park Realm Init Failed');
+        });
+
+        // initiliaze seed realm
+        UserService.initializeParkRealm().then((response) => {
+            // update User parks
+            UserService.updateUserParks().then(() => {
+                // success
+                console.log('seed parks success');
+            }).catch((error) => {
+                console.log(error);
+                console.log('seed parks failed');
+            });
+        }).catch((error) => {
+            console.log(error)
+            console.log('Park Realm Init Failed');
+        });
+
     }
 
     // toggle camera modal
