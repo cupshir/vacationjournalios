@@ -14,14 +14,15 @@ import {
 
 import * as UserService from '../../realm/userService';
 
-import ListItemJournal from "../../components/ListItemJournal";
+import ListItem from "../../components/ListItem";
 import LoadingMickey from '../../components/LoadingMickey';
 
-class JournalList extends Component {
+class AttractionList extends Component {
     constructor(props) {
         super(props);
         this.state = {
             currentUser: null,
+            attractions: null,
             isLoading: false
         }  
         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
@@ -33,10 +34,13 @@ class JournalList extends Component {
             this.updateCurrentUserInState(UserService.currentUser);
         }
         if (event.type == 'NavBarButtonPress') {
-            if (event.id == 'addJournal') {
+            if (event.id == 'addAttraction') {
                 this.props.navigator.push({
-                    screen: 'vacationjournalios.EditJournal',
-                    title: 'Create Journal',
+                    screen: 'vacationjournalios.EditAttraction',
+                    title: 'Create Attraction',
+                    passProps: {
+                        parkId: this.props.parkId
+                    },
                     animated: true,
                     animationType: 'fade'
                 });
@@ -57,7 +61,7 @@ class JournalList extends Component {
                     rightButtons: 
                     [
                         {
-                            id: 'addJournal',
+                            id: 'addAttraction',
                             icon: IconsMap['add']
                         }
                     ]
@@ -67,14 +71,25 @@ class JournalList extends Component {
     }
 
     updateCurrentUserInState = (user) => {
+        let attractions = null;
+        if (UserService.parkRealm == null ){
+            UserService.initializeParkRealm();
+        } else {
+            if (this.props.parkId) {
+                attractions = UserService.parkRealm.objects('Attraction').filtered('park.id == $0', this.props.parkId).sorted('name');
+            }
+        }
+
         if (user) {
             this.setState({
                 ...this.state,
+                attractions: attractions,
                 currentUser: user
             });
         } else {
             this.setState({
                 ...this.state,
+                attractions: null,
                 currentUser: null
             });
         }
@@ -89,107 +104,40 @@ class JournalList extends Component {
     }
 
     // row on press event
-    onPress = (journalId) => {
-        // activate loading animation
-        this.setState({
-            ...this.state,
-            isLoading: true
-        });
-        if (journalId) {
-            // attempt to set active journal
-            UserService.setActiveJournal(journalId).then((journal) => {
-                //success - stop loading animation and close modal
-                this.setState({
-                    ...this.state,
-                    isLoading: false
-                });
-                // navigate to Journal screen
-                this.props.navigator.push({
-                    screen: 'vacationjournalios.Journal',
-                    title: journal.name,
-                    animated: true,
-                    animationType: 'fade'
-                });
-            }).catch((error) => {
-                console.log('setJournalError: ', error);
-                this.setState({
-                    ...this.state,
-                    isLoading: false
-                });
+    onPress = (id) => {
+        if (id) {
+            this.props.navigator.push({
+                screen: 'vacationjournalios.Attraction',
+                title: 'Attraction Info',
+                passProps: {
+                    attractionId: id
+                },
+                animated: true,
+                animationType: 'fade'
             });
         } 
     }
 
     // row edit press event
-    onEditPress = (id, name) => {
-        // set name
-        const newName = 'Edit ' + name;
+    onEditPress = (id) => {
         this.props.navigator.push({
-            screen: 'vacationjournalios.EditJournal',
-            title: newName,
+            screen: 'vacationjournalios.EditAttraction',
+            title: 'Edit Attraction',
             passProps: {
-                journalId: id
+                attractionId: id
             },
             animated: true,
             animationType: 'fade'
         });
     }
 
-    // row delete press event
-    onDeletePress = (id, journalName) => {
-        // display confirm prompt, user must type matching name to delete
-        AlertIOS.prompt(
-            'Confirm Delete',
-            'WARNING: This will delete all associated journal entries and cant be undone! Type the exact journal name to proceed. Again, this cant be undone...you have been warned!!!',
-            [
-                {
-                    text: 'Cancel',
-                    style: 'cancel'
-                },
-                {
-                    text: 'Delete',
-                    onPress: (enteredName) => this.handleDeleteJournal(id, journalName, enteredName)
-                }
-            ]
-        );
-    }
-
-    // handle delete journal
-    handleDeleteJournal = (journalId, journalName, enteredName) => {
-        // verify typed name matches journal name
-        if(enteredName === journalName) {
-            // start loading animation
-            this.setState({
-                ...this.state,
-                isLoading: true
-            });
-            // attempt to delete journal
-            UserService.deleteJournal(journalId).then(() => {
-                // Success - stop loading animation
-                this.setState({
-                    ...this.state,
-                    isLoading: false
-                });
-            }).catch((error) => {
-                // Failed - stop loading animation
-                this.setState({
-                    ...this.state,
-                    isLoading: false
-                });
-            });
-        } else {
-            // dont match, display alert and do nothing
-            AlertIOS.alert('Names dont match. Journal not deleted!');
-        }
-    }
-
     // render row item
     renderItem = ({ item }) => (
-        <ListItemJournal
-            item={item}
+        <ListItem
+            id={item.id.toString()}
+            title={item.name}
             onPress={this.onPress}
-            onEditPress={this.onEditPress}
-            onDeletePress={this.onDeletePress}
+            onEditPress={UserService.isAdmin ? this.onEditPress : null}
             viewStyle={styles.listView}
             textStyle={styles.listText} />
     );
@@ -216,11 +164,10 @@ class JournalList extends Component {
             );
         }
 
-        // if no journals exist, display message to create one
-        if (this.state.currentUser.journals.length === 0) {
+        if(!this.state.attractions) {
             return (
                 <View style={styles.messageContainer}>
-                   <Text>Create a journal button</Text>
+                    <Text>Missing Attractions</Text>
                 </View>
             );
         }
@@ -228,7 +175,7 @@ class JournalList extends Component {
         return (
             <View style={styles.container}>
                 <FlatList
-                    data={this.state.currentUser.journals}
+                    data={this.state.attractions}
                     renderItem={this.renderItem}
                     keyExtractor={item => item.id} />
             </View>
@@ -250,11 +197,12 @@ var styles = StyleSheet.create({
         padding: 5,
         paddingRight: 10,
         paddingLeft: 10,
-        borderBottomColor: 'lightgrey',
-        borderBottomWidth: 1
+        borderBottomColor: '#444444',
+        borderBottomWidth: 1,
+        backgroundColor: '#151515',
     },
     listText: {
-        color: 'blue',
+        color: '#FFFFFF',
         textAlign: 'center',
         fontSize: 20
     },
@@ -269,4 +217,4 @@ var styles = StyleSheet.create({
     }
 });
 
-export default JournalList;
+export default AttractionList;

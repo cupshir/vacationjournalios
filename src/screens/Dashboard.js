@@ -37,6 +37,10 @@ class Dashboard extends Component {
                     today: '0',
                     vacation: '0',
                     life: '0'
+                },
+                mostVisitedPark: {
+                    vacation: '0',
+                    life: '0'
                 }
             },
             displayStats: {
@@ -55,6 +59,10 @@ class Dashboard extends Component {
                 mostRidden: {
                     label: 'Today',
                     attraction: ''
+                },
+                mostVisitedPark: {
+                    label: 'Vacation',
+                    park: ''
                 }
             },
             authenticated: false,
@@ -96,6 +104,10 @@ class Dashboard extends Component {
                         today: UserService.mostRiddenToday(),
                         vacation: UserService.mostRiddenVacation(),
                         life: UserService.mostRiddenLife()
+                    },
+                    mostVisitedPark: {
+                        vacation: '0',
+                        life: '0'
                     }
                 },
                 displayStats: {
@@ -114,6 +126,10 @@ class Dashboard extends Component {
                     mostRidden: {
                         label: 'Today',
                         attraction: UserService.mostRiddenToday()
+                    },
+                    mostVisitedPark: {
+                        label: 'Vacation',
+                        park: ''
                     }
                 },
                 authenticated: true,
@@ -144,6 +160,10 @@ class Dashboard extends Component {
                         today: '0',
                         vacation: '0',
                         life: '0'
+                    },
+                    mostVisitedPark: {
+                        vacation: '0',
+                        life: '0'
                     }
                 },
                 displayStats: {
@@ -161,6 +181,10 @@ class Dashboard extends Component {
                     },
                     mostRidden: {
                         label: 'Today',
+                        attraction: ''
+                    },
+                    mostVisitedPark: {
+                        label: 'Vacation',
                         attraction: ''
                     }
                 },
@@ -354,6 +378,39 @@ class Dashboard extends Component {
         }
     }
 
+    // handle most visited park change
+    handleMostVisitedParkChange = () => {
+        // get current value and cycle to next value otherwise default to today
+        switch (this.state.displayStats.mostVisitedPark.label) {
+            case 'Vacation': {
+                this.setState({
+                    ...this.state,
+                    displayStats: {
+                        ...this.state.displayStats,
+                        mostVisitedPark: {
+                            label: 'Life Time',
+                            park: this.state.stats.mostVisitedPark.life
+                        }
+                    }
+                });
+                break;
+            }
+            default: {
+                this.setState({
+                    ...this.state,
+                    displayStats: {
+                        ...this.state.displayStats,
+                        mostVisitedPark: {
+                            label: 'Today',
+                            park: this.state.stats.mostVisitedPark.today
+                        }
+                    }
+                });
+                break
+            }
+        }
+    }
+
     // Press Events
     handleItemPress = (item) => {
         switch(item) {
@@ -414,6 +471,11 @@ class Dashboard extends Component {
                     <View style={styles.upper}>
                         <TouchableOpacity onPress={() => this.handleMostRiddenChange()}>
                             <StatBoxLarge style={styles.largeBox} title="Most Ridden" label={this.state.displayStats.mostRidden.label} value={this.state.displayStats.mostRidden.attraction} />
+                        </TouchableOpacity>
+                    </View>
+                    <View style={styles.upper}>
+                        <TouchableOpacity onPress={() => this.handleMostVisitedParkChange()}>
+                            <StatBoxLarge style={styles.largeBox} title="Most Visited" label={this.state.displayStats.mostVisitedPark.label} value={this.state.displayStats.mostVisitedPark.park} />
                         </TouchableOpacity>
                     </View>
                 </View>

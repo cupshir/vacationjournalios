@@ -3,6 +3,8 @@ package com.vacationjournalios;
 import android.app.Application;
 
 import com.facebook.react.ReactApplication;
+import com.rnfs.RNFSPackage;
+import fr.snapp.imagebase64.RNImgToBase64Package;
 import io.realm.react.RealmReactPackage;
 import com.oblador.vectoricons.VectorIconsPackage;
 import com.reactnativenavigation.NavigationReactPackage;
@@ -30,6 +32,8 @@ public class MainApplication extends Application implements ReactApplication {
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
           new MainReactPackage(),
+            new RNFSPackage(),
+            new RNImgToBase64Package(),
             new RealmReactPackage(),
             new VectorIconsPackage(),
             new NavigationReactPackage(),

@@ -36,7 +36,8 @@ Park.schema = {
         photo: 'string?',
         dateCreated: 'date',
         dateModified: 'date',
-        dateSynced: 'date'
+        dateSynced: 'date',
+        description: 'string?'
     }
 }
 
