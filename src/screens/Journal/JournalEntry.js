@@ -236,6 +236,7 @@ var styles = StyleSheet.create({
     },
     minutesWaitedDateJournaledSection: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
         justifyContent: 'space-between',
         backgroundColor: '#252525',
         marginTop: 15,

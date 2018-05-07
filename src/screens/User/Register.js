@@ -1,9 +1,10 @@
 import React, { Component } from 'react';
 import {
-    View,
+    AlertIOS,
+    Image,
     ScrollView,
     StyleSheet,
-    AlertIOS
+    View
 } from 'react-native';
 import { 
     FormLabel, 
@@ -313,6 +314,12 @@ class Register extends Component {
             style={styles.container}
             extraScrollHeight={50}>
             <ScrollView style={styles.form}>
+                <View style={styles.registerImage}>
+                    <Image 
+                        style={styles.image} 
+                        source={require('../../assets/Castle.png')}
+                        resizeMode="contain" />
+                </View>
                 <View>
                     {signUpError}
                     <FormLabel
@@ -394,10 +401,16 @@ var styles = StyleSheet.create({
         marginRight: 25,
         marginLeft: 25,
     },
+    registerImage: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        paddingTop: 15
+    },
     image: {
-        flex: .8,
-        backgroundColor: '#C7D0FE',
-        borderWidth: 1
+        flex: .75,
+        height: null,
+        width: null,
+        aspectRatio: 2880/1800 
     },
     input: {
         backgroundColor: '#AAAAAA',
@@ -411,6 +424,5 @@ var styles = StyleSheet.create({
         color: '#000000'
     }
   });
-
 
 export default Register;

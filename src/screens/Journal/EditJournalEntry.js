@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { 
     FormValidationMessage,
+    Rating,
     SearchBar,
     Text
 } from 'react-native-elements';
@@ -196,7 +197,7 @@ class EditJournalEntry extends Component {
                 ...this.state,
                 formValues: {
                     ...this.state.formValues,
-                    photo: photo
+                    photo: photoData.base64
                 },
                 cameraModalVisible: false,
             });
@@ -696,11 +697,20 @@ class EditJournalEntry extends Component {
             );
         }
 
-        // Check that parks and attractions exist in state
-        if (!this.state.parks || !this.state.attractions) {
+        // Check that parks exist in state
+        if (this.state.parks.length === 0) {
             return (
                 <View style={styles.messageContainer}>
-                    <Text>Parks and/or attractions data missing. Add buttont to request park / attraction data from API</Text>
+                    <Text style={styles.messageText}>Something went wrong, missing parks in active journal.</Text>
+                </View>
+            );
+        }
+
+        // Check that attractions exist in state
+        if (this.state.attractions.length === 0) {
+            return (
+                <View style={styles.messageContainer}>
+                    <Text style={styles.messageText}>Something went wrong, attractions are missing.</Text>
                 </View>
             );
         }
@@ -757,7 +767,8 @@ class EditJournalEntry extends Component {
                         onChangeText={this.handleMinutesWaitedChange}
                         placeholder='Minutes Waited'
                         placeholderTextColor={'#444444'}
-                        value={this.state.formValues.minutesWaited} 
+                        value={this.state.formValues.minutesWaited}
+                        keyboardType='numeric'
                     />                        
                     <DatePicker
                         style={[
@@ -798,6 +809,7 @@ class EditJournalEntry extends Component {
                         placeholder='Rating'
                         placeholderTextColor={'#444444'}
                         value={this.state.formValues.rating} 
+                        keyboardType='numeric'
                     />
                     <View style={styles.fastpass}>
                         <Text style={{ marginRight: 5, color: '#FFFFFF' }}>Fastpass</Text>
@@ -872,6 +884,9 @@ var styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    messageText: {
+        color: '#FFFFFF'
     },
     modalContainer: {
         flex: 1

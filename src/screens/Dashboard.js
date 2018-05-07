@@ -1,13 +1,17 @@
 import React, { Component } from 'react';
 import {
-    View,
+    ImageBackground,
     StatusBar,
     StyleSheet,
     Text,
-    TouchableOpacity
+    TouchableOpacity,
+    View
 } from 'react-native';
-
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import * as UserService from '../realm/userService';
+
+import LoadingMickey from '../components/LoadingMickey';
+import MickeyButton from '../components/MickeyButton';
 
 import StatBoxLarge from '../components/StatBoxLarge';
 import StatBoxSmall from '../components/StatBoxSmall';
@@ -65,8 +69,9 @@ class Dashboard extends Component {
                     park: ''
                 }
             },
-            authenticated: false,
-            isLoading: true
+            isAuthenticated: false,
+            statsLoaded: false,
+            isLoading: false
         };
         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
     }
@@ -76,11 +81,10 @@ class Dashboard extends Component {
             this.updateUserStatsInState(UserService.currentUser);
         }
     }
-
+    
     // update current user in state, if no current user clear user object from state
     updateUserStatsInState = (user) => {
         if (user) {
-            UserService.mostRiddenLife();
             this.setState({
                 ...this.state,
                 currentUser: user,
@@ -132,7 +136,7 @@ class Dashboard extends Component {
                         park: ''
                     }
                 },
-                authenticated: true,
+                isAuthenticated: true,
                 statsLoaded: true,
                 isLoading: false
             });            
@@ -188,6 +192,8 @@ class Dashboard extends Component {
                         attraction: ''
                     }
                 },
+                isAuthenticated: false,
+                statsLoaded: false,
                 isLoading: false
             });
         }
@@ -401,8 +407,8 @@ class Dashboard extends Component {
                     displayStats: {
                         ...this.state.displayStats,
                         mostVisitedPark: {
-                            label: 'Today',
-                            park: this.state.stats.mostVisitedPark.today
+                            label: 'Vacation',
+                            park: this.state.stats.mostVisitedPark.vacation
                         }
                     }
                 });
@@ -411,88 +417,95 @@ class Dashboard extends Component {
         }
     }
 
-    // Press Events
-    handleItemPress = (item) => {
-        switch(item) {
-            case 'signIn': {
-                this.props.navigator.showModal({
-                    screen: 'vacationjournalios.SignIn',
-                    title: 'Sign In',
-                    navigatorStyle: {
-                        largeTitle: true,
-                        navBarBackgroundColor: '#252525',
-                        navBarTextColor: '#FFFFFF',
-                        navBarButtonColor: '#FFFFFF',
-                        statusBarTextColorScheme: 'light',
-                        screenBackgroundColor: '#151515'
-                    },
-                    animated: true
-                });
-                break;
-            }
-            case 'register': {
-                this.props.navigator.showModal({
-                    screen: 'vacationjournalios.Register',
-                    title: 'Register',
-                    navigatorStyle: {
-                        largeTitle: true,
-                        navBarBackgroundColor: '#252525',
-                        navBarTextColor: '#FFFFFF',
-                        navBarButtonColor: '#FFFFFF',
-                        statusBarTextColorScheme: 'light',
-                        screenBackgroundColor: '#151515'
-                    },
-                    animated: true
-                });
-                break;
-            }
-        }
+    // lauch sign in modal
+    onSignInPress = () => {
+        this.props.navigator.showModal({
+            screen: 'vacationjournalios.SignIn',
+            title: 'Sign In',
+            navigatorStyle: {
+                largeTitle: true,
+                navBarBackgroundColor: '#252525',
+                navBarTextColor: '#FFFFFF',
+                navBarButtonColor: '#FFFFFF',
+                statusBarTextColorScheme: 'light',
+                screenBackgroundColor: '#151515'
+            },
+            animated: true
+        });
+    }
+
+    // launch register modal
+    onRegisterPress = () => {
+        this.props.navigator.showModal({
+            screen: 'vacationjournalios.Register',
+            title: 'Register',
+            navigatorStyle: {
+                largeTitle: true,
+                navBarBackgroundColor: '#252525',
+                navBarTextColor: '#FFFFFF',
+                navBarButtonColor: '#FFFFFF',
+                statusBarTextColorScheme: 'light',
+                screenBackgroundColor: '#151515'
+            },
+            animated: true
+        });
     }
 
     render() {
-
-        if(this.state.authenticated) {
+        if (this.state.isLoading) {
             return (
                 <View style={styles.container}>
-                    <StatusBar
-                        barStyle="light-content"
-                    />
-                    <View style={styles.lower}>
-                        <TouchableOpacity onPress={() => this.handleMinutesWaitedChange()}>
-                            <StatBoxSmall style={styles.largeBox} title="Minutes Waited" label={this.state.displayStats.minutesWaited.label} value={this.state.displayStats.minutesWaited.value} />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => this.handleTotalFastpassesChange()}>
-                            <StatBoxSmall style={styles.largeBox} title="Fastpasses Used" label={this.state.displayStats.usedFastpasses.label} value={this.state.displayStats.usedFastpasses.value} />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => this.handleTotalRidesChange()}>
-                            <StatBoxSmall style={styles.largeBox} title="Total Attractions" label={this.state.displayStats.totalRides.label} value={this.state.displayStats.totalRides.value} />
-                        </TouchableOpacity>
-                    </View>
-                    <View style={styles.upper}>
-                        <TouchableOpacity onPress={() => this.handleMostRiddenChange()}>
-                            <StatBoxLarge style={styles.largeBox} title="Most Ridden" label={this.state.displayStats.mostRidden.label} value={this.state.displayStats.mostRidden.attraction} />
-                        </TouchableOpacity>
-                    </View>
-                    <View style={styles.upper}>
-                        <TouchableOpacity onPress={() => this.handleMostVisitedParkChange()}>
-                            <StatBoxLarge style={styles.largeBox} title="Most Visited" label={this.state.displayStats.mostVisitedPark.label} value={this.state.displayStats.mostVisitedPark.park} />
-                        </TouchableOpacity>
-                    </View>
+                    <LoadingMickey />
                 </View>
+            );
+        }
+
+        if(this.state.isAuthenticated && this.state.statsLoaded) {
+            return (
+                <KeyboardAwareScrollView>
+                    <View style={styles.container}>
+                        <StatusBar barStyle="light-content" />
+                        <View style={styles.lower}>
+                            <TouchableOpacity onPress={() => this.handleMinutesWaitedChange()}>
+                                <StatBoxSmall style={styles.largeBox} title="Minutes Waited" label={this.state.displayStats.minutesWaited.label} value={this.state.displayStats.minutesWaited.value} />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => this.handleTotalFastpassesChange()}>
+                                <StatBoxSmall style={styles.largeBox} title="Fastpasses Used" label={this.state.displayStats.usedFastpasses.label} value={this.state.displayStats.usedFastpasses.value} />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => this.handleTotalRidesChange()}>
+                                <StatBoxSmall style={styles.largeBox} title="Total Attractions" label={this.state.displayStats.totalRides.label} value={this.state.displayStats.totalRides.value} />
+                            </TouchableOpacity>
+                        </View>
+                        <View style={styles.upper}>
+                            <TouchableOpacity onPress={() => this.handleMostRiddenChange()}>
+                                <StatBoxLarge style={styles.largeBox} title="Most Ridden" label={this.state.displayStats.mostRidden.label} value={this.state.displayStats.mostRidden.attraction} />
+                            </TouchableOpacity>
+                        </View>
+                        <View style={styles.upper}>
+                            <TouchableOpacity onPress={() => this.handleMostVisitedParkChange()}>
+                                <StatBoxLarge style={styles.largeBox} title="Most Visited" label={this.state.displayStats.mostVisitedPark.label} value={this.state.displayStats.mostVisitedPark.park} />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </KeyboardAwareScrollView>
             );
         }
 
         // Default render sign in and sign up buttons
         return (
             <View style={styles.signInContainer}>
-                <View style={styles.signInButtons}>
-                    <TouchableOpacity style={styles.button} onPress={() => this.handleItemPress('signIn')}>
-                        <Text>Sign In</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.button} onPress={() => this.handleItemPress('register')}>
-                        <Text>Register</Text>
-                    </TouchableOpacity>
-                </View>
+                <StatusBar barStyle="light-content" />
+                <ImageBackground 
+                    style={styles.image} 
+                    source={require('../assets/Mickey_Background.png')}
+                    resizeMode='cover'
+                    blurRadius={2}
+                    opacity={10}>
+                    <View style={styles.signInButtons}>
+                        <MickeyButton text='Login' onPress={this.onSignInPress} />
+                        <MickeyButton text='Register' onPress={this.onRegisterPress} />
+                    </View>
+                </ImageBackground>
             </View>
         );
     }
@@ -512,18 +525,19 @@ var styles = StyleSheet.create({
         marginLeft: 5,
         marginRight: 5
     },
+    image: {
+        flex: 1,
+    },
     signInContainer: {
-		flex: 1,
-		justifyContent: 'space-around',
-		alignItems: 'center'
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
     },
     signInButtons: {
-        flex: .1,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 10,
-        borderRadius: 10
+        flex: 1,
+        paddingTop: 100
     },
     button: {
         backgroundColor: 'white',
@@ -531,10 +545,8 @@ var styles = StyleSheet.create({
         height: 50,
         borderWidth: 1,
         borderRadius: 5,
-        justifyContent: 'center',
-        alignItems: 'center',
         margin: 10
     }
-})
+});
 
 export default Dashboard;

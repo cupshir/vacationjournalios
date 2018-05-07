@@ -1,8 +1,9 @@
 import React, { Component } from 'react';
 import {
-    View,
+    AlertIOS,
+    Image,
     StyleSheet,
-    AlertIOS
+    View
 } from 'react-native';
 import { 
     Button,
@@ -113,7 +114,6 @@ class SignIn extends Component {
         const ready = this.readyForSubmit(this.state.formValues)
 
         if(ready) {
-            // Set loading state
             this.setState({
                 ...this.state,
                 isLoading: true
@@ -121,11 +121,6 @@ class SignIn extends Component {
 
             // attempt sign in user
             UserService.signInUser(this.state.formValues.email,this.state.formValues.password).then((user) => {
-                // success - stop loading animation - close modal
-                this.setState({
-                    ...this.state,
-                    isLoading: false
-                });
                 this.props.navigator.dismissModal();
             }).catch((error) => {
                 // failed
@@ -208,7 +203,10 @@ class SignIn extends Component {
         return (
             <KeyboardAwareScrollView style={styles.container}>
                 <View style={styles.upper}>
-                    <Text style={styles.image}>Sign In Graphic</Text>
+                    <Image 
+                        style={styles.signInImage} 
+                        source={require('../../assets/Castle_Vertical.png')}
+                        resizeMode="contain" />
                 </View>
                 <View style={styles.lower}>
                     {authenticationError}
@@ -254,10 +252,10 @@ var styles = StyleSheet.create({
         flex: 1
     },
     upper: {
-        flex: .5,
-        marginTop: 25,
-        marginRight: 25,
-        marginLeft: 25,
+        flex: 1,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        paddingTop: 15
     },
     lower: {
         flex: .4,
@@ -265,10 +263,11 @@ var styles = StyleSheet.create({
         marginRight: 25,
         marginLeft: 25,
     },
-    image: {
-        flex: .9,
-        backgroundColor: '#C7D0FE',
-        borderWidth: 1
+    signInImage: {
+        flex: .55,
+        height: null,
+        width: null,
+        aspectRatio: 679/1016 
     },
     form: {
         height: 40,

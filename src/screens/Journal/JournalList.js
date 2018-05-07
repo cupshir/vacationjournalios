@@ -1,12 +1,13 @@
-import React, { Component } from "react";
+import React, { Component } from 'react';
 import { 
-    View, 
-    Text,
+    AlertIOS,
     FlatList, 
+    ImageBackground,
     StyleSheet,
+    Text,
     TouchableOpacity,
-    AlertIOS 
-} from "react-native";
+    View
+} from 'react-native';
 import { 
     IconsMap,
     IconsLoaded
@@ -14,8 +15,9 @@ import {
 
 import * as UserService from '../../realm/userService';
 
-import ListItemJournal from "../../components/ListItemJournal";
+import ListItemJournal from '../../components/ListItemJournal';
 import LoadingMickey from '../../components/LoadingMickey';
+import MickeyButton from '../../components/MickeyButton';
 
 class JournalList extends Component {
     constructor(props) {
@@ -34,12 +36,7 @@ class JournalList extends Component {
         }
         if (event.type == 'NavBarButtonPress') {
             if (event.id == 'addJournal') {
-                this.props.navigator.push({
-                    screen: 'vacationjournalios.EditJournal',
-                    title: 'Create Journal',
-                    animated: true,
-                    animationType: 'fade'
-                });
+                this.onCreateJournalPress();
             }
         }
     }
@@ -85,6 +82,15 @@ class JournalList extends Component {
             screen: 'vacationjournalios.SignIn',
             title: 'Sign In',
             animated: true
+        });
+    }
+
+    onCreateJournalPress = () => {
+        this.props.navigator.push({
+            screen: 'vacationjournalios.EditJournal',
+            title: 'Create Journal',
+            animated: true,
+            animationType: 'fade'
         });
     }
 
@@ -209,18 +215,34 @@ class JournalList extends Component {
         if(!this.state.currentUser) {
             return (
                 <View style={styles.messageContainer}>
-                    <TouchableOpacity style={styles.button} onPress={() => this.onSignInPress()}>
-                        <Text>Sign In</Text>
-                    </TouchableOpacity>
+                    <ImageBackground 
+                        style={styles.image} 
+                        source={require('../../assets/Mickey_Background.png')}
+                        resizeMode='cover'
+                        blurRadius={2}
+                        opacity={10}>
+                        <View style={{flex: 1, marginTop: 200}}>
+                            <MickeyButton text='Sign In' onPress={this.onSignInPress} />
+                        </View>
+                    </ImageBackground>
                 </View>
             );
         }
 
         // if no journals exist, display message to create one
-        if (this.state.currentUser.journals.length === 0) {
+        if (!Array.isArray(this.state.currentUser.journals) || !this.state.currentUser.journals.length) {
             return (
                 <View style={styles.messageContainer}>
-                   <Text>Create a journal button</Text>
+                    <ImageBackground 
+                        style={styles.image} 
+                        source={require('../../assets/Mickey_Background.png')}
+                        resizeMode='cover'
+                        blurRadius={2}
+                        opacity={10}>
+                        <View style={{flex: 1, marginTop: 200}}>
+                            <MickeyButton text='Create A Journal' onPress={this.onCreateJournalPress} />
+                        </View>
+                    </ImageBackground>
                 </View>
             );
         }
@@ -238,9 +260,14 @@ class JournalList extends Component {
 
 var styles = StyleSheet.create({
     messageContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+    },
+    image: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center'
     },
     container: {
         flex: 1,
@@ -259,6 +286,7 @@ var styles = StyleSheet.create({
         fontSize: 20
     },
     button: {
+        backgroundColor: 'white',
         width: 100,
         height: 50,
         borderWidth: 1,

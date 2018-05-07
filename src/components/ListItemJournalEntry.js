@@ -65,7 +65,7 @@ class ListItemJournalEntry extends PureComponent {
         const photo = (this.props.item.photo === '') 
         ? <Icon style={{ fontSize: 75, color: 'white' }} name="photo" />  
         : <Image 
-                style={{ width: 100, height: 100 }}
+                style={{ flex: 1, width: 100, height: null }}
                 source={{uri: `data:image/png;base64,${this.props.item.photo}`}} 
             />
 
@@ -131,26 +131,26 @@ var styles = StyleSheet.create({
         borderBottomColor: '#444444',
         borderBottomWidth: 1,
         flexDirection: 'row',
-        backgroundColor: '#222222'
+        backgroundColor: '#222222',
+        marginLeft: 15,
+        marginRight: 15
     },
     image: {
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#999999',
         width: 100,
-        height: 100,
-        marginLeft: 15,
+        height: null,
         marginTop: 5,
         marginBottom: 5,
-        marginRight: 5
     },
     contentContainer: {
         justifyContent: 'space-between',
+        flex: 1,
         marginLeft: 5,
         marginRight: 15
     },
     attractionText: {
-        width: 250,
         fontSize: 18,
         fontWeight: 'bold',
         color: '#FFFFFF'

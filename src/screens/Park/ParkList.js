@@ -1,12 +1,11 @@
-import React, { Component } from "react";
-import { 
-    View, 
-    Text,
+import React, { Component } from 'react';
+import {
+    ImageBackground,
     FlatList, 
     StyleSheet,
-    TouchableOpacity,
-    AlertIOS 
-} from "react-native";
+    Text,
+    View 
+} from 'react-native';
 import { 
     IconsMap,
     IconsLoaded
@@ -16,6 +15,7 @@ import * as UserService from '../../realm/userService';
 
 import ListItem from "../../components/ListItem";
 import LoadingMickey from '../../components/LoadingMickey';
+import MickeyButton from '../../components/MickeyButton';
 
 class ParkList extends Component {
     constructor(props) {
@@ -23,7 +23,7 @@ class ParkList extends Component {
         this.state = {
             currentUser: null,
             parks: null,
-            isLoading: false
+            isLoading: true
         }  
         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
     }
@@ -31,7 +31,16 @@ class ParkList extends Component {
     // Navigator button event
     onNavigatorEvent(event) {
         if (event.id === 'willAppear') {
-            this.updateCurrentUserInState(UserService.currentUser);
+            if (UserService.currentUser) {
+                this.updateCurrentUserInState(UserService.currentUser);
+            } else {
+                this.setState({
+                    ...this.state,
+                    parks: null,
+                    currentUser: null,
+                    isLoading: false
+                });
+            }
         }
         if (event.type == 'NavBarButtonPress') {
             if (event.id == 'addPark') {
@@ -46,35 +55,64 @@ class ParkList extends Component {
     }
 
     componentDidMount() {
-        if (UserService.parkRealm === null) {
-            UserService.initializeParkRealm();
+        if (UserService.currentUser) {
+            if (UserService.parkRealm === null) {
+                // missing seed park realm - initialize it
+                UserService.initializeParkRealm().then((response) => {
+                    // success - refresh user data
+                    UserService.updateUserAttractions();
+                    UserService.updateUserParks();
+                }).catch((error) => {
+                    console.log('failed to initialize park realm: ');
+                    console.log(error);
+                });
+            } else {
+                // seed park realm exists, refresh user data
+                UserService.updateUserAttractions();
+                UserService.updateUserParks();
+            }
+
+            // Set nav buttons
+            IconsLoaded.then(() => {
+                if (UserService.currentUser) {
+                    this.props.navigator.setButtons({
+                        rightButtons: 
+                        [
+                            {
+                                id: 'addPark',
+                                icon: IconsMap['add']
+                            }
+                        ]
+                    });
+                }
+            });
+    
+        } else {
+            this.setState({
+                ...this.state,
+                parks: null,
+                currentUser: null,
+                isLoading: false
+            });
         }
 
         // hack to show navbar border (so parent search box looks like ios Native)
         this.props.navigator.setStyle({
             navBarNoBorder: false
         });
-
-        // Set nav buttons
-        IconsLoaded.then(() => {
-            if (UserService.currentUser) {
-                this.props.navigator.setButtons({
-                    rightButtons: 
-                    [
-                        {
-                            id: 'addPark',
-                            icon: IconsMap['add']
-                        }
-                    ]
-                });
-            }
-        });
     }
 
     updateCurrentUserInState = (user) => {
         let parks = null;
         if (UserService.parkRealm == null ){
-            UserService.initializeParkRealm();
+            UserService.initializeParkRealm().then((response) => {
+                // success - refresh user data
+                UserService.updateUserAttractions();
+                UserService.updateUserParks();
+            }).catch((error) => {
+                console.log('failed to initialize park realm: ');
+                console.log(error);
+            });
         } else {
             parks = UserService.parkRealm.objects('Park');
         }
@@ -83,21 +121,49 @@ class ParkList extends Component {
             this.setState({
                 ...this.state,
                 parks: parks,
-                currentUser: user
+                currentUser: user,
+                isLoading: false
             });
         } else {
             this.setState({
                 ...this.state,
                 parks: null,
-                currentUser: null
+                currentUser: null,
+                isLoading: false
             });
         }
     }
 
+    // lauch sign in modal
     onSignInPress = () => {
         this.props.navigator.showModal({
             screen: 'vacationjournalios.SignIn',
             title: 'Sign In',
+            navigatorStyle: {
+                largeTitle: true,
+                navBarBackgroundColor: '#252525',
+                navBarTextColor: '#FFFFFF',
+                navBarButtonColor: '#FFFFFF',
+                statusBarTextColorScheme: 'light',
+                screenBackgroundColor: '#151515'
+            },
+            animated: true
+        });
+    }
+
+    // launch register modal
+    onRegisterPress = () => {
+        this.props.navigator.showModal({
+            screen: 'vacationjournalios.Register',
+            title: 'Register',
+            navigatorStyle: {
+                largeTitle: true,
+                navBarBackgroundColor: '#252525',
+                navBarTextColor: '#FFFFFF',
+                navBarButtonColor: '#FFFFFF',
+                statusBarTextColorScheme: 'light',
+                screenBackgroundColor: '#151515'
+            },
             animated: true
         });
     }
@@ -165,13 +231,21 @@ class ParkList extends Component {
             );
         }
 
-        // if user not logged in, display signin message
-        if(!this.state.currentUser) {
+        // If no current User, display Sign In button
+        if (this.state.currentUser === null) {
             return (
-                <View style={styles.messageContainer}>
-                    <TouchableOpacity style={styles.button} onPress={() => this.onSignInPress()}>
-                        <Text>Sign In</Text>
-                    </TouchableOpacity>
+                <View style={styles.signInContainer}>
+                    <ImageBackground 
+                        style={styles.image} 
+                        source={require('../../assets/Mickey_Background.png')}
+                        resizeMode='cover'
+                        blurRadius={2}
+                        opacity={10}>
+                        <View style={styles.signInButtons}>
+                           <MickeyButton text='Login' onPress={this.onSignInPress} />
+                           <MickeyButton text='Register' onPress={this.onRegisterPress} />
+                        </View>
+                    </ImageBackground>
                 </View>
             );
         }
@@ -218,14 +292,19 @@ var styles = StyleSheet.create({
         textAlign: 'center',
         fontSize: 20
     },
-    button: {
-        width: 100,
-        height: 50,
-        borderWidth: 1,
-        borderRadius: 5,
-        justifyContent: 'center',
-        alignItems: 'center',
-        margin: 10
+    signInContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+    },
+    image: {
+        flex: 1,
+    },
+    signInButtons: {
+        flex: 1,
+        paddingTop: 100
     }
 });
 
