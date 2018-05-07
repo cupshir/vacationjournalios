@@ -13,10 +13,8 @@ import {
 
 import * as AppConstants from './config';
 
-// temp dev
+// for dev
 import RNFS from 'react-native-fs';
-//import * as tempImages from '../assets/temp/Magic Kingdom/images';
-
 
 // Class Properties?
 export let parkRealm;
@@ -26,6 +24,7 @@ export let attractions;
 export let parks;
 export let isAdmin = false;
 export let isDevAdmin = false;
+export let isAuthenticated = false;
 
 //// User Functions
 
@@ -65,6 +64,9 @@ export function registerUser(userObject) {
                     });
                     // horrible hack? wait 2s then try the initial seed user realm
                     setTimeout(initialSeedFromParkRealm(), 2000);
+
+                    currentUser = userRealm.objectForPrimaryKey('Person', user.identity);
+
                     resolve(currentUser);
                 } catch (e) {
                     // Something went wrong userRealm write
@@ -169,10 +171,18 @@ export function changeUserPassword(oldPassword, newPassword) {
 export function signInUser(email, password) {
     return new Promise((resolve, reject) => {
         const userCheck = Realm.Sync.User.current;
+
         if (!userCheck) {
             // make authentication request
             Realm.Sync.User.login(AppConstants.AUTH_URL, email, password)
                 .then(user => {
+                    // set isAuthenticated
+                    isAuthenticated = true;
+                    // set isAddmin
+                    isAdmin = user.isAdmin ? true : false;
+                    // set dev admin user
+                    isDevAdmin = user.identity === '461129407087609086f11bb9cb1dbb8e' ? true : false;
+ 
                     // Had problems with opening as new realm, using this method...not sure if correct...but for now its working
                     // setup realm config
                     const userConfig = {
@@ -183,20 +193,14 @@ export function signInUser(email, password) {
                         }
                     }
 
-                    // set isAddmin
-                    isAdmin = user.isAdmin ? true : false;
-                    // set dev admin user
-                    isDevAdmin = user.identity === '461129407087609086f11bb9cb1dbb8e' ? true : false;
-                    console.log(isDevAdmin);
-
-                    console.log('user.id');
-
                     // open the realm
                     Realm.open(userConfig).then(realm => {
                         userRealm = realm;
 
                         // update currentUser object
                         currentUser = userRealm.objectForPrimaryKey('Person', user.identity);
+                        attractions = userRealm.objects('Attraction');
+                        parks = userRealm.objects('Park');
                         
                         resolve(currentUser);
                     }).catch((error) => {
@@ -219,11 +223,13 @@ export function loadUserFromCache() {
         const user = Realm.Sync.User.current;
 
         if (user) {
+            // set isAuthenticated
+            isAuthenticated = true;
             // set admin user
             isAdmin = user.isAdmin ? true : false;
             // set dev admin user
             isDevAdmin = user.identity === '461129407087609086f11bb9cb1dbb8e' ? true : false;
-            console.log(isDevAdmin);
+
             // Open userRealm
             userRealm = new Realm({
                 schema: [Person, Park, Attraction, Journal, JournalEntry],
@@ -254,6 +260,7 @@ export function signOutUser() {
             user.logout();
         }                
 
+        isAuthenticated = false;
         currentUser = null;
         userRealm = null;
         parkRealm = null;
@@ -1136,7 +1143,7 @@ export function tempDev1Function() {
 export function tempDev2Function() {
 
     //copyAttractionImagesByParkIdFromFilesToRealm('temp');
-    copyParkImagesFromFilesToRealm();
+    //copyParkImagesFromFilesToRealm();
 }
 
 function copyAttractionImagesByParkIdFromFilesToRealm(parkId) {

@@ -22,14 +22,8 @@ var styles = StyleSheet.create({
     container: {
         alignItems: 'center',
         height: 100,
-        width: 100,
-        borderColor: 'gray',
-        borderWidth: 1,
-        marginTop: 5,
-        marginBottom: 5,
-        marginLeft: 5,
-        marginRight: 5,
-        padding: 5,
+        width: 90,
+        margin: 5,
         backgroundColor: '#C7D0FE'
     },
     stat: {

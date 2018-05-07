@@ -71,6 +71,7 @@ class CameraModal extends Component {
             }).catch((error) => {
                 // failed - TODO: Better error handling or remove..
                 console.log('something failed saving photo');
+                console.log(error);
             })
         }
     }

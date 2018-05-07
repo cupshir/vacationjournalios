@@ -72,7 +72,8 @@ var styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         paddingLeft: 5,
-        paddingRight: 5
+        paddingRight: 5,
+        flexWrap: 'wrap'
     },
     titleText: {
         color: '#FFFFFF',

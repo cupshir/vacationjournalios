@@ -211,7 +211,7 @@ class EditJournal extends Component {
                 ...this.state,
                 formValues: {
                     ...this.state.formValues,
-                    photo: photo
+                    photo: photoData.base64
                 },
                 cameraModalVisible: false,
             });

@@ -1,12 +1,14 @@
-import React, { Component } from "react";
+import React, { Component } from 'react';
 import { 
     AlertIOS,
     Image,
+    ImageBackground,
     StyleSheet,
     Text,
     TouchableOpacity, 
     View,  
-} from "react-native";
+} from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { 
     IconsMap,
@@ -17,6 +19,7 @@ import moment from 'moment';
 import * as UserService from '../../realm/userService';
 
 import LoadingMickey from '../../components/LoadingMickey';
+import MickeyButton from '../../components/MickeyButton';
 import CameraModal from "../../components/CameraModal";
 
 
@@ -59,24 +62,6 @@ class Profile extends Component {
                 // add sync button for parks and attractions
                 this.renderSyncParksAndAttractionsButton();
 
-                // TODO: add network check before querying
-                // TODO: Check when last sync happened and visually change the sync icon to indicate its time to sync
-
-                // get current time and set time to 14 days back
-                const currentTime = new Date();
-                currentTime.setDate(currentTime.getDate()-14);
-
-                // debugging
-                console.log('CT: ', currentTime)
-                console.log('lastSyncParks: ', UserService.currentUser.parksLastSynced);
-                console.log('lastSyncAttractions: ', UserService.currentUser.attractionsLastSynced)
-                console.log('Diff: ', UserService.currentUser.attractionsLastSynced - currentTime);
-
-                // if sync difference is less than 14, triggere sync
-                if ((UserService.currentUser.attractionsLastSynced - currentTime) < 14 || (UserService.currentUser.parksLastSynced - currentTime) < 14) {
-                    // do something here if data out of sync
-
-                }
                 this.updateCurrentUserInState(UserService.currentUser);
             }
         }
@@ -230,7 +215,7 @@ class Profile extends Component {
                 ...this.state,
                 formValues: {
                     ...this.state.formValues,
-                    photo: photo
+                    photo: photoData.base64
                 },
                 cameraModalVisible: false,
             });
@@ -269,38 +254,6 @@ class Profile extends Component {
     // Press Events
     handleItemPress = (item) => {
         switch(item) {
-            case 'signIn': {
-                this.props.navigator.showModal({
-                    screen: 'vacationjournalios.SignIn',
-                    title: 'Sign In',
-                    navigatorStyle: {
-                        largeTitle: true,
-                        navBarBackgroundColor: '#252525',
-                        navBarTextColor: '#FFFFFF',
-                        navBarButtonColor: '#FFFFFF',
-                        statusBarTextColorScheme: 'light',
-                        screenBackgroundColor: '#151515'
-                    },
-                    animated: true
-                });
-                break;
-            }
-            case 'register': {
-                this.props.navigator.showModal({
-                    screen: 'vacationjournalios.Register',
-                    title: 'Register',
-                    navigatorStyle: {
-                        largeTitle: true,
-                        navBarBackgroundColor: '#252525',
-                        navBarTextColor: '#FFFFFF',
-                        navBarButtonColor: '#FFFFFF',
-                        statusBarTextColorScheme: 'light',
-                        screenBackgroundColor: '#151515'
-                    },
-                    animated: true
-                });
-                break;
-            }
             case 'edit': {
                 this.props.navigator.showModal({
                     screen: 'vacationjournalios.EditPerson',
@@ -344,6 +297,40 @@ class Profile extends Component {
                 break;
             }
         }
+    }
+
+    // lauch sign in modal
+    onSignInPress = () => {
+        this.props.navigator.showModal({
+            screen: 'vacationjournalios.SignIn',
+            title: 'Sign In',
+            navigatorStyle: {
+                largeTitle: true,
+                navBarBackgroundColor: '#252525',
+                navBarTextColor: '#FFFFFF',
+                navBarButtonColor: '#FFFFFF',
+                statusBarTextColorScheme: 'light',
+                screenBackgroundColor: '#151515'
+            },
+            animated: true
+        });
+    }
+
+    // launch register modal
+    onRegisterPress = () => {
+        this.props.navigator.showModal({
+            screen: 'vacationjournalios.Register',
+            title: 'Register',
+            navigatorStyle: {
+                largeTitle: true,
+                navBarBackgroundColor: '#252525',
+                navBarTextColor: '#FFFFFF',
+                navBarButtonColor: '#FFFFFF',
+                statusBarTextColorScheme: 'light',
+                screenBackgroundColor: '#151515'
+            },
+            animated: true
+        });
     }
 
     // Sign out user
@@ -455,7 +442,7 @@ class Profile extends Component {
                 : 'Photos will not be saved to camera roll.'
 
             return (
-                <View style={styles.container}>
+                <KeyboardAwareScrollView style={styles.container} contentContainerStyle={{flex: 1}} >
                     <View style={styles.profileContainer}>
                         <View style={styles.nameSection}>
                             <Text style={{ fontSize: 24, color: 'white' }}>{this.state.currentUser.firstName} {this.state.currentUser.lastName}</Text>
@@ -483,29 +470,30 @@ class Profile extends Component {
                                 <Text>Sign Out</Text>
                             </TouchableOpacity>
                         </View>
-                        <CameraModal 
-                            quality={'1'}
-                            savePhoto={this.savePhoto}
-                            visible={this.state.cameraModalVisible}
-                            toggleCameraModal={this.toggleCameraModal}
-                        />
                     </View>
-
-                </View>
+                    <CameraModal 
+                        quality={'1'}
+                        savePhoto={this.savePhoto}
+                        visible={this.state.cameraModalVisible}
+                        toggleCameraModal={this.toggleCameraModal} />
+                </KeyboardAwareScrollView>
             );
         }
 
         // Default render sign in and sign up buttons
         return (
             <View style={styles.signInContainer}>
-                <View style={styles.signInButtons}>
-                    <TouchableOpacity style={styles.button} onPress={() => this.handleItemPress('signIn')}>
-                        <Text>Sign In</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.button} onPress={() => this.handleItemPress('register')}>
-                        <Text>Register</Text>
-                    </TouchableOpacity>
-                </View>
+                <ImageBackground 
+                    style={styles.image} 
+                    source={require('../../assets/Mickey_Background.png')}
+                    resizeMode='cover'
+                    blurRadius={2}
+                    opacity={10}>
+                    <View style={styles.signInButtons}>
+                        <MickeyButton text='Login' onPress={this.onSignInPress} />
+                        <MickeyButton text='Register' onPress={this.onRegisterPress} />
+                    </View>
+                </ImageBackground>
             </View>
         )
     }
@@ -513,30 +501,30 @@ class Profile extends Component {
 
 var styles = StyleSheet.create({
 	signInContainer: {
-		flex: 1,
-		justifyContent: 'space-around',
-		alignItems: 'center'
-    },
-    signInButtons: {
-        flex: .1,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 10,
-        borderRadius: 10
-    },
-    container: {
-        flex: 1,
-        justifyContent: 'space-around',
-        alignItems: 'center'
-    },
-    profileContainer: {
         position: 'absolute',
         top: 0,
         left: 0,
-        width: '100%',
-        height: '100%',
-        justifyContent: 'space-around',
+        right: 0,
+        bottom: 0,
+    },
+    signInImage: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        paddingTop: 100
+    },
+    image: {
+        flex: 1,
+    },
+    signInButtons: {
+        flex: 1,
+        paddingTop: 100
+    },
+    container: {
+        flex: 1
+    },
+    profileContainer: {
+        flex: 1,
+        justifyContent: 'space-between',
         alignItems: 'center'
     },
     nameSection: {
@@ -548,14 +536,15 @@ var styles = StyleSheet.create({
         padding: 15
     },
     journalSection: {
-        flex: .9,
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: 15
     },
     lowerContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-between'
+        justifyContent: 'space-between',
+        marginBottom: 15,
+        marginTop: 15
     },
     journalText: {
         fontSize: 18,

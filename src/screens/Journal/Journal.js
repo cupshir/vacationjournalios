@@ -1,13 +1,15 @@
-import React, { Component } from "react";
+import React, { Component } from 'react';
 import { 
     AlertIOS, 
     Button,
+    Image,
+    ImageBackground,
     SectionList, 
     StyleSheet,
     Text,
     TouchableOpacity,
     View
-} from "react-native";
+} from 'react-native';
 import {
     SearchBar
 } from 'react-native-elements';
@@ -19,18 +21,14 @@ import moment from 'moment';
 
 import * as UserService from '../../realm/userService';
 
-import ListItemJournalEntry from "../../components/ListItemJournalEntry";
-import SectionHeader from "../../components/SectionHeader";
+import ListItemJournalEntry from '../../components/ListItemJournalEntry';
+import MickeyButton from '../../components/MickeyButton'
+import SectionHeader from '../../components/SectionHeader';
 import LoadingMickey from '../../components/LoadingMickey';
 
 class Journal extends Component {
     static navigatorButtons = {
-        leftButtons: [
-            {
-                title: 'Journals',
-                id: 'journals'
-            }
-        ]
+
     };
 
     constructor(props) {
@@ -83,6 +81,12 @@ class Journal extends Component {
     renderAddJournalEntryButton = () => {
         IconsLoaded.then(() => {
             this.props.navigator.setButtons({
+                leftButtons: [
+                    {
+                        title: 'Journals',
+                        id: 'journals'
+                    }
+                ],
                 rightButtons: [
                     {
                         id: 'addEntry',
@@ -122,6 +126,31 @@ class Journal extends Component {
         this.props.navigator.showModal({
             screen: 'vacationjournalios.SignIn',
             title: 'Sign In',
+            navigatorStyle: {
+                largeTitle: true,
+                navBarBackgroundColor: '#252525',
+                navBarTextColor: '#FFFFFF',
+                navBarButtonColor: '#FFFFFF',
+                statusBarTextColorScheme: 'light',
+                screenBackgroundColor: '#151515'
+            },
+            animated: true
+        });
+    }
+
+    // launch register modal
+    onRegisterPress = () => {
+        this.props.navigator.showModal({
+            screen: 'vacationjournalios.Register',
+            title: 'Register',
+            navigatorStyle: {
+                largeTitle: true,
+                navBarBackgroundColor: '#252525',
+                navBarTextColor: '#FFFFFF',
+                navBarButtonColor: '#FFFFFF',
+                statusBarTextColorScheme: 'light',
+                screenBackgroundColor: '#151515'
+            },
             animated: true
         });
     }
@@ -347,10 +376,18 @@ class Journal extends Component {
         // If no current User, display Sign In button
         if (this.state.currentUser === null) {
             return (
-                <View style={styles.container}>
-                    <TouchableOpacity style={styles.button} onPress={() => this.onSignInPress()}>
-                        <Text>Sign In</Text>
-                    </TouchableOpacity>
+                <View style={styles.signInContainer}>
+                    <ImageBackground 
+                        style={styles.image} 
+                        source={require('../../assets/Mickey_Background.png')}
+                        resizeMode='cover'
+                        blurRadius={2}
+                        opacity={10}>
+                        <View style={styles.signInButtons}>
+                           <MickeyButton text='Login' onPress={this.onSignInPress} />
+                           <MickeyButton text='Register' onPress={this.onRegisterPress} />
+                        </View>
+                    </ImageBackground>
                 </View>
             );
         }
@@ -358,9 +395,16 @@ class Journal extends Component {
         // If no active Journal display Select a journal
         if (this.state.currentUser !== null && this.state.currentUser.activeJournal === null) {
             return (
-                <View style={styles.container}>
-                    <Button title='Select A Journal' onPress={this.onJournalListPress} />
-                </View>
+                <ImageBackground 
+                        style={styles.image} 
+                        source={require('../../assets/Mickey_Background.png')}
+                        resizeMode='cover'
+                        blurRadius={2}
+                        opacity={10}>
+                    <View style={styles.container}>
+                        <MickeyButton text='Select A Journal' onPress={this.onJournalListPress} />                   
+                    </View>
+                </ImageBackground>
             );
         }
         
@@ -408,14 +452,19 @@ var styles = StyleSheet.create({
         marginLeft: 15,
         marginRight: 15
     },
-    button: {
-        width: 100,
-        height: 50,
-        borderWidth: 1,
-        borderRadius: 5,
-        justifyContent: 'center',
-        alignItems: 'center',
-        margin: 10
+    signInContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+    },
+    image: {
+        flex: 1,
+    },
+    signInButtons: {
+        flex: 1,
+        paddingTop: 100
     }
 });
 
