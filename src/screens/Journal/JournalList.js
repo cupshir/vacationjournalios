@@ -230,7 +230,7 @@ class JournalList extends Component {
         }
 
         // if no journals exist, display message to create one
-        if (!Array.isArray(this.state.currentUser.journals) || !this.state.currentUser.journals.length) {
+        if (this.state.currentUser && this.state.currentUser.journals.length === 0) {
             return (
                 <View style={styles.messageContainer}>
                     <ImageBackground 

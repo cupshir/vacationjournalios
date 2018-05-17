@@ -68,13 +68,21 @@ class ParkList extends Component {
                 });
             } else {
                 // seed park realm exists, refresh user data
-                UserService.updateUserAttractions();
-                UserService.updateUserParks();
+                UserService.updateUserAttractions().then(() => {
+                }).catch((error) => {
+                    console.log('Failed to update user attractions');
+                    console.log(error);
+                });
+                UserService.updateUserParks().then(() => {
+                }).catch((error) => {
+                    console.log('Failed to update user parks');
+                    console.log(error);                
+                });
             }
 
             // Set nav buttons
             IconsLoaded.then(() => {
-                if (UserService.currentUser) {
+                if (UserService.currentUser && UserService.isAdmin) {
                     this.props.navigator.setButtons({
                         rightButtons: 
                         [
@@ -100,6 +108,26 @@ class ParkList extends Component {
         this.props.navigator.setStyle({
             navBarNoBorder: false
         });
+    }
+
+    onLoadParksPress = () => {
+        if (UserService.currentUser) {
+            if (UserService.parkRealm === null) {
+                // missing seed park realm - initialize it
+                UserService.initializeParkRealm().then((response) => {
+                    // success - refresh user data
+                    UserService.updateUserAttractions();
+                    UserService.updateUserParks();
+                }).catch((error) => {
+                    console.log('failed to initialize park realm: ');
+                    console.log(error);
+                });
+            } else {
+                // seed park realm exists, refresh user data
+                UserService.updateUserAttractions();
+                UserService.updateUserParks();
+            }
+        }
     }
 
     updateCurrentUserInState = (user) => {
@@ -253,7 +281,16 @@ class ParkList extends Component {
         if(!this.state.parks) {
             return (
                 <View style={styles.messageContainer}>
-                    <Text>Missing Parks</Text>
+                    <ImageBackground 
+                        style={styles.image} 
+                        source={require('../../assets/Mickey_Background.png')}
+                        resizeMode='cover'
+                        blurRadius={2}
+                        opacity={10}>
+                        <View style={{flex: 1, marginTop: 200}}>
+                           <MickeyButton text='Load Parks' onPress={this.onLoadParksPress} />
+                        </View>
+                    </ImageBackground>
                 </View>
             );
         }
@@ -271,9 +308,11 @@ class ParkList extends Component {
 
 var styles = StyleSheet.create({
     messageContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center'
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
     },
     container: {
         flex: 1,

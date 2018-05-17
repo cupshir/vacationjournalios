@@ -21,7 +21,6 @@ IconsLoaded.then(() => {
 		
 		tabs: [
 			{
-				label: 'Home',
 				screen: 'vacationjournalios.Dashboard',
 				title: 'Dashboard',
 				icon: IconsMap['home'],
@@ -36,7 +35,6 @@ IconsLoaded.then(() => {
 				}
 			},
 			{
-				label: 'Journal',
 				screen: 'vacationjournalios.Journal',
 				title: 'Select A Journal',
 				icon: IconsMap['journal'],
@@ -52,7 +50,6 @@ IconsLoaded.then(() => {
 				}
 			},
 			{
-				label: 'Profile',
 				screen: 'vacationjournalios.Profile',
 				title: 'Profile',
 				icon: IconsMap['person'],
@@ -67,7 +64,6 @@ IconsLoaded.then(() => {
 				}
 			},
 			{
-				label: 'Parks',
 				screen: 'vacationjournalios.ParkList',
 				title: 'Parks',
 				icon: IconsMap['parks'],

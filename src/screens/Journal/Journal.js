@@ -56,12 +56,7 @@ class Journal extends Component {
             if (event.id === 'addEntry') {
                 if (this.state.currentUser !== null) {
                     if (this.state.currentUser.activeJournal !== null) {
-                        this.props.navigator.push({
-                            screen: 'vacationjournalios.EditJournalEntry',
-                            title: 'Add Journal Entry',
-                            animated: true,
-                            animationType: 'fade'
-                        });
+                        this.onAddJournalEntryPress();[]
                     } else {
                         AlertIOS.alert('Please select/create a journal');
                     }
@@ -119,6 +114,15 @@ class Journal extends Component {
                 isLoading: false
             });
         }
+    }
+
+    onAddJournalEntryPress = () => {
+        this.props.navigator.push({
+            screen: 'vacationjournalios.EditJournalEntry',
+            title: 'Add Journal Entry',
+            animated: true,
+            animationType: 'fade'
+        });
     }
 
     // lauch sign in modal
@@ -395,16 +399,18 @@ class Journal extends Component {
         // If no active Journal display Select a journal
         if (this.state.currentUser !== null && this.state.currentUser.activeJournal === null) {
             return (
-                <ImageBackground 
-                        style={styles.image} 
-                        source={require('../../assets/Mickey_Background.png')}
-                        resizeMode='cover'
-                        blurRadius={2}
-                        opacity={10}>
-                    <View style={styles.container}>
-                        <MickeyButton text='Select A Journal' onPress={this.onJournalListPress} />                   
-                    </View>
-                </ImageBackground>
+                <View style={styles.messageContainer}>
+                    <ImageBackground 
+                            style={styles.image} 
+                            source={require('../../assets/Mickey_Background.png')}
+                            resizeMode='cover'
+                            blurRadius={2}
+                            opacity={10}>
+                        <View style={{flex: 1, marginTop: 200}}>
+                            <MickeyButton text='Select A Journal' onPress={this.onJournalListPress} />                   
+                        </View>
+                    </ImageBackground>
+                </View>
             );
         }
         
@@ -414,6 +420,24 @@ class Journal extends Component {
             if (this.state.currentUser.activeJournal !== null) {
                 // load journalEntries from state if filteredEntries in state is null (this is so something loads when view first renders) 
                 const filteredEntries = this.state.filteredEntries !== null ? this.state.filteredEntries : this.state.currentUser.activeJournal.journalEntries;
+
+                // if no journal entries exist, display message to create one
+                if (filteredEntries.length === 0) {
+                    return (
+                        <View style={styles.messageContainer}>
+                            <ImageBackground 
+                                style={styles.image} 
+                                source={require('../../assets/Mickey_Background.png')}
+                                resizeMode='cover'
+                                blurRadius={2}
+                                opacity={10}>
+                                <View style={{flex: 1, marginTop: 200}}>
+                                    <MickeyButton text='Add First Journal Entry' onPress={this.onAddJournalEntryPress} />
+                                </View>
+                            </ImageBackground>
+                        </View>
+                    );
+                }
     
                 // Split filtered array into sections array
                 const journalEntriesBySection = this.splitJournalEntriesIntoSections(filteredEntries);
@@ -422,6 +446,8 @@ class Journal extends Component {
                 journalEntryList = this.renderJournalEntries(journalEntriesBySection);
             }          
         }
+
+
 
         return (
             <View>
@@ -465,7 +491,14 @@ var styles = StyleSheet.create({
     signInButtons: {
         flex: 1,
         paddingTop: 100
-    }
+    },
+    messageContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+    },
 });
 
 export default Journal;

@@ -14,13 +14,13 @@ class StatBoxLarge extends Component {
         let photo = <Icon style={{ fontSize: 75, color: 'white' }} name="photo" /> ;
         let name = '';
 
-        if (this.props.value !== undefined) {
+        if (this.props.value) {
             name = this.props.value.name;
 
             if (this.props.value.photo) {
                 photo = (
                     <Image 
-                        style={{ width: 100, height: 75 }}
+                        style={{ width: 150, height: 100 }}
                         source={{uri: `data:image/png;base64,${this.props.value.photo}`}} 
                     />
                 );

@@ -59,7 +59,8 @@ var styles = StyleSheet.create({
     buttonText: {
         color: '#000000',
         fontWeight: 'bold',
-        fontSize: 16
+        fontSize: 16,
+        textAlign: 'center'
     }
 })
 

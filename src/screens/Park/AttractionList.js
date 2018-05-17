@@ -56,7 +56,7 @@ class AttractionList extends Component {
 
         // Set nav buttons
         IconsLoaded.then(() => {
-            if (UserService.currentUser) {
+            if (UserService.currentUser && UserService.isAdmin) {
                 this.props.navigator.setButtons({
                     rightButtons: 
                     [

@@ -460,6 +460,29 @@ class Dashboard extends Component {
             );
         }
 
+        let mostRiddenAttraction = null;
+        if(this.state.displayStats.mostRidden.attraction !== '') {
+            mostRiddenAttraction = (
+                <View style={styles.upper}>
+                    <TouchableOpacity onPress={() => this.handleMostRiddenChange()}>
+                        <StatBoxLarge style={styles.largeBox} title="Most Ridden" label={this.state.displayStats.mostRidden.label} value={this.state.displayStats.mostRidden.attraction} />
+                    </TouchableOpacity>
+                </View>
+            );
+        }
+
+        let mostVisitedPark = null; 
+        
+        if(this.state.displayStats.mostVisitedPark.park !== '') {
+            mostVisitedPark = (
+                <View style={styles.upper}>
+                    <TouchableOpacity onPress={() => this.handleMostVisitedParkChange()}>
+                        <StatBoxLarge style={styles.largeBox} title="Most Visited" label={this.state.displayStats.mostVisitedPark.label} value={this.state.displayStats.mostVisitedPark.park} />
+                    </TouchableOpacity>
+                </View>
+            );
+        }
+
         if(this.state.isAuthenticated && this.state.statsLoaded) {
             return (
                 <KeyboardAwareScrollView>
@@ -476,16 +499,8 @@ class Dashboard extends Component {
                                 <StatBoxSmall style={styles.largeBox} title="Total Attractions" label={this.state.displayStats.totalRides.label} value={this.state.displayStats.totalRides.value} />
                             </TouchableOpacity>
                         </View>
-                        <View style={styles.upper}>
-                            <TouchableOpacity onPress={() => this.handleMostRiddenChange()}>
-                                <StatBoxLarge style={styles.largeBox} title="Most Ridden" label={this.state.displayStats.mostRidden.label} value={this.state.displayStats.mostRidden.attraction} />
-                            </TouchableOpacity>
-                        </View>
-                        <View style={styles.upper}>
-                            <TouchableOpacity onPress={() => this.handleMostVisitedParkChange()}>
-                                <StatBoxLarge style={styles.largeBox} title="Most Visited" label={this.state.displayStats.mostVisitedPark.label} value={this.state.displayStats.mostVisitedPark.park} />
-                            </TouchableOpacity>
-                        </View>
+                        {mostRiddenAttraction}
+                        {mostVisitedPark}
                     </View>
                 </KeyboardAwareScrollView>
             );
