@@ -72,12 +72,8 @@ class AttractionList extends Component {
 
     updateCurrentUserInState = (user) => {
         let attractions = null;
-        if (UserService.parkRealm == null ){
-            UserService.initializeParkRealm();
-        } else {
-            if (this.props.parkId) {
-                attractions = UserService.parkRealm.objects('Attraction').filtered('park.id == $0', this.props.parkId).sorted('name');
-            }
+        if (UserService.parkRealm && this.props.parkId) {
+            attractions = UserService.parkRealm.objects('Attraction').filtered('park.id == $0', this.props.parkId).sorted('name');
         }
 
         if (user) {
@@ -167,7 +163,7 @@ class AttractionList extends Component {
         if(!this.state.attractions) {
             return (
                 <View style={styles.messageContainer}>
-                    <Text>Missing Attractions</Text>
+                    <Text>Missing Park Realm Attractions</Text>
                 </View>
             );
         }

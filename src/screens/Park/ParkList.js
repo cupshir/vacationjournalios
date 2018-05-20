@@ -56,28 +56,19 @@ class ParkList extends Component {
 
     componentDidMount() {
         if (UserService.currentUser) {
-            if (UserService.parkRealm === null) {
-                // missing seed park realm - initialize it
-                UserService.initializeParkRealm().then((response) => {
-                    // success - refresh user data
-                    UserService.updateUserAttractions();
-                    UserService.updateUserParks();
-                }).catch((error) => {
-                    console.log('failed to initialize park realm: ');
-                    console.log(error);
-                });
-            } else {
+            if (UserService.parkRealm) {
                 // seed park realm exists, refresh user data
-                UserService.updateUserAttractions().then(() => {
-                }).catch((error) => {
-                    console.log('Failed to update user attractions');
-                    console.log(error);
-                });
-                UserService.updateUserParks().then(() => {
-                }).catch((error) => {
-                    console.log('Failed to update user parks');
-                    console.log(error);                
-                });
+                UserService.updateUserAttractions()
+                    .then(() => {
+                    }).catch((error) => {
+                        console.log('Failed to update user attractions');
+                        console.log(error);
+                    });
+                    UserService.updateUserParks().then(() => {
+                    }).catch((error) => {
+                        console.log('Failed to update user parks');
+                        console.log(error);                
+                    });
             }
 
             // Set nav buttons
@@ -110,38 +101,9 @@ class ParkList extends Component {
         });
     }
 
-    onLoadParksPress = () => {
-        if (UserService.currentUser) {
-            if (UserService.parkRealm === null) {
-                // missing seed park realm - initialize it
-                UserService.initializeParkRealm().then((response) => {
-                    // success - refresh user data
-                    UserService.updateUserAttractions();
-                    UserService.updateUserParks();
-                }).catch((error) => {
-                    console.log('failed to initialize park realm: ');
-                    console.log(error);
-                });
-            } else {
-                // seed park realm exists, refresh user data
-                UserService.updateUserAttractions();
-                UserService.updateUserParks();
-            }
-        }
-    }
-
     updateCurrentUserInState = (user) => {
         let parks = null;
-        if (UserService.parkRealm == null ){
-            UserService.initializeParkRealm().then((response) => {
-                // success - refresh user data
-                UserService.updateUserAttractions();
-                UserService.updateUserParks();
-            }).catch((error) => {
-                console.log('failed to initialize park realm: ');
-                console.log(error);
-            });
-        } else {
+        if (UserService.parkRealm) {
             parks = UserService.parkRealm.objects('Park');
         }
 
@@ -272,23 +234,6 @@ class ParkList extends Component {
                         <View style={styles.signInButtons}>
                            <MickeyButton text='Login' onPress={this.onSignInPress} />
                            <MickeyButton text='Register' onPress={this.onRegisterPress} />
-                        </View>
-                    </ImageBackground>
-                </View>
-            );
-        }
-
-        if(!this.state.parks) {
-            return (
-                <View style={styles.messageContainer}>
-                    <ImageBackground 
-                        style={styles.image} 
-                        source={require('../../assets/Mickey_Background.png')}
-                        resizeMode='cover'
-                        blurRadius={2}
-                        opacity={10}>
-                        <View style={{flex: 1, marginTop: 200}}>
-                           <MickeyButton text='Load Parks' onPress={this.onLoadParksPress} />
                         </View>
                     </ImageBackground>
                 </View>

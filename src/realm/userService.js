@@ -20,64 +20,83 @@ import RNFS from 'react-native-fs';
 export let parkRealm;
 export let userRealm;
 export let currentUser;
+export let currentSyncUser;
 export let attractions;
 export let parks;
 export let isAdmin = false;
 export let isDevAdmin = false;
 export let isAuthenticated = false;
 
+// Open Seed Realm
+Realm.Sync.User.login(AppConstants.AUTH_URL, 'seedUser', AppConstants.SEED_USER_PASSWORD).then(user => {
+    // setup realm config
+    const userConfig = {
+        schema: [ Park, Attraction ],
+        sync: {
+            user,
+            url: `${AppConstants.REALM_URL}/${AppConstants.REALM_PARKS_PATH}`
+        }
+    }
+
+    // open the realm
+    Realm.open(userConfig).then(realm => {
+        parkRealm = realm;
+    });
+});
+
+
 //// User Functions
 
 // Register user and build realms
 export function registerUser(userObject) {
     return new Promise((resolve, reject) => {
-        const userCheck = Realm.Sync.User.current;
-        if (!userCheck) {
+        if (!currentSyncUser) {
             // Send register request to create user
-            Realm.Sync.User.register(AppConstants.AUTH_URL, userObject.email, userObject.password).then(user => {
-                // Open a new user Realm        
-                userRealm = new Realm({
-                    schema: [Person, Park, Attraction, Journal, JournalEntry],
-                    sync: {
-                        user,
-                        url: `${AppConstants.REALM_URL}/${AppConstants.REALM_USER_PATH}`
-                    }
-                });
-
-                // Create a new Person object in the userRealm
-                try {
-                    userRealm.write(() => {
-                        currentUser = userRealm.create('Person', {
-                            id: user.identity,
-                            email: userObject.email,
-                            firstName: userObject.firstName,
-                            lastName: '',
-                            profilePhoto: '',
-                            savePhotosToCameraRoll: false,
-                            activeJournal: null,
-                            journals: [],
-                            dateCreated: new Date(),
-                            dateModified: new Date(),
-                            parksLastSynced: new Date(1900,0,1),
-                            attractionsLastSynced: new Date(1900,0,1)
-                        });
+            Realm.Sync.User.register(AppConstants.AUTH_URL, userObject.email, userObject.password)
+                .then(user => {
+                    // set current sync user
+                    currentSyncUser = user;
+                    // Open a new user Realm        
+                    userRealm = new Realm({
+                        schema: [Person, Park, Attraction, Journal, JournalEntry],
+                        sync: {
+                            user,
+                            url: `${AppConstants.REALM_URL}/${AppConstants.REALM_USER_PATH}`
+                        }
                     });
-                    // horrible hack? wait 2s then try the initial seed user realm
-                    setTimeout(initialSeedFromParkRealm(), 2000);
 
-                    currentUser = userRealm.objectForPrimaryKey('Person', user.identity);
+                    // Create a new Person object in the userRealm
+                    try {
+                        userRealm.write(() => {
+                            currentUser = userRealm.create('Person', {
+                                id: user.identity,
+                                email: userObject.email,
+                                firstName: userObject.firstName,
+                                lastName: '',
+                                profilePhoto: '',
+                                savePhotosToCameraRoll: false,
+                                activeJournal: null,
+                                journals: [],
+                                dateCreated: new Date(),
+                                dateModified: new Date(),
+                                parksLastSynced: new Date(1900,0,1),
+                                attractionsLastSynced: new Date(1900,0,1)
+                            });
+                        });
+                        // horrible hack? wait 2s then try the initial seed user realm
+                        setTimeout(initialSeedFromParkRealm(), 2000);
 
-                    resolve(currentUser);
-                } catch (e) {
-                    // Something went wrong userRealm write
-                    console.log('userRealmWriteError: ', e);
-                    reject(e);
-                }
-            }).catch(error =>  {
-                // Something went wrong with register
-                console.log('registerCatchError1: ', error);
-                reject(error);
-            });
+                        resolve(currentUser);
+                    } catch (e) {
+                        // Something went wrong userRealm write
+                        console.log('userRealmWriteError: ', e);
+                        reject(e);
+                    }
+                }).catch(error =>  {
+                    // Something went wrong with register
+                    console.log('registerCatchError1: ', error);
+                    reject(error);
+                });
         } else {
             signOutUser();
             reject('Error: Current user logged out, please try again.');
@@ -142,7 +161,7 @@ export function changeUserPassword(oldPassword, newPassword) {
                             headers: {
                                 Accept: 'application/json',
                                 'Content-Type': 'application/json',
-                                Authorization: Realm.Sync.User.current.token
+                                Authorization: currentSyncUser.token
                             },
                             body: JSON.stringify({
                                 'user_id': currentUser.id,
@@ -170,20 +189,16 @@ export function changeUserPassword(oldPassword, newPassword) {
 // Signin user by verifying email / password and then load realms
 export function signInUser(email, password) {
     return new Promise((resolve, reject) => {
-        const userCheck = Realm.Sync.User.current;
-
-        if (!userCheck) {
+        if (!currentSyncUser) {
             // make authentication request
             Realm.Sync.User.login(AppConstants.AUTH_URL, email, password)
                 .then(user => {
-                    // set isAuthenticated
+                    // set properties
+                    currentSyncUser = user;
                     isAuthenticated = true;
-                    // set isAddmin
                     isAdmin = user.isAdmin ? true : false;
-                    // set dev admin user
                     isDevAdmin = user.identity === '461129407087609086f11bb9cb1dbb8e' ? true : false;
  
-                    // Had problems with opening as new realm, using this method...not sure if correct...but for now its working
                     // setup realm config
                     const userConfig = {
                         schema: [Person, Park, Attraction, Journal, JournalEntry],
@@ -219,8 +234,18 @@ export function signInUser(email, password) {
 // Load user from cache then load realms
 export function loadUserFromCache() {
     return new Promise((resolve, reject) => {
-        // Try to load user from cache
-        const user = Realm.Sync.User.current;
+        // Check for logged in user
+        let user = null;
+        // Load users from cache
+        let users = Realm.Sync.User.all;
+        for(const key in users) {
+            const checkUser = users[key];
+
+            if (checkUser.identity !== 'afb126a04b869ab949e2e9477dd8fb59') {
+                user = checkUser;
+                break;
+            }            
+        }   
 
         if (user) {
             // set isAuthenticated
@@ -262,10 +287,12 @@ export function signOutUser() {
 
         isAuthenticated = false;
         currentUser = null;
+        currentSyncUser = null;
         userRealm = null;
         parkRealm = null;
         isAdmin = false;
         isDevAdmin = false;
+
         resolve(currentUser);
         
         reject('Something went wrong with signout');
@@ -277,9 +304,7 @@ export function savePhotoToCameraRoll(photo) {
     return new Promise((resolve, reject) => {
         // save photo to camera roll if user setting is true
         if (currentUser.savePhotosToCameraRoll) {
-            console.log('1test')
             if (photo) {
-                console.log('test')
                 CameraRoll.saveToCameraRoll(photo).then(() => {
                     resolve('success');
                 }).catch((error) => {
@@ -302,40 +327,36 @@ export function updateUserParks() {
         if (parkRealm) {
             // get parks from seed realm
             const seedParks = parkRealm.objects('Park');
-            // horrible hack, delay to give time for parks object to load
-            setTimeout(function(){
-                    if (seedParks.length > 0) {
-                        try {
-                            // add/update parks in userRealm
-                            userRealm.write(() => {
-                                seedParks.forEach((park) => {
-                                    const newPark = userRealm.create('Park', {
-                                        id: park.id,
-                                        name: park.name,
-                                        photo: park.photo,
-                                        dateCreated: park.dateCreated,
-                                        dateModified: park.dateModified,
-                                        dateSynced: new Date(),
-                                        description: park.description
-                                    },
-                                    true);
-                                });
-                                // update lastSynced time
-                                currentUser.parksLastSynced = new Date();
+                if (seedParks) {
+                    try {
+                        // add/update parks in userRealm
+                        userRealm.write(() => {
+                            seedParks.forEach((park) => {
+                                const newPark = userRealm.create('Park', {
+                                    id: park.id,
+                                    name: park.name,
+                                    photo: park.photo,
+                                    dateCreated: park.dateCreated,
+                                    dateModified: park.dateModified,
+                                    dateSynced: new Date(),
+                                    description: park.description
+                                },
+                                true);
                             });
-                            // update parks object with updated parks list
-                            parks = userRealm.objects('Park');
+                            // update lastSynced time
+                            currentUser.parksLastSynced = new Date();
+                        });
+                        // update parks object with updated parks list
+                        parks = userRealm.objects('Park');
 
-                            resolve('success');
-                        } catch (error) {
-                            console.log(error);
-                            reject('Updating parks in userRealm failed');
-                        }
-                    } else {
-                        reject('Failed to load parks from park realm');
+                        resolve('success');
+                    } catch (error) {
+                        console.log(error);
+                        reject('Updating parks in userRealm failed');
                     }
-                },1000
-            );
+                } else {
+                    reject('Failed to load parks from park realm');
+                }
         } else {
             reject('Missing Seed Park Realm');
         }   
@@ -349,44 +370,40 @@ export function updateUserAttractions() {
         if (parkRealm) {
             // get attractions from seed realm
             const seedAttractions = parkRealm.objects('Attraction');
-            console.log('a', seedAttractions.length)
-            // horrible hack, delay so attractions object has time to load
-            setTimeout(function(){
-                    if (seedAttractions.length > 0) {
-                        try {
-                            // add/update attractions in userRealm
-                            userRealm.write(() => {
-                                seedAttractions.forEach((attraction) => {
-                                    const newAttraction = userRealm.create('Attraction', {
-                                        id: attraction.id,
-                                        name: attraction.name,
-                                        photo: attraction.photo,
-                                        park: attraction.park,
-                                        description: attraction.description,
-                                        heightToRide: attraction.heightToRide,
-                                        hasScore: attraction.hasScore,
-                                        dateCreated: attraction.dateCreated,
-                                        dateModified: attraction.dateModified,
-                                        dateSynced: new Date()
-                                    },
-                                    true);
-                                });
-                                // update lastSynced time
-                                currentUser.attractionsLastSynced = new Date();
-                            });
-                            // update attractions object with updated attractions list
-                            attractions = userRealm.objects('Attraction');
-                            
-                            resolve('success');
-                        } catch (error) {
-                            console.log(error);
-                            reject('Updating attractions in userRealm failed');
-                        }
-                    } else {
-                        reject('Failed to load attractions from park realm');
-                    }
-                },1000
-            );
+            
+            if (seedAttractions) {
+                try {
+                    // add/update attractions in userRealm
+                    userRealm.write(() => {
+                        seedAttractions.forEach((attraction) => {
+                            const newAttraction = userRealm.create('Attraction', {
+                                id: attraction.id,
+                                name: attraction.name,
+                                photo: attraction.photo,
+                                park: attraction.park,
+                                description: attraction.description,
+                                heightToRide: attraction.heightToRide,
+                                hasScore: attraction.hasScore,
+                                dateCreated: attraction.dateCreated,
+                                dateModified: attraction.dateModified,
+                                dateSynced: new Date()
+                            },
+                            true);
+                        });
+                        // update lastSynced time
+                        currentUser.attractionsLastSynced = new Date();
+                    });
+                    // update attractions object with updated attractions list
+                    attractions = userRealm.objects('Attraction');
+                    
+                    resolve('success');
+                } catch (error) {
+                    console.log(error);
+                    reject('Updating attractions in userRealm failed');
+                }
+            } else {
+                reject('Failed to load attractions from park realm');
+            }
         } else {
             reject('Missing Seed Park Realm');
         }
@@ -397,54 +414,20 @@ export function updateUserAttractions() {
 
 //// Admin Park / Attraction Functions
 
-// initialize park realm
-export function initializeParkRealm() {
-    return new Promise((resolve, reject) => {
-        try {
-            // get current user
-            const user = Realm.Sync.User.current;
-
-            if (user) {
-                // open seed realm
-                parkRealm = new Realm({
-                    schema: [Park, Attraction],
-                    sync: {
-                        user: user,
-                        url: `${AppConstants.REALM_URL}/${AppConstants.REALM_PARKS_PATH}`
-                    }
-                });
-                console.log('testParkRealm: ', parkRealm);
-                resolve('success');    
-            } else {
-                reject('User not logged in')
-            }
-        } catch (error) {
-            console.log(error);
-            reject('Failed to open park Realm');
-        }
-    });
-}
-
 // initial seed copy from park realm to user realm
 function initialSeedFromParkRealm() {
     return function() {
-        // seed parks and attractions into new users realm
-        initializeParkRealm().then(() => {
-            updateUserParks().then(() => {
-                console.log('first time park sync success');
-            }).catch((error) => {
-                console.log(error);
-                console.log('error seeding parks');
-            });
-            updateUserAttractions().then(() => {
-                console.log('first time attraction sync success');
-            }).catch((error) => {
-                console.log(error);
-                console.log('error seeding attractions');
-            });
+        updateUserParks().then(() => {
+            console.log('first time park sync success');
         }).catch((error) => {
             console.log(error);
-            console.log('error loading seed realm');
+            console.log('error seeding parks');
+        });
+        updateUserAttractions().then(() => {
+            console.log('first time attraction sync success');
+        }).catch((error) => {
+            console.log(error);
+            console.log('error seeding attractions');
         });
     }
 }
@@ -452,9 +435,7 @@ function initialSeedFromParkRealm() {
 // Save a new park or edited park
 export function adminSavePark(park) {
     return new Promise((resolve, reject) => {
-        const user = Realm.Sync.User.current;
-
-        if (user.isAdmin === true) {
+        if (currentSyncUser.isAdmin === true) {
             console.log('attempting to save park');
             try {
                 parkRealm.write(() => {
@@ -485,9 +466,7 @@ export function adminSavePark(park) {
 // Save a new attraction or edited attraction
 export function adminSaveAttraction(attraction) {
     return new Promise((resolve, reject) => {
-        const user = Realm.Sync.User.current;
-
-        if ( user.isAdmin === true) {
+        if ( currentSyncUser.isAdmin === true) {
             console.log('attempting to save attraction')
             try {
                 parkRealm.write(() => {
@@ -519,7 +498,6 @@ export function adminSaveAttraction(attraction) {
 }
 
 //// End Admin Park / Attraction Functions
-
 
 
 //// Journal Functions
@@ -763,7 +741,6 @@ export function createJournalEntry(park, attraction, entryValues, isEdit) {
                             console.log('Create New Journal Entry Failed');
                             reject('Write Journal Entry failed');
                         }
-
                     } else {
                         console.log('Create Attraction Failed');
                         reject('Write Attraction failed');
@@ -1147,8 +1124,7 @@ export function tempDev2Function() {
 }
 
 function copyAttractionImagesByParkIdFromFilesToRealm(parkId) {
-    const user = Realm.Sync.User.current;
-
+    
     if (parkRealm) {
         // check for seed realm
         console.log('ready');
@@ -1226,8 +1202,6 @@ function copyAttractionImagesByParkIdFromFilesToRealm(parkId) {
 
 
 function copyParkImagesFromFilesToRealm() {
-    const user = Realm.Sync.User.current;
-
     if (parkRealm) {
         // check for seed realm
         console.log('ready');

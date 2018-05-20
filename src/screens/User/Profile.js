@@ -37,22 +37,22 @@ class Profile extends Component {
 
     // on mount try to load user from cache
     componentDidMount() {
-        UserService.loadUserFromCache().then((user) => {
-            UserService.initializeParkRealm();
-            // Success - update user in state
-            this.setState({
-                ...this.state,
-                isLoading: true
-            })
-            this.updateCurrentUserInState(user);
-        }).catch((error) => {
-            // Failed no cache user - clear user in state
-            this.setState({
-                ...this.state,
-                authenticated: false,
-                isLoading: false
+        UserService.loadUserFromCache()
+            .then((user) => {
+                // Success - update user in state
+                this.setState({
+                    ...this.state,
+                    isLoading: true
+                })
+                this.updateCurrentUserInState(user);
+            }).catch((error) => {
+                // Failed no cache user - clear user in state
+                this.setState({
+                    ...this.state,
+                    authenticated: false,
+                    isLoading: false
+                });
             });
-        });
     }
 
     // Navigator button event
@@ -63,6 +63,11 @@ class Profile extends Component {
                 this.renderSyncParksAndAttractionsButton();
 
                 this.updateCurrentUserInState(UserService.currentUser);
+            } else {
+                this.props.navigator.setButtons({
+                    rightButtons: [
+                    ]
+                });
             }
         }
         if (event.type == 'NavBarButtonPress') {

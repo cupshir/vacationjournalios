@@ -3,6 +3,7 @@ import {
     AlertIOS,
     FlatList,
     Image,
+    ImageBackground,
     StyleSheet,
     Switch,
     TextInput,
@@ -98,8 +99,13 @@ class EditJournal extends Component {
     addCheckedPropertyToParks = (selectedParks = []) => {
         let parks = [];
 
+        if (!UserService.parkRealm) {
+            return null;
+        }
+
         // Get parks from park realm
-        const realmParks = UserService.parks;
+        //const realmParks = UserService.parks;
+        const realmParks = UserService.parkRealm.objects('Park');
 
         // If selected parks, create an array of their ID's
         const selectedParksArray = [];
@@ -596,8 +602,8 @@ class EditJournal extends Component {
     
         // render photo or camera button
         const photo = (this.state.formValues.photo !== '') 
-        ? this.renderPhoto(this.state.formValues.photo) 
-        : this.renderCameraButton()
+            ? this.renderPhoto(this.state.formValues.photo) 
+            : this.renderCameraButton()
 
         return (
             <KeyboardAwareScrollView style={styles.container}>
