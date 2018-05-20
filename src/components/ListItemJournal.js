@@ -45,11 +45,11 @@ class ListItemJournal extends PureComponent {
         ]
 
         const photo = (this.props.item.photo === '') 
-        ? <Icon style={{ fontSize: 75, color: 'white' }} name="photo" />  
-        : <Image 
-                style={{ width: 100, height: 75 }}
-                source={{uri: `data:image/png;base64,${this.props.item.photo}`}} 
-            />
+            ? <Icon style={{ fontSize: 75, color: 'white' }} name="photo" />  
+            : <Image 
+                    style={{ width: 100, height: 75 }}
+                    source={{uri: `data:image/png;base64,${this.props.item.photo}`}} 
+                />
 
         let dateRange = '';
 

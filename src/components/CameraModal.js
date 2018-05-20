@@ -65,14 +65,15 @@ class CameraModal extends Component {
                 forceUpOrientation: true,
                 base64: true 
             };
-            this.camera.takePictureAsync(options).then((data) => {
-                // success - pass base64 of photo back
-                this.props.savePhoto(data, false);
-            }).catch((error) => {
-                // failed - TODO: Better error handling or remove..
-                console.log('something failed saving photo');
-                console.log(error);
-            })
+            this.camera.takePictureAsync(options)
+                .then((data) => {
+                    // success - pass base64 of photo back
+                    this.props.savePhoto(data, false);
+                }).catch((error) => {
+                    // failed - TODO: Better error handling or remove..
+                    console.log('something failed saving photo');
+                    console.log(error);
+                });
         }
     }
 

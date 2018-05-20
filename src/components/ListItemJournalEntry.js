@@ -63,11 +63,11 @@ class ListItemJournalEntry extends PureComponent {
 
         // render photo or placeholder
         const photo = (this.props.item.photo === '') 
-        ? <Icon style={{ fontSize: 75, color: 'white' }} name="photo" />  
-        : <Image 
-                style={{ flex: 1, width: 100, height: null }}
-                source={{uri: `data:image/png;base64,${this.props.item.photo}`}} 
-            />
+            ? <Icon style={{ fontSize: 75, color: 'white' }} name="photo" />  
+            : <Image 
+                    style={{ flex: 1, width: 100, height: null }}
+                    source={{uri: `data:image/png;base64,${this.props.item.photo}`}} 
+                />
 
         // render fastpass image if used
         let fastpass = null;

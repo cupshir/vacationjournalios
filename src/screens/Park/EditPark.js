@@ -168,23 +168,24 @@ class EditPark extends Component {
             const submitValues = this.prepareValuesForDB(this.state.formValues);
 
             // save park to realm
-            UserService.adminSavePark(submitValues).then((park) => {
-                // Success - stop animation
-                this.setState({
-                    ...this.state,
-                    isLoading: false
+            UserService.adminSavePark(submitValues)
+                .then((park) => {
+                    // Success - stop animation
+                    this.setState({
+                        ...this.state,
+                        isLoading: false
+                    });
+                    console.log('save successful');
+                    this.props.navigator.popToRoot();
+                }).catch((error) => {
+                    console.log('error: ');
+                    console.log(error);
+                    // Failed - stop animation
+                    this.setState({
+                        ...this.state,
+                        isLoading: false
+                    });
                 });
-                console.log('save successful');
-                this.props.navigator.popToRoot();
-            }).catch((error) => {
-                console.log('error: ');
-                console.log(error);
-                // Failed - stop animation
-                this.setState({
-                    ...this.state,
-                    isLoading: false
-                });
-            });
         } else {
             AlertIOS.alert('Please correct form errors and try again.');
         }        

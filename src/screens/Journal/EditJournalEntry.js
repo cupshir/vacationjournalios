@@ -180,18 +180,19 @@ class EditJournalEntry extends Component {
     savePhoto = (photoData, fromCameraRoll) => {
         if (UserService.currentUser.savePhotosToCameraRoll && !fromCameraRoll) {
             // save photo to camera roll
-            UserService.savePhotoToCameraRoll(photoData.uri).then((returnedPhoto) => {
-                this.setState({
-                    ...this.state,
-                    formValues: {
-                        ...this.state.formValues,
-                        photo: photoData.base64
-                    },
-                    cameraModalVisible: false,
-                });                
-            }).catch((error) => {
-                console.log('error saving to camera roll: ', error);
-            });
+            UserService.savePhotoToCameraRoll(photoData.uri)
+                .then((returnedPhoto) => {
+                    this.setState({
+                        ...this.state,
+                        formValues: {
+                            ...this.state.formValues,
+                            photo: photoData.base64
+                        },
+                        cameraModalVisible: false,
+                    });                
+                }).catch((error) => {
+                    console.log('error saving to camera roll: ', error);
+                });
         } else {
             this.setState({
                 ...this.state,
@@ -729,8 +730,8 @@ class EditJournalEntry extends Component {
 
         // render photo or camera button
         const photo = (this.state.formValues.photo !== '') 
-                    ? this.renderPhoto(this.state.formValues.photo)
-                    : this.renderCameraButton()
+            ? this.renderPhoto(this.state.formValues.photo)
+            : this.renderCameraButton()
 
         // Render form
         return (

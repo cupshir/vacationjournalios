@@ -76,12 +76,12 @@ class Park extends Component {
     renderPark = () => {
         // render photo or camera button
         const photo = (this.state.park.photo !== '') 
-        ? this.renderPhoto(this.state.park.photo) 
-        : null
+            ? this.renderPhoto(this.state.park.photo) 
+            : null
 
         const devParkId = (UserService.isDevAdmin)
-        ? <Text style={styles.contentText} selectable={true}>{this.state.park.id}</Text>
-        : null
+            ? <Text style={styles.contentText} selectable={true}>{this.state.park.id}</Text>
+            : null
 
         return (
             <View style={styles.container}>

@@ -222,20 +222,21 @@ class Journal extends Component {
             isLoading: true
         });
         // match, delete journal by id
-        UserService.deleteJournalEntry(id, this.state.currentUser.activeJournal.id).then(() => {
-            // success - stop animation
-            this.setState({
-                ...this.state,
-                isLoading: false
+        UserService.deleteJournalEntry(id, this.state.currentUser.activeJournal.id)
+            .then(() => {
+                // success - stop animation
+                this.setState({
+                    ...this.state,
+                    isLoading: false
+                });
+            }).catch((error) => {
+                // failed - stop animiation
+                console.log('fail', error)
+                this.setState({
+                    ...this.state,
+                    isLoading: false
+                });
             });
-        }).catch((error) => {
-            // failed - stop animiation
-            console.log('fail', error)
-            this.setState({
-                ...this.state,
-                isLoading: false
-            });
-        });
     }
 
     // handle search input

@@ -200,6 +200,7 @@ class Attraction extends Component {
     }
 
     // handle Attraction save event
+    // TODO: Go back to Attraction List after edit - For now pops to root screen
     handleDone = () => {
         // Check if ready to submit
         const ready = this.readyForSubmit(this.state.formValues);
@@ -215,23 +216,24 @@ class Attraction extends Component {
             const submitValues = this.prepareValuesForDB(this.state.formValues);
 
             // save attraction
-            UserService.adminSaveAttraction(submitValues).then((attraction) => {
-                // Success - stop animation
-                this.setState({
-                    ...this.state,
-                    isLoading: false
+            UserService.adminSaveAttraction(submitValues)
+                .then((attraction) => {
+                    // Success - stop animation
+                    this.setState({
+                        ...this.state,
+                        isLoading: false
+                    });
+                    console.log('save successful');
+                    this.props.navigator.popToRoot();
+                }).catch((error) => {
+                    console.log('error: ');
+                    console.log(error);
+                    // Failed - stop animation
+                    this.setState({
+                        ...this.state,
+                        isLoading: false
+                    });
                 });
-                console.log('save successful');
-                this.props.navigator.popToRoot();
-            }).catch((error) => {
-                console.log('error: ');
-                console.log(error);
-                // Failed - stop animation
-                this.setState({
-                    ...this.state,
-                    isLoading: false
-                });
-            });
         } else {
             AlertIOS.alert('Please correct form errors and try again.');
         }        

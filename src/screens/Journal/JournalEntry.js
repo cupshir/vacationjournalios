@@ -40,14 +40,15 @@ class JournalEntry extends Component {
 
     componentDidMount() {
         if(this.props.journalEntryId) {
-            UserService.getJournalEntryById(this.props.journalEntryId).then((journalEntry) => {
-                // success - pass journal entry to edit screen
-                this.loadEntryIntoState(journalEntry);
-            }).catch((error) => {
-                // failed
-                console.log('error: ', error);
-                this.props.navigator.pop();
-            })
+            UserService.getJournalEntryById(this.props.journalEntryId)
+                .then((journalEntry) => {
+                    // success - pass journal entry to edit screen
+                    this.loadEntryIntoState(journalEntry);
+                }).catch((error) => {
+                    // failed
+                    console.log('error: ', error);
+                    this.props.navigator.pop();
+                });
         } else {
             this.props.navigator.pop();
         }
@@ -140,8 +141,8 @@ class JournalEntry extends Component {
 
         // render photo or placeholder
         const photo = (this.state.formValues.photo !== '') 
-        ? this.renderPhoto(this.state.formValues.photo)
-        : this.renderPhotoPlaceholder()
+            ? this.renderPhoto(this.state.formValues.photo)
+            : this.renderPhotoPlaceholder()
 
         // render fastpass image if used
         let fastpass = null;

@@ -103,26 +103,27 @@ class JournalList extends Component {
         });
         if (journalId) {
             // attempt to set active journal
-            UserService.setActiveJournal(journalId).then((journal) => {
-                //success - stop loading animation and close modal
-                this.setState({
-                    ...this.state,
-                    isLoading: false
+            UserService.setActiveJournal(journalId)
+                .then((journal) => {
+                    //success - stop loading animation and close modal
+                    this.setState({
+                        ...this.state,
+                        isLoading: false
+                    });
+                    // navigate to Journal screen
+                    this.props.navigator.push({
+                        screen: 'vacationjournalios.Journal',
+                        title: journal.name,
+                        animated: true,
+                        animationType: 'fade'
+                    });
+                }).catch((error) => {
+                    console.log('setJournalError: ', error);
+                    this.setState({
+                        ...this.state,
+                        isLoading: false
+                    });
                 });
-                // navigate to Journal screen
-                this.props.navigator.push({
-                    screen: 'vacationjournalios.Journal',
-                    title: journal.name,
-                    animated: true,
-                    animationType: 'fade'
-                });
-            }).catch((error) => {
-                console.log('setJournalError: ', error);
-                this.setState({
-                    ...this.state,
-                    isLoading: false
-                });
-            });
         } 
     }
 
@@ -170,19 +171,20 @@ class JournalList extends Component {
                 isLoading: true
             });
             // attempt to delete journal
-            UserService.deleteJournal(journalId).then(() => {
-                // Success - stop loading animation
-                this.setState({
-                    ...this.state,
-                    isLoading: false
+            UserService.deleteJournal(journalId)
+                .then(() => {
+                    // Success - stop loading animation
+                    this.setState({
+                        ...this.state,
+                        isLoading: false
+                    });
+                }).catch((error) => {
+                    // Failed - stop loading animation
+                    this.setState({
+                        ...this.state,
+                        isLoading: false
+                    });
                 });
-            }).catch((error) => {
-                // Failed - stop loading animation
-                this.setState({
-                    ...this.state,
-                    isLoading: false
-                });
-            });
         } else {
             // dont match, display alert and do nothing
             AlertIOS.alert('Names dont match. Journal not deleted!');
