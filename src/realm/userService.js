@@ -198,29 +198,9 @@ export function signInUser(email, password) {
                     isAuthenticated = true;
                     isAdmin = user.isAdmin ? true : false;
                     isDevAdmin = user.identity === '461129407087609086f11bb9cb1dbb8e' ? true : false;
- 
-                    // setup realm config
-                    const userConfig = {
-                        schema: [Person, Park, Attraction, Journal, JournalEntry],
-                        sync: {
-                            user,
-                            url: `${AppConstants.REALM_URL}/${AppConstants.REALM_USER_PATH}`
-                        }
-                    }
 
-                    // open the realm
-                    Realm.open(userConfig).then(realm => {
-                        userRealm = realm;
+                    resolve(user);
 
-                        // update currentUser object
-                        currentUser = userRealm.objectForPrimaryKey('Person', user.identity);
-                        attractions = userRealm.objects('Attraction');
-                        parks = userRealm.objects('Park');
-                        
-                        resolve(currentUser);
-                    }).catch((error) => {
-                        reject(error);
-                    });
                 }).catch(error => {
                     reject(error);
                 });
@@ -248,11 +228,9 @@ export function loadUserFromCache() {
         }   
 
         if (user) {
-            // set isAuthenticated
+            // set properties
             isAuthenticated = true;
-            // set admin user
             isAdmin = user.isAdmin ? true : false;
-            // set dev admin user
             isDevAdmin = user.identity === '461129407087609086f11bb9cb1dbb8e' ? true : false;
 
             // Open userRealm
@@ -282,18 +260,20 @@ export function signOutUser() {
         let users = Realm.Sync.User.all;
         for(const key in users) {
             const user = users[key];
-            user.logout();
+
+            if (user.identity !== 'afb126a04b869ab949e2e9477dd8fb59') {
+                user.logout();
+            }
         }                
 
         isAuthenticated = false;
         currentUser = null;
         currentSyncUser = null;
         userRealm = null;
-        parkRealm = null;
         isAdmin = false;
         isDevAdmin = false;
 
-        resolve(currentUser);
+        resolve();
         
         reject('Something went wrong with signout');
     });

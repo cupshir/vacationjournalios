@@ -18,6 +18,16 @@ import * as UserService from '../../realm/userService';
 
 import LoadingMickey from '../../components/LoadingMickey';
 
+import Realm from 'realm';
+import * as AppConstants from '../../realm/config';
+import {
+    Person, 
+    Park, 
+    Attraction, 
+    Journal, 
+    JournalEntry
+} from '../../realm/model/user';
+
 class SignIn extends Component {
     static navigatorButtons = {
         rightButtons: [
@@ -46,6 +56,8 @@ class SignIn extends Component {
                 password: ''
             },
             authenticationError: '',
+            userLoadTitle: '',
+            userLoadProgress: '',
             isLoading: false
         };
         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
@@ -116,25 +128,69 @@ class SignIn extends Component {
         if(ready) {
             this.setState({
                 ...this.state,
+                userLoadTitle: 'Logging in...',
                 isLoading: true
             });
 
             // attempt sign in user
-            UserService.signInUser(this.state.formValues.email,this.state.formValues.password).then((user) => {
-                this.props.navigator.dismissModal();
-            }).catch((error) => {
-                // failed
-                console.log('signInError: ', error);
-                // set error message in state
-                this.setState({
-                    ...this.state,
-                    authenticationError: error.message,
-                    isLoading: false
+            Realm.Sync.User.login(AppConstants.AUTH_URL, this.state.formValues.email, this.state.formValues.password)
+                .then(user => {
+                    // update state
+                    this.setState({
+                        ...this.state,
+                        userLoadTitle: 'Opening User Realm...'
+                    });
+
+                    // setup realm config
+                    const userConfig = {
+                        schema: [Person, Park, Attraction, Journal, JournalEntry],
+                        sync: {
+                            user,
+                            url: `${AppConstants.REALM_URL}/${AppConstants.REALM_USER_PATH}`
+                        }
+                    }
+
+                    // open realm
+                    Realm.open(userConfig)
+                        .progress((transferred, transferable) => {
+                            // get progress
+                            const progress = Math.round((transferred / transferable) * 100);
+
+                            // update state
+                            this.setState({
+                                ...this.state,
+                                userLoadProgress: progress,
+                            });
+                        }).then(realm => {
+                            // realm created set properties in UserService
+                            UserService.userRealm = realm;
+                            UserService.currentUser = UserService.userRealm.objectForPrimaryKey('Person', user.identity);
+                            UserService.attractions = UserService.userRealm.objects('Attraction');
+                            UserService.parks = UserService.userRealm.objects('Park');
+
+                            // update state
+                            this.setState({
+                                ...this.state,
+                                isLoading: false
+                            });
+                            this.props.navigator.dismissModal();
+                        }).catch((e) => {
+                            console.log('error');
+                            console.log(e);
+                        }) 
+                }).catch((error) => {
+                    // failed
+                    console.log('signInError: ', error);
+                    // set error message in state
+                    this.setState({
+                        ...this.state,
+                        authenticationError: error.message,
+                        isLoading: false
+                    });
                 });
-            });
         } else {
             // not ready for submit
-            AlertIOS.alert('Please enter a valid email address and password')
+            AlertIOS.alert('Please enter a valid email address and password');
         }
     }
 
@@ -190,11 +246,14 @@ class SignIn extends Component {
         // Check for authentication error in state
         const authenticationError = (this.state.authenticationError !== '') ? this.renderError(this.state.authenticationError) : null;
 
+        const loadProgressTitle = (this.state.userLoadTitle !== '') ? this.state.userLoadTitle : null;
+        const loadProgress = (this.state.userLoadProgress !== '') ? (this.state.userLoadProgress + '%') : null;
+
         // Loading Mickey Graphic
         if (this.state.isLoading) {
             return (
                 <View style={styles.container}>
-                    <LoadingMickey />
+                    <LoadingMickey title={loadProgressTitle} text={loadProgress} />
                 </View>
             );
         }
@@ -212,9 +271,8 @@ class SignIn extends Component {
                     {authenticationError}
                     <View>
                         <FormLabel
-                            labelStyle={styles.inputLabel}
-                        >
-                            Email
+                            labelStyle={styles.inputLabel}>
+                                Email
                         </FormLabel>
                         <FormInput 
                             onChangeText={this.handleEmailChange}
@@ -223,12 +281,12 @@ class SignIn extends Component {
                             autoCorrect={false}
                             containerStyle={styles.input}
                             inputStyle={styles.inputText}
-                            value={this.state.formValues.email}
-                        />
+                            value={this.state.formValues.email} />
                         {emailError}
                         <FormLabel
-                            labelStyle={styles.inputLabel}
-                        >Password</FormLabel>
+                            labelStyle={styles.inputLabel}>
+                                Password
+                        </FormLabel>
                         <FormInput 
                             onChangeText={this.handlePasswordChange}
                             placeholder='Enter password'
@@ -237,13 +295,12 @@ class SignIn extends Component {
                             autoCorrect={false}
                             spellCheck={false}
                             containerStyle={styles.input}
-                            inputStyle={styles.inputText}
-                        />
+                            inputStyle={styles.inputText} />
                         {passwordError}
                     </View>
                 </View>
             </KeyboardAwareScrollView>
-        )
+        );
     }
 }
 

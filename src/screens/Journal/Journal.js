@@ -27,15 +27,11 @@ import SectionHeader from '../../components/SectionHeader';
 import LoadingMickey from '../../components/LoadingMickey';
 
 class Journal extends Component {
-    static navigatorButtons = {
-
-    };
-
     constructor(props) {
         super(props);
         this.state = {
             currentUser: null,
-            isLoading: true,
+            isLoading: false,
             filteredEntries: null
         };
         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
@@ -268,15 +264,13 @@ class Journal extends Component {
             item={item}
             onPress={this.onPress}
             onEditPress={this.onEditPress}
-            onDeletePress={this.onDeletePress} 
-        />
+            onDeletePress={this.onDeletePress} />
     );
 
     // render Header row
     renderSectionHeader = ({ section }) => (
         <SectionHeader
-            title={section.title} 
-        />
+            title={section.title} />
     );
 
     // Render Search Input (placed here to keep view below easier to read)
@@ -290,8 +284,7 @@ class Journal extends Component {
                 onChangeText={this.handleSearch}
                 icon={{ style: { marginLeft: 4 } }}
                 clearIcon={{ name: 'close' }}
-                placeholder='Search' 
-            />
+                placeholder='Search' />
         );
     }
 
@@ -361,8 +354,7 @@ class Journal extends Component {
                             })}
                         renderItem={this.renderItem}
                         renderSectionHeader={this.renderSectionHeader}
-                        keyExtractor={ (item, index) => index } 
-                    />
+                        keyExtractor={ (item, index) => index } />
                 </View>
             </View>
         );     
@@ -448,8 +440,6 @@ class Journal extends Component {
             }          
         }
 
-
-
         return (
             <View>
                 {journalEntryList}
@@ -460,9 +450,7 @@ class Journal extends Component {
 
 var styles = StyleSheet.create({
     container: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
+        flex: 1
     },
     searchContainer: {
         backgroundColor: '#252525',
