@@ -18,6 +18,7 @@ import RNFS from 'react-native-fs';
 
 // Class Properties?
 export let parkRealm;
+export let parkSyncUser;
 export let userRealm;
 export let currentUser;
 export let currentSyncUser;
@@ -27,22 +28,23 @@ export let isAdmin = false;
 export let isDevAdmin = false;
 export let isAuthenticated = false;
 
+
 // Open Seed Realm
 Realm.Sync.User.login(AppConstants.AUTH_URL, 'seedUser', AppConstants.SEED_USER_PASSWORD).then(user => {
-    // setup realm config
-    const userConfig = {
+    parkSyncUser = user;
+
+    parkRealm = new Realm({
         schema: [ Park, Attraction ],
         sync: {
             user,
             url: `${AppConstants.REALM_URL}/${AppConstants.REALM_PARKS_PATH}`
         }
-    }
-
-    // open the realm
-    Realm.open(userConfig).then(realm => {
-        parkRealm = realm;
     });
+
+    console.log('Park Realm: ', parkRealm);
+    console.log('Park Sync User: ', parkSyncUser);
 });
+
 
 
 //// User Functions
@@ -56,6 +58,8 @@ export function registerUser(userObject) {
                 .then(user => {
                     // set current sync user
                     currentSyncUser = user;
+                    isAuthenticated = true;
+
                     // Open a new user Realm        
                     userRealm = new Realm({
                         schema: [Person, Park, Attraction, Journal, JournalEntry],
@@ -83,10 +87,9 @@ export function registerUser(userObject) {
                                 attractionsLastSynced: new Date(1900,0,1)
                             });
                         });
-                        // horrible hack? wait 2s then try the initial seed user realm
-                        setTimeout(initialSeedFromParkRealm(), 2000);
 
                         resolve(currentUser);
+
                     } catch (e) {
                         // Something went wrong userRealm write
                         console.log('userRealmWriteError: ', e);
@@ -94,12 +97,12 @@ export function registerUser(userObject) {
                     }
                 }).catch(error =>  {
                     // Something went wrong with register
-                    console.log('registerCatchError1: ', error);
+                    console.log('register account error: ', error);
                     reject(error);
                 });
         } else {
             signOutUser();
-            reject('Error: Current user logged out, please try again.');
+            reject('Error: A user was already logged in, but has been logged out, please try again.');
         }
     });
 }
@@ -186,7 +189,7 @@ export function changeUserPassword(oldPassword, newPassword) {
     });
 }
 
-// Signin user by verifying email / password and then load realms
+// Signin user by verifying email / password
 export function signInUser(email, password) {
     return new Promise((resolve, reject) => {
         if (!currentSyncUser) {
@@ -221,7 +224,7 @@ export function loadUserFromCache() {
         for(const key in users) {
             const checkUser = users[key];
 
-            if (checkUser.identity !== 'afb126a04b869ab949e2e9477dd8fb59') {
+            if (checkUser.identity !== AppConstants.SEED_USER_ID) {
                 user = checkUser;
                 break;
             }            
@@ -231,7 +234,7 @@ export function loadUserFromCache() {
             // set properties
             isAuthenticated = true;
             isAdmin = user.isAdmin ? true : false;
-            isDevAdmin = user.identity === '461129407087609086f11bb9cb1dbb8e' ? true : false;
+            isDevAdmin = user.identity === AppConstants.DEV_USER_ID ? true : false;
 
             // Open userRealm
             userRealm = new Realm({
@@ -261,7 +264,7 @@ export function signOutUser() {
         for(const key in users) {
             const user = users[key];
 
-            if (user.identity !== 'afb126a04b869ab949e2e9477dd8fb59') {
+            if (user.identity !== AppConstants.SEED_USER_ID) {
                 user.logout();
             }
         }                
@@ -1093,14 +1096,17 @@ export function mostRiddenLife() {
 /////    TEMP FOR DEV
 export function tempDev1Function() {
 
-
-
 }
 
 export function tempDev2Function() {
 
     //copyAttractionImagesByParkIdFromFilesToRealm('temp');
-    //copyParkImagesFromFilesToRealm();
+    //copyParkImagesFromFilesToRealm();    
+    
+}
+
+export function tempDev3Function() {
+
 }
 
 function copyAttractionImagesByParkIdFromFilesToRealm(parkId) {

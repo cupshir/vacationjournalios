@@ -80,6 +80,9 @@ class Profile extends Component {
             if (event.id === 'dev2') {
                 this.dev2Function();
             }
+            if (event.id === 'dev3') {
+                this.dev3Function();
+            }
         }
     }
 
@@ -92,6 +95,11 @@ class Profile extends Component {
     dev2Function = () => {
         console.log('run dev 2 function');
         UserService.tempDev2Function();
+    }
+
+    dev3Function = () => {
+        console.log('run dev 3 function');
+        UserService.tempDev3Function();
     }
 
     // Render Add journal Entry Button in nav bar
@@ -113,17 +121,11 @@ class Profile extends Component {
                             id: 'dev2',
                             title: '2',
                             buttonFontSize: 32
-                        }
-                    ]
-                });
-            });
-        } else {
-            IconsLoaded.then(() => {
-                this.props.navigator.setButtons({
-                    rightButtons: [
+                        },
                         {
-                            id: 'syncParksAndAttractions',
-                            icon: IconsMap['sync']
+                            id: 'dev3',
+                            title: '3',
+                            buttonFontSize: 32
                         }
                     ]
                 });
@@ -193,15 +195,6 @@ class Profile extends Component {
         });
     }
 
-    // save photo to state
-    savePhoto = (photo) => {
-        UserService.saveUserPhoto(photo).then((updatedUser) => {
-            this.updateCurrentUserInState(updatedUser);
-        }).catch((error) => {
-            console.log('Save Photo Failed: ', error);
-        });
-    }
-
     // save photo to state and possibly camera roll
     savePhoto = (photoData, fromCameraRoll) => {
         if (UserService.currentUser.savePhotosToCameraRoll && !fromCameraRoll) {
@@ -216,6 +209,13 @@ class Profile extends Component {
                 console.log('error saving to camera roll: ', error);
             });
         } else {
+            // save photo
+            UserService.saveUserPhoto(photoData.base64).then((updatedUser) => {
+                this.updateCurrentUserInState(updatedUser);
+            }).catch((error) => {
+                console.log('Save Photo Failed: ', error);
+            }); 
+
             this.setState({
                 ...this.state,
                 formValues: {

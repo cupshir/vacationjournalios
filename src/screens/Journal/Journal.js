@@ -91,7 +91,9 @@ class Journal extends Component {
     // update current user in state, if no current user clear user object from state
     updateCurrentUserInState = (user) => {
         if (user) {
-            this.renderAddJournalEntryButton();
+            if (user.activeJournal) {
+                this.renderAddJournalEntryButton();
+            }
             this.setState({
                 ...this.state,
                 currentUser: user,

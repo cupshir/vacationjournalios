@@ -52,6 +52,8 @@ class Register extends Component {
                 firstName: '',
             },
             signUpError: '',
+            userLoadTitle: '',
+            userLoadProgress: '',
             isLoading: false
         };
         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
@@ -210,6 +212,8 @@ class Register extends Component {
             // start loading animation
             this.setState({
                 ...this.state,
+                userLoadTitle: 'Registering New Account...',
+                userLoadProgress: '0',
                 isLoading: true
             });
             // Create and populate credentials object
@@ -221,12 +225,67 @@ class Register extends Component {
 
             // Attempt registration
             UserService.registerUser(credentials).then((user) => {
-                // success - stoping loading animation and close modal
+                console.log('register success');
+                // success registering, start seed and update progress
                 this.setState({
                     ...this.state,
-                    isLoading: false
-                })
-                this.props.navigator.dismissModal();
+                    userLoadTitle: 'Adding Parks to New Account...',
+                    userLoadProgress: '33',
+                });
+
+                if(UserService.parkRealm) {
+                    // start initial park seed
+                    UserService.updateUserParks()
+                        .then(() => {
+                            console.log('first time park sync success');
+                            
+                            // success seeding parks
+                            this.setState({
+                                ...this.state,
+                                userLoadTitle: 'Adding Attractions to New Account...',
+                                userLoadProgress: '66',
+                            });
+
+                            // start initial attraction seed
+                            UserService.updateUserAttractions()
+                                .then(() => {
+                                    console.log('first time attraction sync success');
+                                    
+                                    // seed success - close modal                                    
+                                    this.setState({
+                                        ...this.state,
+                                        isLoading: false
+                                    });
+                                    this.props.navigator.dismissModal();
+                            }).catch((error) => {
+                                // failed to seed attractions
+                                console.log(error);
+                                console.log('error seeding attractions');
+                                this.setState({
+                                    ...this.state,
+                                    signUpError: error,
+                                    isLoading: false
+                                });
+                            });
+                        }).catch((error) => {
+                            // failed to seed parks
+                            console.log(error);
+                            console.log('error seeding parks');
+                            this.setState({
+                                ...this.state,
+                                signUpError: error,
+                                isLoading: false
+                            });
+                        });
+                } else {
+                    // failed to start seed
+                    console.log('Park Realm not available, unable to start initial seed');
+                    this.setState({
+                        ...this.state,
+                        signUpError: 'Park Realm not available, unable to start initial seed',
+                        isLoading: false
+                    });
+                }
             }).catch((error) => {
                 // failed
                 console.log('handleSignUpError: ', error);
@@ -299,11 +358,14 @@ class Register extends Component {
         // Check if sign in errors in state
         const signUpError = (this.state.signUpError !== '') ? this.renderError(this.state.signUpError) : null;
 
+        const loadProgressTitle = (this.state.userLoadTitle !== '') ? this.state.userLoadTitle : null;
+        const loadProgress = (this.state.userLoadProgress !== '') ? (this.state.userLoadProgress + '%') : null;
+
         // Loading Mickey Graphic
         if (this.state.isLoading) {
             return (
                 <View style={styles.container}>
-                    <LoadingMickey />
+                    <LoadingMickey title={loadProgressTitle} text={loadProgress} />
                 </View>
             );
         }

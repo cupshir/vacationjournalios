@@ -552,22 +552,115 @@ export function tempDevFunction() {
                       true);
                   });
               
-              });
-              
+              });         
           } catch (error) {
               console.log(error);
           }
-          
-
-
       },5000);
-
-
-
-
-
-      
   } else {
       console.log('missing teamSeedrealm');
   }
+}
+
+
+
+
+// Copy Realm from a different server  
+function copyObject(obj, objSchema, targetRealm) {
+  const copy = {};
+  for (var key in objSchema.properties) {
+      const prop = objSchema.properties[key];
+      if (!prop.hasOwnProperty('objectType')) {
+          copy[key] = obj[key];
+      }
+      else if (prop['type'] == "list") {
+          copy[key] = [];
+      }
+      else {
+          copy[key] = null;
+      }
+  }
+
+  // Add object to target realm
+  targetRealm.create(objSchema.name, copy, true);
+}
+
+function getMatchingObjectInOtherRealm(sourceObj, source_realm, target_realm, class_name) {
+  const allObjects = source_realm.objects(class_name);
+  const ndx = allObjects.indexOf(sourceObj);
+
+  // Get object on same position in target realm
+  return target_realm.objects(class_name)[ndx];
+}
+
+function addLinksToObject(sourceObj, targetObj, objSchema, source_realm, target_realm) {
+  for (var key in objSchema.properties) {
+      const prop = objSchema.properties[key];
+      if (prop.hasOwnProperty('objectType')) {
+          if (prop['type'] == "list") {
+              var targetList = targetObj[key];
+              sourceObj[key].forEach((linkedObj) => {
+                  const obj = getMatchingObjectInOtherRealm(linkedObj, source_realm, target_realm, prop.objectType);
+                  targetList.push(obj);
+              });
+          }
+          else {
+              // Find the position of the linked object
+              const linkedObj = sourceObj[key];
+              if (linkedObj === null) {
+                  continue;
+              }
+
+              // set link to object on same position in target realm
+              targetObj[key] = getMatchingObjectInOtherRealm(linkedObj, source_realm, target_realm, prop.objectType);
+          }
+      }
+  }
+}
+
+function copyRealm() {
+  // open source realm
+  const source_realm = new Realm({
+      sync: {
+          user: tempSyncUser,
+          url: 'realm://serveraddressgoeshere/seedDataParks',
+      }
+  });
+  const source_realm_schema = source_realm.schema;
+
+  const target_realm = parkRealm;
+
+  console.log('source realm: ', source_realm);
+  console.log('target realm: ', target_realm);
+
+  target_realm.write(() => {
+      // Copy all objects, but ignore links for now
+      source_realm_schema.forEach((objSchema) => {
+          console.log('Copying objects: ', objSchema['name']);
+          const allObjects = source_realm.objects(objSchema['name']);
+
+          allObjects.forEach((obj) => {
+              copyObject(obj, objSchema, target_realm)
+          });
+
+          console.log('Done copying objects: ', objSchema['name']);
+      });
+
+      // Do a second pass to add links
+      source_realm_schema.forEach((objSchema) => {
+          console.log('Updating links in: ', objSchema['name']);
+          const allSourceObjects = source_realm.objects(objSchema['name']);
+          const allTargetObjects = target_realm.objects(objSchema['name']);
+
+          for (var i = 0; i < allSourceObjects.length; ++i) {
+              const sourceObject = allSourceObjects[i];
+              const targetObject = allTargetObjects[i];
+
+              addLinksToObject(sourceObject, targetObject, objSchema, source_realm, target_realm);
+              console.log('Update link: ', i);
+          }
+
+          console.log('Done updating Links in: ', objSchema['name']);
+      });
+  });
 }
