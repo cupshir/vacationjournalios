@@ -1,6 +1,4 @@
 /* eslint-disable no-unused-vars */
-import React from 'react';
-
 import { Navigation } from 'react-native-navigation';
 
 // import icons
@@ -17,8 +15,7 @@ registerScreens();
 // After icon map has loaded, start app
 IconsLoaded.then(() => {
 
-	Navigation.startTabBasedApp({
-		
+	Navigation.startTabBasedApp({		
 		tabs: [
 			{
 				screen: 'vacationjournalios.Dashboard',
@@ -88,13 +85,4 @@ IconsLoaded.then(() => {
 			orientation: 'portrait'
 		}
 	});
-})
-
-
-	
-
-
-
-
-
-
+});
