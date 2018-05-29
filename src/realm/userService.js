@@ -200,7 +200,7 @@ export function signInUser(email, password) {
                     currentSyncUser = user;
                     isAuthenticated = true;
                     isAdmin = user.isAdmin ? true : false;
-                    isDevAdmin = user.identity === '461129407087609086f11bb9cb1dbb8e' ? true : false;
+                    isDevAdmin = user.identity === AppConstants.DEV_USER_ID ? true : false;
 
                     resolve(user);
 
@@ -232,6 +232,7 @@ export function loadUserFromCache() {
 
         if (user) {
             // set properties
+            currentSyncUser = user;
             isAuthenticated = true;
             isAdmin = user.isAdmin ? true : false;
             isDevAdmin = user.identity === AppConstants.DEV_USER_ID ? true : false;
@@ -1090,12 +1091,9 @@ export function mostRiddenLife() {
 
 
 
-
-
-
 /////    TEMP FOR DEV
 export function tempDev1Function() {
-
+    //console.log(RNFS.DocumentDirectoryPath);
 }
 
 export function tempDev2Function() {
@@ -1106,7 +1104,7 @@ export function tempDev2Function() {
 }
 
 export function tempDev3Function() {
-
+    //copyAttractionImagesByParkIdFromFilesToRealm(AppConstants.DISNEY_SPRINGS);
 }
 
 function copyAttractionImagesByParkIdFromFilesToRealm(parkId) {
@@ -1116,7 +1114,7 @@ function copyAttractionImagesByParkIdFromFilesToRealm(parkId) {
         console.log('ready');
 
         // TODO: Update to use supplied parkID instead of hardcoded
-        const attractions = parkRealm.objects('Attraction').filtered(`park.id == '52d9a73b-cf1f-478e-8b0f-12b86d7274bd'`);
+        const attractions = parkRealm.objects('Attraction').filtered(`park.id == $0`, parkId);
         console.log(attractions.length);
 
         let attractionObjectArray = [];
@@ -1127,7 +1125,7 @@ function copyAttractionImagesByParkIdFromFilesToRealm(parkId) {
 
             // convert image file to base64   MainBundlePath
             let image;
-            RNFS.readFile(`${RNFS.DocumentDirectoryPath}/SeedImages/MagicKingdom/${attraction.id}.png`, 'base64').then((img) => {
+            RNFS.readFile(`${RNFS.DocumentDirectoryPath}/SeedImages/${parkId}/${attraction.id}.png`, 'base64').then((img) => {
                 image = img;
                 console.log(attraction.name);
                 console.log(attraction.id);

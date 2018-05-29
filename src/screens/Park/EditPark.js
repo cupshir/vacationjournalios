@@ -68,7 +68,6 @@ class EditPark extends Component {
                 // New park - disable loading animation
                 this.setState({
                     ...this.state,
-                    parks: this.addCheckedPropertyToParks(),
                     isLoading: false
                 });
             }
