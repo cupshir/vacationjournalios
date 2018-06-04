@@ -130,6 +130,17 @@ class Profile extends Component {
                     ]
                 });
             });
+        } else {
+            IconsLoaded.then(() => {
+                this.props.navigator.setButtons({
+                    rightButtons: [
+                        {
+                            id: 'syncParksAndAttractions',
+                            icon: IconsMap['sync']
+                        }
+                    ]
+                });
+            });
         }
     }
 
@@ -155,36 +166,24 @@ class Profile extends Component {
     }
 
     syncParksAndAttractions = () => {
-        console.log('starting sync....')
-        // initiliaze seed realm
-        UserService.initializeParkRealm().then((response) => {
-            UserService.updateUserAttractions().then(() => {
-                // success
-                console.log('seed attractions success');
-            }).catch((error) => {
-                console.log(error);
-                console.log('seed attractions failed');
-            });
+        console.log('starting sync....');
+        
+        UserService.updateUserAttractions().then(() => {
+            // success
+            console.log('seed attractions success');
         }).catch((error) => {
             console.log(error);
-            console.log('Park Realm Init Failed');
+            console.log('seed attractions failed');
         });
-
-        // initiliaze seed realm
-        UserService.initializeParkRealm().then((response) => {
-            // update User parks
-            UserService.updateUserParks().then(() => {
-                // success
-                console.log('seed parks success');
-            }).catch((error) => {
-                console.log(error);
-                console.log('seed parks failed');
-            });
+    
+        // update User parks
+        UserService.updateUserParks().then(() => {
+            // success
+            console.log('seed parks success');
         }).catch((error) => {
-            console.log(error)
-            console.log('Park Realm Init Failed');
+            console.log(error);
+            console.log('seed parks failed');
         });
-
     }
 
     // toggle camera modal
